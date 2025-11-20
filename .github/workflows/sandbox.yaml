@@ -1,0 +1,171 @@
+name: Sandbox Build and Deploy
+concurrency:
+  group: ${{ github.workflow }}
+
+on:
+  push:
+    paths:
+      - .github/workflows/sandbox.yaml
+      - packages/**
+      - scripts/**
+      - infra/**
+    branches:
+      - sandbox
+
+env:
+  AWS_REGION: "us-east-1"
+
+permissions:
+  id-token: write # This is required for requesting the JWT for AWS
+  contents: read # This is required for actions/checkout
+
+jobs:
+  detect-infra-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy_infra: ${{ steps.diff_infra.outputs.should_deploy_infra }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # Fetch all history for accurate diff
+
+      - name: Diff infra project
+        id: diff_infra
+        run: |
+          git fetch
+          git diff ${{ github.event.before }} -- infra
+          git diff ${{ github.event.before }} -- infra >> infra_changes.txt
+          if [ -e "infra_changes.txt" ] && [ ! -s "infra_changes.txt" ]; then
+            echo "Infra changes were NOT detected, do NOT deploy infra"
+            echo "should_deploy_infra=false" >> $GITHUB_OUTPUT
+          elif [ -e "infra_changes.txt" ] && [ -s "infra_changes.txt" ]; then
+            echo "Infra changes WERE detected, deploy infra changes"
+            echo "should_deploy_infra=true" >> $GITHUB_OUTPUT
+          else
+            echo "Infra change detection failed, deploy infra just in case"
+            echo "should_deploy_infra=true" >> $GITHUB_OUTPUT
+          fi
+
+  infrastructure-as-code:
+    needs: detect-infra-changes
+    if: needs.detect-infra-changes.outputs.should_deploy_infra == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: sandbox
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: cd infra && npm install
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4.2.1
+        with:
+          role-to-assume: ${{ secrets.ACTION_RUNNER_AWS_ROLE }}
+          role-session-name: BC_Checkout_Sandbox_GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: CDK diff
+        continue-on-error: true # Allow the workflow to continue even if there are no changes
+        run: |
+          echo "Running CDK diff to see if there are any changes to the infrastructure"
+          cd infra && npm run cdk diff BcCheckoutUIStack
+
+      # TODO capture diff and save in artifacts
+
+      - name: CDK deploy
+        run: |
+          echo "Running CDK deploy to apply any changes to the infrastructure"
+          cd infra && npm run cdk deploy BcCheckoutUIStack
+
+      - name: save cdk outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: cdk.out
+          path: infra/cdk.out
+
+  build-artifact-upload-to-s3:
+    needs: infrastructure-as-code
+    if: |
+      always() && (needs.infrastructure-as-code.result == 'skipped' || needs.infrastructure-as-code.result == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment: sandbox
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Cache .npm dir
+        id: cache-npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: (npm install)
+
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v1.7.0
+        with:
+          role-to-assume: ${{ secrets.ACTION_RUNNER_AWS_ROLE }}
+          role-session-name: BC_Checkout_Sandbox_GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Build Node Artifact
+        run: (npm run build)
+
+      # upload artifacts to s3 with commit hash
+      - name: upload artifacts to S3
+        run: |
+          echo "GITHUB sha: ${{ github.sha }}"
+          # sync to a version specific bucket for rollbacks
+          aws s3 sync dist s3://${{ vars.S3_BUCKET }}/${{ github.sha }}
+          # sync to root of bucket for CloudFront distribution which should have no origin path
+          aws s3 sync s3://${{ vars.S3_BUCKET }}/${{ github.sha }} s3://${{ vars.S3_BUCKET }}
+
+  deploy-cloudfront:
+    needs: build-artifact-upload-to-s3
+    if: |
+      always() && (needs.build-artifact-upload-to-s3.result == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: sandbox
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v1.7.0
+        with:
+          role-to-assume: ${{ secrets.ACTION_RUNNER_AWS_ROLE }}
+          role-session-name: BC_Checkout_Sandbox_GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: invalidate cloudfront cache
+        run: |
+          # TODO wait 10 minutes since last invalidation
+          INVALIDATION_RESPONSE=`aws cloudfront create-invalidation --distribution-id '${{ secrets.CAMP_CLOUDFRONT_DISTRIBUTION_ID }}' --paths "/*"`
+          echo "invalidation response: $INVALIDATION_RESPONSE"
+          INVALIDATION_ID=$(echo $INVALIDATION_RESPONSE | jq -r '.Invalidation.Id')
+          echo "invalidation id: $INVALIDATION_ID"
+          aws cloudfront wait invalidation-completed --id $INVALIDATION_ID --distribution-id ${{ secrets.CAMP_CLOUDFRONT_DISTRIBUTION_ID }}
+
+      # run playwright test validating the UI
+
+      # rollback if necessary
+
+      # TODO invalidate cache after rollback

@@ -1,0 +1,27 @@
+{
+  "name": "infra",
+  "version": "0.1.0",
+  "bin": {
+    "infra": "bin/infra.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "cdk": "cdk"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-acm": "^3.803.0",
+    "@aws-sdk/client-cloudfront": "^3.804.0",
+    "@aws-sdk/client-ssm": "^3.920.0",
+    "@aws-sdk/client-sts": "^3.864.0",
+    "@aws-sdk/client-wafv2": "^3.803.0",
+    "@types/node": "22.7.9",
+    "aws-cdk": "2.1012.0",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.6.3"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "2.190.0",
+    "constructs": "^10.0.0"
+  }
+}
