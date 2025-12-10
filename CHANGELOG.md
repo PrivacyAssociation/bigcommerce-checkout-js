@@ -2,6 +2,56 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.705.2](https://github.com/bigcommerce/checkout-js/compare/v1.705.1...v1.705.2) (2025-12-09)
+
+
+### Code Refactoring
+
+* **checkout:** CHECKOUT-9677 Update Summary Display ([#2725](https://github.com/bigcommerce/checkout-js/issues/2725)) ([52ae062](https://github.com/bigcommerce/checkout-js/commit/52ae062390e48f708e5fd29b6410892a10b914d0))
+
+### [1.705.1](https://github.com/bigcommerce/checkout-js/compare/v1.705.0...v1.705.1) (2025-12-08)
+
+
+### Bug Fixes
+
+* **shipping:** CHECKOUT-9630 Update empty countries error logic to account for logged in shopper ([#2719](https://github.com/bigcommerce/checkout-js/issues/2719)) ([c7e924f](https://github.com/bigcommerce/checkout-js/commit/c7e924fce16fa32c5f637e8c535015c55373147b))
+
+## [1.705.0](https://github.com/bigcommerce/checkout-js/compare/v1.704.1...v1.705.0) (2025-12-08)
+
+
+### Features
+
+* **checkout:** CHECKOUT-9677 Enable Adding or Removing Coupons ([#2721](https://github.com/bigcommerce/checkout-js/issues/2721)) ([6c16854](https://github.com/bigcommerce/checkout-js/commit/6c168545a4afa9655a53618d0c89bcfc80931f43))
+
+### [1.704.1](https://github.com/bigcommerce/checkout-js/compare/v1.704.0...v1.704.1) (2025-12-08)
+
+
+### Bug Fixes
+
+* **payment:** fix issue with Stripe OCS and store credits ([4cfd9ea](https://github.com/bigcommerce/checkout-js/commit/4cfd9ea4ee231d9ad49b25cc0113b39c30bfa3f4))
+
+## [1.704.0](https://github.com/bigcommerce/checkout-js/compare/v1.703.1...v1.704.0) (2025-12-03)
+
+
+### Features
+
+* **checkout:** CHECKOUT-9675 Add Multi Coupon UI ([#2714](https://github.com/bigcommerce/checkout-js/issues/2714)) ([8a253d7](https://github.com/bigcommerce/checkout-js/commit/8a253d7140caf09ef1bbe6daa66420fe0765f4b1))
+
+### [1.703.1](https://github.com/bigcommerce/checkout-js/compare/v1.703.0...v1.703.1) (2025-12-03)
+
+
+### Bug Fixes
+
+* **checkout:** CHECKOUT-9450 Fix incorrect strategy for Barclaycard ([9e506ee](https://github.com/bigcommerce/checkout-js/commit/9e506ee1513b621708e396994d206ca3afa32a92))
+* **checkout:** CHECKOUT-9450 Pass strategies as part of order finalisation ([806f5f1](https://github.com/bigcommerce/checkout-js/commit/806f5f1558db04f29f8e82658acc16fef6acab9e))
+* **checkout:** CHECKOUT-9630 Display error if no shipping countries are configured ([#2716](https://github.com/bigcommerce/checkout-js/issues/2716)) ([fa2accc](https://github.com/bigcommerce/checkout-js/commit/fa2accc883dcddb2437644965ffb74cad33d3a55))
+
+
+### Code Refactoring
+
+* **checkout:** CHECKOUT-9620 Convert CheckoutPage ([#2709](https://github.com/bigcommerce/checkout-js/issues/2709)) ([355b58e](https://github.com/bigcommerce/checkout-js/commit/355b58e24e9c9461037a74b89b9a2b178192952f))
+* **checkout:** CHECKOUT-9620 Refactor CheckoutPage ([#2718](https://github.com/bigcommerce/checkout-js/issues/2718)) ([77ec442](https://github.com/bigcommerce/checkout-js/commit/77ec44299b2f9ab70a77bfe5d8ce33a91fb3a239))
+
 ## [1.703.0](https://github.com/bigcommerce/checkout-js/compare/v1.702.0...v1.703.0) (2025-11-20)
 
 

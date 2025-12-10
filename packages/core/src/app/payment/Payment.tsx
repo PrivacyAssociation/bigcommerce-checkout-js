@@ -1,11 +1,17 @@
 import {
-    type CartChangedError,
     type CheckoutSelectors,
     type CheckoutService,
     type CheckoutSettings,
+    type OrderFinalizeOptions,
     type OrderRequestBody,
     type PaymentMethod,
 } from '@bigcommerce/checkout-sdk';
+import { createCBAMPGSPaymentStrategy } from '@bigcommerce/checkout-sdk/integrations/cba-mpgs';
+import { createCheckoutComAPMPaymentStrategy, createCheckoutComCreditCardPaymentStrategy, createCheckoutComFawryPaymentStrategy, createCheckoutComIdealPaymentStrategy, createCheckoutComSepaPaymentStrategy } from '@bigcommerce/checkout-sdk/integrations/checkoutcom-custom';
+import { createClearpayPaymentStrategy } from '@bigcommerce/checkout-sdk/integrations/clearpay';
+import { createOffsitePaymentStrategy } from '@bigcommerce/checkout-sdk/integrations/offsite';
+import { createPaypalExpressPaymentStrategy } from '@bigcommerce/checkout-sdk/integrations/paypal-express';
+import { createSagePayPaymentStrategy } from '@bigcommerce/checkout-sdk/integrations/sagepay';
 import { memoizeOne } from '@bigcommerce/memoize';
 import { compact, find, isEmpty, noop } from 'lodash';
 import React, {
@@ -50,7 +56,7 @@ export interface PaymentProps {
     isEmbedded?: boolean;
     isUsingMultiShipping?: boolean;
     checkEmbeddedSupport?(methodIds: string[]): void; // TODO: We're currently doing this check in multiple places, perhaps we should move it up so this check get be done in a single place instead.
-    onCartChangedError?(error: CartChangedError): void;
+    onCartChangedError?(): void;
     onFinalize?(): void;
     onFinalizeError?(error: Error): void;
     onReady?(): void;
@@ -77,7 +83,7 @@ interface WithCheckoutPaymentProps {
     usableStoreCredit: number;
     applyStoreCredit(useStoreCredit: boolean): Promise<CheckoutSelectors>;
     clearError(error: Error): void;
-    finalizeOrderIfNeeded(): Promise<CheckoutSelectors>;
+    finalizeOrderIfNeeded(options: OrderFinalizeOptions): Promise<CheckoutSelectors>;
     isPaymentDataRequired(): boolean;
     loadCheckout(): Promise<CheckoutSelectors>;
     loadPaymentMethods(): Promise<CheckoutSelectors>;
@@ -322,7 +328,7 @@ const Payment= (props: PaymentProps & WithCheckoutPaymentProps & WithLanguagePro
             }
 
             if (isCartChangedError(error)) {
-                return onCartChangedError(error);
+                return onCartChangedError();
             }
 
             onSubmitError(error);
@@ -448,7 +454,20 @@ const Payment= (props: PaymentProps & WithCheckoutPaymentProps & WithLanguagePro
             await loadPaymentMethodsOrThrow();
 
             try {
-                const state = await finalizeOrderIfNeeded();
+                const state = await finalizeOrderIfNeeded({
+                    integrations: [
+                        createCBAMPGSPaymentStrategy,
+                        createCheckoutComAPMPaymentStrategy,
+                        createCheckoutComCreditCardPaymentStrategy,
+                        createCheckoutComFawryPaymentStrategy,
+                        createCheckoutComIdealPaymentStrategy,
+                        createCheckoutComSepaPaymentStrategy,
+                        createClearpayPaymentStrategy,
+                        createOffsitePaymentStrategy,
+                        createPaypalExpressPaymentStrategy,
+                        createSagePayPaymentStrategy,
+                    ],
+                });
                 const order = state.data.getOrder();
 
                 onFinalize(order?.orderId);
