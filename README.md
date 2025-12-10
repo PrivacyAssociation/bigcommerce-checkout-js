@@ -32,31 +32,44 @@ You may need to install windows WSL and some other dependencies too, you can req
 3. Run ``` git clone https://github.com/bigcommerce/checkout-js.git ``` to grab a local copy. 
 4. RUN ``` cd bigcommerce-checkout-js ```
 5. RUN 
+```sh
+# Add the original repository as upstream
+git remote add upstream https://github.com/bigcommerce/checkout-js 
+# should see the original repo listed
+git remote -v 
+# Get updates from parent repo
+git fetch upstream
+# merge the master repo's main branch into your local repo:
+git merge upstream master
+# Make sure when you create your PR's "privacy association" as root and destination. 
+
+ ```
+6. RUN 
 ```sh 
 # Build your local Linux/Node image
 docker build -t bigcommerce-checkout .
 ```
-6. RUN 
+7. RUN 
 ```sh
 # Boot up your image into a working container
 docker run -p 8080:8080 -d --name bc-checkout-dev bigcommerce-checkout
 ```
-7. RUN
+8. RUN
 ```sh
 # Login to our container and access a terminal
 docker exec -it bc-checkout-dev sh
 ```
-8. RUN 
+9. RUN 
 ```sh
 # install all dependencies
 npm ci
 ```
-9. RUN 
+10. RUN 
 ```sh
 # This will create the build folder in the container and should make your files available locally
 npm run dev
 ```
-10. Test to see if your container is serving files: [Localhost](http://localhost:8080) .
+11. Test to see if your container is serving files: [Localhost](http://localhost:8080) .
 
 If you see an "Index of / " web page, with a bunch of linked files including "auto-loader-dev.js". You are good to go!
 
