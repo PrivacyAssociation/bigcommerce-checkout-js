@@ -1,0 +1,171 @@
+name: Test Build and Deploy
+concurrency:
+  group: ${{ github.workflow }}
+
+on:
+  push:
+    branches:
+      # TODO create a prod.yml for master, we need a test branch for org-nonprod to test these before pushing out
+      # TODO do we want some rollback mechanism for prod?
+      #    maybe at least some sort of s3 tag linked to git commit hash or versions?
+      - test
+      - feature/iac-deploy-pipeline-2
+
+# TODO what env does dave use when building locally?
+env:
+  AWS_REGION: 'us-east-1'
+
+permissions:
+  id-token: write # This is required for requesting the JWT for AWS
+  contents: read # This is required for actions/checkout
+
+jobs:
+  build-assets-upload-to-s3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      # no caching of packages, this thing should run infrequently, and we likely want to ensure a full build each time
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22' # DOES NOT WORK WITH NODE 24
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
+        with:
+          role-to-assume: ${{ secrets.ACTION_RUNNER_AWS_ROLE_TEST }}
+          role-session-name: BigCommerce_Checkout_Js_Test_GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Build Node Assets
+        run: npm run build
+
+      - name: upload assets to S3
+        run: |
+          echo "GITHUB sha: ${{ github.sha }}"
+          # sync to a version specific bucket for rollbacks
+          # TODO should we still plan on having this backup strategy?
+          aws s3 sync dist s3://${{ vars.S3_BUCKET_TEST }}/${{ github.sha }}
+          # sync to root of bucket for CloudFront distribution which should have no origin path
+          aws s3 sync s3://${{ vars.S3_BUCKET_TEST }}/${{ github.sha }} s3://${{ vars.S3_BUCKET_TEST }}
+
+      - name: Clear CloudFront origin path if set from a previous rollback
+        run: |
+          echo "Detecting CloudFront origin path. Origin path should only be set after a rollback - will clear this if set."
+          aws cloudfront wait distribution-deployed --id ${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_TEST }}
+          DIST_CONFIG=$(aws cloudfront get-distribution-config --id ${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_TEST }})
+          ETAG=`echo $DIST_CONFIG | jq -r .ETag`  
+          echo "ETAG: $ETAG"
+          echo "$DIST_CONFIG"
+          config=`echo $DIST_CONFIG | jq .DistributionConfig`
+          ORIGIN_PATH=`echo "$config" | jq -r ".Origins.Items[0].OriginPath"`
+          echo "ORIGIN_PATH=$ORIGIN_PATH"
+          if [ -n "$ORIGIN_PATH" ]; then
+            echo "CloudFront origin path is set to $ORIGIN_PATH, clearing origin path"
+            updated_config=$(echo "$config" | jq ".Origins.Items[0].OriginPath = \"\"")
+            aws cloudfront update-distribution --id ${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_TEST }} --if-match "$ETAG" --distribution-config "$updated_config"
+            echo "now wait for the CloudFront Distribution to be deployed"
+            aws cloudfront wait distribution-deployed --id ${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_TEST }}
+          else
+            echo "OriginPath not set, nothing to do here."
+          fi
+
+      - name: invalidate cloudfront cache
+        run: |
+          # TODO wait 10 minutes since last invalidation
+          INVALIDATION_RESPONSE=`aws cloudfront create-invalidation --distribution-id '${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_TEST }}' --paths "/*"`
+          echo "invalidation response: $INVALIDATION_RESPONSE"
+          INVALIDATION_ID=$(echo $INVALIDATION_RESPONSE | jq -r '.Invalidation.Id')
+          echo "invalidation id: $INVALIDATION_ID"
+          aws cloudfront wait invalidation-completed --id $INVALIDATION_ID --distribution-id ${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_TEST }}
+
+      - name: upload build artifact for production deployment
+        uses: actions/upload-artifact@v4
+        with:
+          name: "bc-checkout-js-build-artifact-${{ github.sha }}"
+          path: dist
+          retention-days: 30
+
+  visual-regression-test:
+    needs: build-assets-upload-to-s3
+    if: |
+      always() && (needs.build-assets-upload-to-s3.result == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: "npm"
+          package-manager-cache: true
+          cache-dependency-path: "automated-testing"
+
+      # TODO how to ensure updating browser versions against this cache?
+      - name: Cache playwright browsers
+        id: cache-playwright-browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('automated-testing/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install dependencies
+        run: (cd automated-testing && npm ci)
+
+      - name: Install Playwright browsers (Chromium only)
+        if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
+        run: (cd automated-testing && npx playwright install chromium --with-deps)
+
+      - name: Create JSON Credentials file using Bash
+        run: |
+          # Define variables for JSON content
+          TEST_USERNAME="${{ secrets.VISUAL_REGRESSION_TEST_USERNAME }}"
+          TEST_USER_PASSWORD="${{ secrets.VISUAL_REGRESSION_TEST_USER_PASSWORD }}"
+
+          # Construct the JSON string
+          JSON_CONTENT=$(cat <<EOF
+          {
+            "users":[{"username": "$TEST_USERNAME",
+            "password": "$TEST_USER_PASSWORD"}]
+          }
+          EOF
+          )
+          echo "$JSON_CONTENT" > automated-testing/tests/regression/user-config.json
+
+      # needs the MyIapp WAF token to access the MyIapp TEST environment which is behind our internal network
+      - name: Run visual regression tests
+        env:
+          MYIAPP_WAF_TOKEN: ${{ secrets.MYIAPP_WAF_TOKEN }}
+        run: |
+          (cd automated-testing && npx playwright test --project=test-regression)
+
+      # Capture test results and upload them as GitHub artifacts
+      # TODO test results stored in GitHub Wiki or GitHub Pages
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-test
+          path: automated-testing/playwright-report/
+          retention-days: 30
+
+  production-deploy:
+    needs: visual-regression-test
+    if: (needs.visual-regression-test.result == 'success')
+    uses: ./.github/workflows/production.yaml
+    secrets: inherit
+    with:
+      environment: production
+      build_artifact_key: "bc-checkout-js-build-artifact-${{ github.sha }}"
+      github_sha: ${{ github.sha }}
+
