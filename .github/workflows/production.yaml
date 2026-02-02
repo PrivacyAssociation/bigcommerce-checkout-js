@@ -56,17 +56,17 @@ jobs:
       # only need to build again if we did not pass in the build artifact from test?
       # no caching of packages, this thing should run infrequently, and we likely want to ensure a full build each time
       - name: Set up Node.js
-        if: github.event_name == 'workflow_dispatch || github.event_name == 'push'
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         uses: actions/setup-node@v6
         with:
           node-version: '22' # DOES NOT WORK WITH NODE 24
 
       - name: Install dependencies
-        if: github.event_name == 'workflow_dispatch || github.event_name == 'push'
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         run: npm ci
 
       - name: Build Node Assets
-        if: github.event_name == 'workflow_dispatch || github.event_name == 'push'
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         run: npm run build
 
       - name: configure aws credentials
