@@ -8,4 +8,4 @@ node_modules/
 
 state.json
 **/win32/**.png
-**/storageState.json
+**/user-config.json
