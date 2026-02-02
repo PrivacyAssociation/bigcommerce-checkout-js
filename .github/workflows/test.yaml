@@ -168,4 +168,5 @@ jobs:
       environment: production
       build_artifact_key: "bc-checkout-js-build-artifact-${{ github.sha }}"
       github_sha: ${{ github.sha }}
+      s3_bucket_name: ${{ vars.S3_BUCKET_PRODUCTION }}
 
