@@ -19,20 +19,27 @@ export default defineConfig({
 
   projects: [
     {
+      name: 'sandbox-regression',
+      testDir: './tests/regression/',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'https://iapp-akeneo-sandbox.mybigcommerce.com',
+      },
+    },
+    {
       name: 'test-regression',
       testDir: './tests/regression/',
       use: {
         ...devices['Desktop Chrome'],
-        baseURL: 'https://test.iapp.org',
+        baseURL: 'https://sandbox-iapp.mybigcommerce.com',
       },
     },
-
     {
       name: 'production-regression',
       testDir: './tests/regression/',
       use: {
         ...devices['Desktop Chrome'],
-        baseURL: 'https://iapp.org',
+        baseURL: 'https://store.iapp.org',
       },
     },
 
