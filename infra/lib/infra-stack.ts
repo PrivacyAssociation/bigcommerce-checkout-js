@@ -10,6 +10,18 @@ import {
 } from 'aws-cdk-lib/aws-iam';
 import { type Construct } from 'constructs';
 
+// Specify allowed origins, avoiding trailing slashes
+const NONPROD_ORIGINS =  [
+        'https://iapp-akeneo-sandbox.mybigcommerce.com',
+        'https://store.iapp.org',
+        'https://sandbox-iapp.mybigcommerce.com/'
+      ]
+      
+// Specify allowed origins, avoiding trailing slashes
+const PROD_ORIGINS =  [
+        'https://store.iapp.org',
+      ]
+
 /*
  Manages the infrastructure for BigCommerce Checkout JS necessary for hosting in cloudfront such that the IAPP Store can use the MyIapp Login
 */
@@ -63,12 +75,7 @@ export class InfraStack extends Stack {
         aws_s3.HttpMethods.GET,
         aws_s3.HttpMethods.HEAD,
       ],
-      // Specify allowed origins, avoiding trailing slashes
-      allowedOrigins: [
-        'https://iapp-akeneo-sandbox.mybigcommerce.com',
-        'https://store.iapp.org',
-        'https://sandbox-iapp.mybigcommerce.com/'
-      ],
+      allowedOrigins: runtimeEnvironment === 'production' ? PROD_ORIGINS: NONPROD_ORIGINS,
       // Allow all headers
       allowedHeaders: ['*'], 
       // Expose specific headers to the client
@@ -192,8 +199,9 @@ export class InfraStack extends Stack {
       new aws_iam.PolicyStatement({
         sid: 'GitHubActionsDeployCode',
         actions: [
-          's3:PutObject',
-          's3:ListBucket',
+            's3:PutObject',
+            's3:ListBucket',
+            's3:GetObject',
         ],
         resources: [this.siteBucket.bucketArn, `${this.siteBucket.bucketArn}/*`],
       }),
@@ -203,7 +211,13 @@ export class InfraStack extends Stack {
     gitHubActionsIamRole.addToPolicy(
       new aws_iam.PolicyStatement({
         sid: 'GitHubActionsIacPermissionsCDK',
-        actions: ['wafv2:ListWebACLs', 'cloudfront:CreateInvalidation',  'cloudfront:GetInvalidation', 'cloudfront:GetDistribution'],
+        actions: [
+            'wafv2:ListWebACLs',
+            'cloudfront:CreateInvalidation',
+            'cloudfront:GetInvalidation',
+            'cloudfront:GetDistribution',
+            'cloudfront:GetDistributionConfig'
+        ],
         resources: [
           `${distribution.distributionArn}`,
           `arn:aws:wafv2:${this.region}:${this.account}:global/webacl/${repoName}*`,

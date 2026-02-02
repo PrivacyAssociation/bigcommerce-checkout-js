@@ -27,7 +27,7 @@ const accountIdToEnvironmentMap: { [key: string]: string } = {
 // TODO these dont exist yet
 const awsCertificateNames: { [key: string]: string } = {
   test: '*.iapp.org', // TODO "test-checkout.iapp.org",
-  production: 'checkout.iapp.org', // TODO
+  production: '*.iapp.org', // TODO
 };
 
 /*

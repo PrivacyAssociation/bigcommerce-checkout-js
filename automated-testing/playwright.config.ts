@@ -19,20 +19,11 @@ export default defineConfig({
 
   projects: [
     {
-      name: 'local-regression',
-      testDir: './tests/regression/',
-      use: {
-        ...devices['Desktop Chrome'],
-        baseURL: 'https://localhost:3000',
-      },
-    },
-
-    {
       name: 'test-regression',
       testDir: './tests/regression/',
       use: {
         ...devices['Desktop Chrome'],
-        baseURL: process.env.BASE_URL || 'https://test.iapp.org',
+        baseURL: 'https://test.iapp.org',
       },
     },
 
