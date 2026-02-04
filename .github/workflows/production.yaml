@@ -1,6 +1,6 @@
 name: Production Build and Deploy
 concurrency:
-  group: ${{ github.workflow }}
+  group: prod-deploy # only one deployment per environment at a time
 
 on:
   # should only be invoked via workflow_call from test.yaml after a successful validation of the TEST environment with MyIapp Login

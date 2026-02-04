@@ -6,24 +6,6 @@ let loginId = '';
 test.beforeAll(async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
-  const userProfile = testUserConfig.users[0]; // Assign one user per VU
-  await addWafHeader(page); // needed to log in
-  await page.goto('/');
-  await page.evaluate(() => {
-    // skip the "have you done this before?" prompts go to sign in directly
-    window.localStorage.setItem('hasVisitedPrev', 'true');
-  });
-  await page.reload();
-
-  const username = userProfile.username;
-  loginId = username;
-  const password = userProfile.password;
-
-  await acceptOneTrustIfPresent(page);
-  await myIappLogin(page, username, password);
-  await page.waitForTimeout(2000); // wait for any API calls to finish
-  await context.storageState({ path: 'storageState.json' });
-  await page.close();
 });
 
 test.beforeEach(async ({ page }) => {
@@ -45,8 +27,16 @@ test.afterEach(async ({ page }, testInfo) => {
   }
 });
 
-test.describe('MyIappDashboardNavigation', () => {
-  test('should navigate successfully to the Dashboard page and display correct data related content (Visual Regression)', async ({
+/*
+  1. start at a store page for a known item like /aigp-exam/
+  2. wait for add to cart button to appear on page
+  3. add to cart
+  4.
+
+
+*/
+test.describe('BigCommerce Store checkout should trigger MyIapp Login and return on success', () => {
+  test('should navigate successfully to the BC Store and login via MyIapp at checkout', async ({
     browser,
   }) => {
     const authenticatedContext = await browser.newContext({
@@ -57,15 +47,53 @@ test.describe('MyIappDashboardNavigation', () => {
       if (msg.type() === 'error') console.log(`Error text: "${msg.text()}"`);
       else console.log(msg.text());
     });
+
+    const userProfile = testUserConfig.users[0]; // Assign one user per VU
+    const username = userProfile.username;
+    loginId = username;
+    const password = userProfile.password;
+
     await addWafHeader(page);
-    await navigateToMyIappPageWaitForLoad(page);
+    await navigateToStoreWaitForLoad(page);
     await acceptOneTrustIfPresent(page);
-    await page.waitForTimeout(5500);
-    // TODO Validation
-    // await expect(page).toHaveScreenshot(`myiapp-${loginId}-dashboard.png`);
+    await addAigpExamToCart(page);
+    // if this direct link breaks, people are probably impacted so its likely fine having this in automation instead of clicking buttons in the UI to get here
+    await page.goto('/checkout'); // "/checkout" -> https://iapp-akeneo-sandbox.mybigcommerce.com/checkout
+    // TODO is this worthwhile?
+    // check that the S3 call was successful and called the correct S3?
+    // https://d25zeaeldlj8pj.cloudfront.net/auto-loader.js
+    // can we even look at the ETag? and verify its the one we just deployed?
+    await waitForApiCalls(page, [
+      'https://d25zeaeldlj8pj.cloudfront.net/auto-loader.js',
+    ]);
+    // wait for the sign in button to appear and click it
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await myIappLogin(page, username, password);
+    // TODO await return to store checkout page
+    // TODO Validation that we loaded the cart successfully?
+    // await expect(page).toHaveScreenshot(`bigcommerce-${loginId}-checkout-logged-in.png`);
     await authenticatedContext.close();
   });
 });
+
+async function waitForApiCalls(page: Page, expectedApiCalls: string[]) {
+  try {
+    await page.waitForFunction((expectedApiCalls) => {
+      const entries = performance.getEntriesByType('resource'); // Get all performance entries
+      const apiCalls = entries.filter((entry) =>
+        expectedApiCalls.some((term) => entry.name.includes(term))
+      );
+      // if (apiCalls.length > 0) { // uncomment to debug api calls
+      //   console.log(`## ${JSON.stringify(apiCalls)}`);
+      // }
+      return apiCalls.length >= expectedApiCalls.length;
+    }, expectedApiCalls);
+  } catch (error) {
+    console.error(
+      `Failed to load all expected backend API calls page: ${JSON.stringify(expectedApiCalls)}`
+    );
+  }
+}
 
 // test is behind internal WAF, punch a hole for this test when invoked from GitHub Actions
 async function addWafHeader(page: Page) {
@@ -78,6 +106,7 @@ async function addWafHeader(page: Page) {
 }
 
 async function myIappLogin(page: Page, username: string, password: string) {
+  // click the "Sign In" button
   await page
     .locator('button[type="button"]')
     .waitFor({ state: 'visible', timeout: 10000 });
@@ -113,57 +142,40 @@ async function myIappLogin(page: Page, username: string, password: string) {
 // 'https://store.iapp.org'
 // 'https://sandbox-iapp.mybigcommerce.com/'
 //
-// TODO this will need to provide the preview code in TEST as it is in sandbox mode
+
 async function navigateToStoreWaitForLoad(page: Page) {
-  const homepageResponse = await page.goto('/');
+  const certificationStorePageResponse = await page.goto('/aigp-exam/');
+  // TODO enter preview code if in TEST environment
   try {
-    await page.waitForSelector('a[href="/certifications"]', {
+    await page.waitForSelector('#guestTkn', {
       state: 'visible',
       timeout: 10000,
     });
+    const bcPreviewCode: string = process.env.BC_PREVIEW_CODE ?? ''; // TODO add in github secrets
+
+    await page.fill('#guestTkn', bcPreviewCode);
+    await page.waitForTimeout(500); // wait a bit before submitting
+    await page.locator('input[value="Submit"]').click(); // TODO submit and wait for for load below
   } catch (error) {
-    // uncomment to debug login issues
-    // await page.screenshot({
-    //   path: `screenshots/success-${uuid}-${Date.now()}.png`,
-    // });
-    const allHeaders = homepageResponse!.headers();
-    console.error(
-      `StatusCode: ${homepageResponse!.status()}, Response Headers: ${JSON.stringify(
-        allHeaders,
-        null,
-        2
-      )}`
-    );
-    throw new Error(
-      'Dashboard element not found after login; login via localStorage failed'
-    );
+    // ignore if not present
   }
 }
 
-async function navigateToMyIappPageWaitForLoad(page: Page) {
-  const homepageResponse = await page.goto('/');
-  try {
-    await page.waitForSelector('a[href="/certifications"]', {
-      state: 'visible',
-      timeout: 10000,
-    });
-  } catch (error) {
-    // uncomment to debug login issues
-    // await page.screenshot({
-    //   path: `screenshots/success-${uuid}-${Date.now()}.png`,
-    // });
-    const allHeaders = homepageResponse!.headers();
-    console.error(
-      `StatusCode: ${homepageResponse!.status()}, Response Headers: ${JSON.stringify(
-        allHeaders,
-        null,
-        2
-      )}`
-    );
-    throw new Error(
-      'Dashboard element not found after login; login via localStorage failed'
-    );
-  }
+async function addAigpExamToCart(page: Page) {
+  await page
+    .locator('input[type="submit"][value="Add to Cart"]')
+    .scrollIntoViewIfNeeded();
+  await page
+    .locator('input[type="submit"][value="Add to Cart"]')
+    .waitFor({ state: 'visible', timeout: 10000 });
+  // selects "Yes" from dropdown - Have you ever attempted the AIGP exam before OR are you a holder of any other IAPP certification?: (Required)
+  await page.evaluate(() => window.scrollBy(0, 500)); // Scrolls down by 500 pixels
+  await page.selectOption('#attribute_select_2529', { label: 'Yes' });
+  await page.locator('input[type="submit"][value="Add to Cart"]').click();
+  // wait for "added to cart" confirmation popup screen before navigating to checkout
+  await page
+    .locator('a[href="/checkout"]')
+    .waitFor({ state: 'visible', timeout: 10000 });
 }
 
 async function acceptOneTrustIfPresent(page: Page) {
