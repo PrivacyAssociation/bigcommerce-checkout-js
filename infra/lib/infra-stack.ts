@@ -1,4 +1,4 @@
-import { aws_certificatemanager, aws_iam, aws_s3, RemovalPolicy, Stack } from 'aws-cdk-lib';
+import { aws_certificatemanager, aws_iam, aws_s3, aws_wafv2, Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as cloudfront_origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import {
@@ -33,7 +33,7 @@ export class InfraStack extends Stack {
     repoName: string,
     runtimeEnvironment: string,
     iappCertificateArn: string,
-    webAclArn: string,
+    internalWafWebAclArn: string,
   ) {
     super(scope, id);
 
@@ -95,7 +95,22 @@ export class InfraStack extends Stack {
       versioned: true,
       encryption: aws_s3.BucketEncryption.S3_MANAGED,
       removalPolicy: RemovalPolicy.DESTROY,
-      // TODO lifecycle rules, clean it up once moving to blue/green. There is no easy lifecycle mechanism for path based routes
+      lifecycleRules: [
+        // "site/" folder is used for rollbacks, do not need to keep them beyond deployment validation and soak period
+        {
+          id: 'Site folder rollbacks cleanup',
+          enabled: true,
+          expiration: Duration.days(30),
+          noncurrentVersionExpiration: Duration.days(15),
+          prefix: 'site/' 
+        },
+        // expire the loader.js and other root files non-current versions after 15 days
+        {
+          id: 'Root objects non-current version cleanup',
+          enabled: true,
+          noncurrentVersionExpiration: Duration.days(15), 
+        },
+      ],  
     });
 
     // TODO create ACM cert in UI manually. This will avoid any IaC drift issues breaking certs in future
@@ -112,6 +127,16 @@ export class InfraStack extends Stack {
       signing: cloudfront.Signing.SIGV4_ALWAYS, // TODO learn more about this before going live
     });
 
+    let webAclArn: string = internalWafWebAclArn; // default to internal web acl for non-prod environments
+    if (runtimeEnvironment === 'production') {
+      const blockIpSet:aws_wafv2.CfnIPSet = this.createWafIPBlockSet(repoName);
+      webAclArn = this.createWafWebAclProduction(
+        repoName,
+        runtimeEnvironment,
+        blockIpSet
+      ).attrArn;
+    }
+    
     // TODO decide on domain names
     // const domainNamesByEnvironment = {
     //   production: ["checkout.iapp.org"],
@@ -224,6 +249,141 @@ export class InfraStack extends Stack {
         ],
       }),
     );
+  }
 
+  // Blocked IPs - Default state is empty. Can be used to block IPs directly within the console to quickly respond to malicious traffic
+  private createWafIPBlockSet(repoName: string) {
+    return new aws_wafv2.CfnIPSet(this, 'DotOrgIPBlockSet', {
+      name: `${repoName}-IPBlockSet`,
+      description: 'Blocked IP Set for BigCommerce Checkout JS Static Assets',
+      scope: 'CLOUDFRONT',
+      ipAddressVersion: 'IPV4',
+      addresses: [],
+    });
+  }
+
+  // use the IAPP InternalWAF For non-production environments? employee on GSA shooould be fine for their browser to connect? lets test this
+  private createWafWebAclProduction(
+    repoName: string,
+    runtimeEnvironment: string,
+    ipBlockSet: aws_wafv2.CfnIPSet
+  ): aws_wafv2.CfnWebACL {
+    const customResponse = {
+      responseCode: 403,
+      customResponseBodyKey: 'custom-response',
+    };
+    const customResponseBodies = {
+      'custom-response': {
+        // this key 'custom-response' must match the `customResponseBodyKey` defined in customResponse
+        contentType: 'TEXT_PLAIN',
+        content: 'Access Denied.',
+      },
+    };
+    return new aws_wafv2.CfnWebACL(this, 'BigCommerceCheckoutAssetsWafWebAcl', {
+      defaultAction: {
+        allow: {},
+      },
+      scope: 'CLOUDFRONT', // this is the only scope supported by CloudFront
+      visibilityConfig: {
+        cloudWatchMetricsEnabled: true,
+        metricName: `${repoName}-${runtimeEnvironment}-web-acl`,
+        sampledRequestsEnabled: true,
+      },
+      customResponseBodies: customResponseBodies,
+      name: `${repoName}-${runtimeEnvironment}-web-acl`,
+      description: `Web ACL for ${repoName} in ${runtimeEnvironment} environment`,
+
+      rules: [
+         {
+          name: 'BlockIPset',
+          priority: 0,
+          action: { block: {} },
+          statement: {
+            ipSetReferenceStatement: {
+              arn: ipBlockSet.attrArn,
+            },
+          },
+          visibilityConfig: {
+            cloudWatchMetricsEnabled: true,
+            metricName: `${repoName}-${runtimeEnvironment}-BlockIPSet`,
+            sampledRequestsEnabled: true,
+          },
+        },
+        {
+          name: 'AWSManageIpReputationList',
+          priority: 1,
+          statement: {
+            managedRuleGroupStatement: {
+              vendorName: 'AWS',
+              name: 'AWSManagedRulesAmazonIpReputationList',
+            },
+          },
+          visibilityConfig: {
+            sampledRequestsEnabled: true,
+            cloudWatchMetricsEnabled: true,
+            metricName: `${repoName}-${runtimeEnvironment}-AWSManagedRules-IPReputationList`,
+          },
+          overrideAction: {
+            count: {},
+          },
+        },
+        {
+          name: 'AWSManagedKnownBadInputs',
+          priority: 2,
+          statement: {
+            managedRuleGroupStatement: {
+              vendorName: 'AWS',
+              name: 'AWSManagedRulesKnownBadInputsRuleSet',
+            },
+          },
+          visibilityConfig: {
+            sampledRequestsEnabled: true,
+            cloudWatchMetricsEnabled: true,
+            metricName: `${repoName}-${runtimeEnvironment}-AWSManagedRules-KnownBadInputs`,
+          },
+          overrideAction: {
+            count: {},
+          },
+        },
+        {
+          name: 'BlockRateLimit',
+          priority: 3,
+          statement: {
+            rateBasedStatement: {
+              limit: 2000,
+              aggregateKeyType: 'IP',
+              evaluationWindowSec: 300,
+            },
+          },
+          visibilityConfig: {
+            sampledRequestsEnabled: true,
+            cloudWatchMetricsEnabled: true,
+            metricName: `${repoName}-${runtimeEnvironment}-BlockRateLimit`,
+          },
+          action: {
+            count: {},
+          },
+        },
+        {
+          name: 'AWSCommonRuleSet',
+          priority: 4,
+          statement: {
+            managedRuleGroupStatement: {
+              name: 'AWSManagedRulesCommonRuleSet', // MUST EQUAL EXACTLY AWSManagedRulesCommonRuleSet since it is an AWS managed rule group
+              vendorName: 'AWS',
+            },
+          },
+          visibilityConfig: {
+            cloudWatchMetricsEnabled: true,
+            metricName: `${repoName}-${runtimeEnvironment}-AWSCommonRuleSet`,
+            sampledRequestsEnabled: true,
+          },
+          overrideAction: {
+            none: {},
+          },
+        },
+      ],
+    });
   }
 }
+

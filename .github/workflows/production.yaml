@@ -83,10 +83,11 @@ jobs:
         run: |
           echo "GITHUB sha: $CODE_VERSION"
           # sync to a version specific bucket for rollbacks
-          # TODO should we still plan on having this backup strategy?
-          aws s3 sync dist s3://$S3_BUCKET/$CODE_VERSION
+          # site folder enables clean lifecycle rules of maintaining backups for shorter timeframes
+          aws s3 sync dist s3://$S3_BUCKET/site/$CODE_VERSION
           # sync to root of bucket for CloudFront distribution which should have no origin path
-          aws s3 sync s3://$S3_BUCKET/$CODE_VERSION s3://$S3_BUCKET
+          # delete any old files, since this build process creates version-suffixed file names, we need to clean out old files
+          aws s3 sync s3://$S3_BUCKET/site/$CODE_VERSION s3://$S3_BUCKET
 
       - name: Clear CloudFront origin path if set from a previous rollback
         run: |

@@ -83,7 +83,7 @@ async function main() {
       throw new Error('no webacls found in this account, make sure scaffolding has been run');
     } else {
       webAcls.forEach(function (webAcl) {
-        if (webAcl.ARN !== undefined && webAcl.Name === 'WebACLWithAMRCloudFrontExternal') {
+        if (webAcl.ARN !== undefined && webAcl.Name === 'WebACLWithAMRCloudFrontInternal') {
           webAclArn = webAcl.ARN;
         }
       });
