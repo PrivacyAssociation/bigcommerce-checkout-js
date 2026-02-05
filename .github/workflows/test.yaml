@@ -70,7 +70,7 @@ jobs:
           config=`echo $DIST_CONFIG | jq .DistributionConfig`
           ORIGIN_PATH=`echo "$config" | jq -r ".Origins.Items[0].OriginPath"`
           echo "ORIGIN_PATH=$ORIGIN_PATH"
-          if [[ "$ORIGIN_PATH" == "rollback" ]]; then
+          if [[ "$ORIGIN_PATH" == "/rollback" ]]; then
             echo "CloudFront origin path is set to $ORIGIN_PATH, clearing origin path"
             updated_config=$(echo "$config" | jq ".Origins.Items[0].OriginPath = \"/active\"")
             aws cloudfront update-distribution --id ${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_TEST }} --if-match "$ETAG" --distribution-config "$updated_config"
