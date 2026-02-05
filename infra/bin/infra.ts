@@ -17,10 +17,10 @@ const accountIdToEnvironmentMap: { [key: string]: string } = {
   '620738768371': 'test',
   '237529788575': 'production',
 };
-// TODO these dont exist yet
+
 const awsCertificateNames: { [key: string]: string } = {
-  test: '*.iapp.org', // TODO "test-checkout.iapp.org",
-  production: '*.iapp.org', // TODO
+  test: 'test-checkout.iapp.org', 
+  production: 'checkout.iapp.org', 
 };
 
 /*

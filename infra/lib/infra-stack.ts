@@ -142,11 +142,11 @@ export class InfraStack extends Stack {
         blockIpSet
       ).attrArn;
     }
-    
-    // const domainNamesByEnvironment = {
-    //   production: ["checkout.iapp.org"],
-    //   test: ["test-checkout.iapp.org"],
-    // }; 
+
+    const domainNamesByEnvironment = {
+      production: ["checkout.iapp.org"],
+      test: ["test-checkout.iapp.org"],
+    }; 
 
     // CloudFront distribution for the Store UI Assets
     const distribution = new cloudfront.Distribution(
@@ -157,7 +157,7 @@ export class InfraStack extends Stack {
         certificate: iappCertificate,
         httpVersion: cloudfront.HttpVersion.HTTP2, // TODO do we need HTTP3 for this?
         defaultRootObject: 'loader.js',
-        // domainNames: domainNamesByEnvironment[runtimeEnvironment],
+        domainNames: domainNamesByEnvironment[runtimeEnvironment],
         minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
         defaultBehavior: {
           origin: cloudfront_origins.S3BucketOrigin.withOriginAccessControl(this.siteBucket, {
