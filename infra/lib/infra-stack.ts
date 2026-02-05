@@ -33,7 +33,6 @@ export class InfraStack extends Stack {
     repoName: string,
     runtimeEnvironment: string,
     iappCertificateArn: string,
-    internalWafWebAclArn: string,
   ) {
     super(scope, id);
 
@@ -127,21 +126,27 @@ export class InfraStack extends Stack {
       signing: cloudfront.Signing.SIGV4_ALWAYS, // TODO learn more about this before going live
     });
 
-    let webAclArn: string = internalWafWebAclArn; // default to internal web acl for non-prod environments
+    const blockIpSet:aws_wafv2.CfnIPSet = this.createWafIPBlockSet(repoName);
+
+    let webAclArn: string = ''; // default to internal web acl for non-prod environments
     if (runtimeEnvironment === 'production') {
-      const blockIpSet:aws_wafv2.CfnIPSet = this.createWafIPBlockSet(repoName);
       webAclArn = this.createWafWebAclProduction(
+        repoName,
+        runtimeEnvironment,
+        blockIpSet
+      ).attrArn;
+    } else {
+      webAclArn = this.createWafWebAclNonProduction(
         repoName,
         runtimeEnvironment,
         blockIpSet
       ).attrArn;
     }
     
-    // TODO decide on domain names
     // const domainNamesByEnvironment = {
     //   production: ["checkout.iapp.org"],
     //   test: ["test-checkout.iapp.org"],
-    // }; // no custom domain names for now, will add in the future
+    // }; 
 
     // CloudFront distribution for the Store UI Assets
     const distribution = new cloudfront.Distribution(
@@ -157,6 +162,7 @@ export class InfraStack extends Stack {
         defaultBehavior: {
           origin: cloudfront_origins.S3BucketOrigin.withOriginAccessControl(this.siteBucket, {
             originAccessControl: cloudfrontOAC,
+            originPath: '/active', // all live assets are stored in the active folder, a /rollback folder is also available for emergency rollbacks
           }),
           compress: true,
           allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
@@ -352,6 +358,131 @@ export class InfraStack extends Stack {
           statement: {
             rateBasedStatement: {
               limit: 2000,
+              aggregateKeyType: 'IP',
+              evaluationWindowSec: 300,
+            },
+          },
+          visibilityConfig: {
+            sampledRequestsEnabled: true,
+            cloudWatchMetricsEnabled: true,
+            metricName: `${repoName}-${runtimeEnvironment}-BlockRateLimit`,
+          },
+          action: {
+            count: {},
+          },
+        },
+        {
+          name: 'AWSCommonRuleSet',
+          priority: 4,
+          statement: {
+            managedRuleGroupStatement: {
+              name: 'AWSManagedRulesCommonRuleSet', // MUST EQUAL EXACTLY AWSManagedRulesCommonRuleSet since it is an AWS managed rule group
+              vendorName: 'AWS',
+            },
+          },
+          visibilityConfig: {
+            cloudWatchMetricsEnabled: true,
+            metricName: `${repoName}-${runtimeEnvironment}-AWSCommonRuleSet`,
+            sampledRequestsEnabled: true,
+          },
+          overrideAction: {
+            none: {},
+          },
+        },
+      ],
+    });
+  }
+
+  // since bigCommerce sandbox needs to reach into S3 initially for the auto-loader.js, it needs to be public sadly. The browser beyond that point is on our network internally.
+  // even though the big commerce sandbox store is only accessible with a preview code that should be pretty secure, we will still apply WAF protections to limit exposure as much as possible on the TEST checkout S3 Assets
+  private createWafWebAclNonProduction(
+    repoName: string,
+    runtimeEnvironment: string,
+    ipBlockSet: aws_wafv2.CfnIPSet
+  ): aws_wafv2.CfnWebACL {
+    const customResponse = {
+      responseCode: 403,
+      customResponseBodyKey: 'custom-response',
+    };
+    const customResponseBodies = {
+      'custom-response': {
+        // this key 'custom-response' must match the `customResponseBodyKey` defined in customResponse
+        contentType: 'TEXT_PLAIN',
+        content: 'Access Denied.',
+      },
+    };
+    return new aws_wafv2.CfnWebACL(this, 'BigCommerceCheckoutAssetsWafWebAcl', {
+      defaultAction: {
+        allow: {},
+      },
+      scope: 'CLOUDFRONT', // this is the only scope supported by CloudFront
+      visibilityConfig: {
+        cloudWatchMetricsEnabled: true,
+        metricName: `${repoName}-${runtimeEnvironment}-web-acl`,
+        sampledRequestsEnabled: true,
+      },
+      customResponseBodies: customResponseBodies,
+      name: `${repoName}-${runtimeEnvironment}-web-acl`,
+      description: `Web ACL for ${repoName} in ${runtimeEnvironment} environment`,
+
+      rules: [
+         {
+          name: 'BlockIPset',
+          priority: 0,
+          action: { block: {} },
+          statement: {
+            ipSetReferenceStatement: {
+              arn: ipBlockSet.attrArn,
+            },
+          },
+          visibilityConfig: {
+            cloudWatchMetricsEnabled: true,
+            metricName: `${repoName}-${runtimeEnvironment}-BlockIPSet`,
+            sampledRequestsEnabled: true,
+          },
+        },
+        {
+          name: 'AWSManageIpReputationList',
+          priority: 1,
+          statement: {
+            managedRuleGroupStatement: {
+              vendorName: 'AWS',
+              name: 'AWSManagedRulesAmazonIpReputationList',
+            },
+          },
+          visibilityConfig: {
+            sampledRequestsEnabled: true,
+            cloudWatchMetricsEnabled: true,
+            metricName: `${repoName}-${runtimeEnvironment}-AWSManagedRules-IPReputationList`,
+          },
+          overrideAction: {
+            count: {},
+          },
+        },
+        {
+          name: 'AWSManagedKnownBadInputs',
+          priority: 2,
+          statement: {
+            managedRuleGroupStatement: {
+              vendorName: 'AWS',
+              name: 'AWSManagedRulesKnownBadInputsRuleSet',
+            },
+          },
+          visibilityConfig: {
+            sampledRequestsEnabled: true,
+            cloudWatchMetricsEnabled: true,
+            metricName: `${repoName}-${runtimeEnvironment}-AWSManagedRules-KnownBadInputs`,
+          },
+          overrideAction: {
+            count: {},
+          },
+        },
+        {
+          name: 'BlockRateLimit',
+          priority: 3,
+          statement: {
+            rateBasedStatement: {
+              limit: 100,
               aggregateKeyType: 'IP',
               evaluationWindowSec: 300,
             },

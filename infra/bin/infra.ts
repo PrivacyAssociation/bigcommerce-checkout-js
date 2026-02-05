@@ -1,6 +1,5 @@
 import { ACMClient, ListCertificatesCommand } from '@aws-sdk/client-acm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
-import { ListWebACLsCommand, WAFV2Client } from '@aws-sdk/client-wafv2';
 import { App, Tags } from 'aws-cdk-lib';
 
 import { InfraStack } from '../lib/infra-stack';
@@ -9,16 +8,10 @@ const app = new App({});
 const repoName = 'bigcommerce-checkout-js';
 const acmClient = new ACMClient();
 const stsClient = new STSClient({ region: 'us-east-1' }); // Replace with your desired region
-const wafClient = new WAFV2Client();
 const acmCommand = new ListCertificatesCommand();
-const wafCommand = new ListWebACLsCommand({
-  Scope: 'CLOUDFRONT',
-  Limit: Number(50),
-});
 
 let iappCertificateArn = '';
 let runtimeEnvironment = 'unknown';
-let webAclArn = '';
 
 const accountIdToEnvironmentMap: { [key: string]: string } = {
   '620738768371': 'test',
@@ -75,35 +68,12 @@ async function main() {
     throw err;
   }
 
-  try {
-    const wafResponse = await wafClient.send(wafCommand);
-    const webAcls = wafResponse.WebACLs;
-
-    if (webAcls === undefined) {
-      throw new Error('no webacls found in this account, make sure scaffolding has been run');
-    } else {
-      webAcls.forEach(function (webAcl) {
-        if (webAcl.ARN !== undefined && webAcl.Name === 'WebACLWithAMRCloudFrontInternal') {
-          webAclArn = webAcl.ARN;
-        }
-      });
-
-      if (webAclArn === undefined || webAclArn === '') {
-        throw new Error('failed to look up AWS CloudFront WebACL WebACLWithAMRCloudFrontInternal');
-      }
-    }
-  } catch (err) {
-    console.error('failed to load AWS Cloudfront WEBACLs, cancelling CDK build', err);
-    throw err;
-  }
-
   const bigCommerceCheckoutJsInfraStack = new InfraStack(
     app,
     'BigCommerceCheckoutJsInfraStack',
     repoName,
     runtimeEnvironment,
     iappCertificateArn,
-    webAclArn,
   );
 
   Tags.of(bigCommerceCheckoutJsInfraStack).add('iapp-github-repository', repoName);

@@ -76,18 +76,19 @@ jobs:
           role-session-name: BigCommerce_Checkout_Js_Prod_GitHub_to_AWS_via_FederatedOIDC
           aws-region: ${{ env.AWS_REGION }}
 
+      # TODO tag s3 assets with git sha or version for potential rollback
       - name: upload assets to S3
         env:
           S3_BUCKET: ${{ inputs.s3_bucket_name || vars.S3_BUCKET_PRODUCTION }}
           CODE_VERSION: ${{ inputs.github_sha || github.sha }}
         run: |
           echo "GITHUB sha: $CODE_VERSION"
-          # sync to a version specific bucket for rollbacks
-          # site folder enables clean lifecycle rules of maintaining backups for shorter timeframes
-          aws s3 sync dist s3://$S3_BUCKET/site/$CODE_VERSION
-          # sync to root of bucket for CloudFront distribution which should have no origin path
-          # delete any old files, since this build process creates version-suffixed file names, we need to clean out old files
-          aws s3 sync s3://$S3_BUCKET/site/$CODE_VERSION s3://$S3_BUCKET
+          # copy current "active" build to a versioned folder for potential rollbacks
+          # from /active prefix, sync everything to /rollback prefix 
+          aws s3 sync s3://${{ vars.S3_BUCKET_TEST }}/active s3://${{ vars.S3_BUCKET_TEST }}/rollback
+          # at this point, the old site is still live at /active in cloudfront
+          # NEXT, sync local build to S3 /active prefix, --delete old files
+          aws s3 sync --delete dist s3://${{ vars.S3_BUCKET_TEST }}/active
 
       - name: Clear CloudFront origin path if set from a previous rollback
         run: |
