@@ -101,14 +101,14 @@ jobs:
           config=`echo $DIST_CONFIG | jq .DistributionConfig`
           ORIGIN_PATH=`echo "$config" | jq -r ".Origins.Items[0].OriginPath"`
           echo "ORIGIN_PATH=$ORIGIN_PATH"
-          if [ -n "$ORIGIN_PATH" ]; then
+          if [[ "$ORIGIN_PATH" == "rollback" ]]; then
             echo "CloudFront origin path is set to $ORIGIN_PATH, clearing origin path"
-            updated_config=$(echo "$config" | jq ".Origins.Items[0].OriginPath = \"\"")
-            aws cloudfront update-distribution --id ${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_PRODUCTION }} --if-match "$ETAG" --distribution-config "$updated_config"
+            updated_config=$(echo "$config" | jq ".Origins.Items[0].OriginPath = \"/active\"")
+            aws cloudfront update-distribution --id ${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_TEST }} --if-match "$ETAG" --distribution-config "$updated_config"
             echo "now wait for the CloudFront Distribution to be deployed"
-            aws cloudfront wait distribution-deployed --id ${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_PRODUCTION }}
+            aws cloudfront wait distribution-deployed --id ${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_TEST }}
           else
-            echo "OriginPath not set, nothing to do here."
+            echo "OriginPath not set to rollback, nothing to do here."
           fi
 
       - name: invalidate cloudfront cache

@@ -248,7 +248,8 @@ export class InfraStack extends Stack {
             'cloudfront:CreateInvalidation',
             'cloudfront:GetInvalidation',
             'cloudfront:GetDistribution',
-            'cloudfront:GetDistributionConfig'
+            'cloudfront:GetDistributionConfig',
+            'cloudfront:UpdateDistribution',
         ],
         resources: [
           `${distribution.distributionArn}`,
