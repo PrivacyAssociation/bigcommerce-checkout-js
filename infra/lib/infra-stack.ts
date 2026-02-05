@@ -13,8 +13,7 @@ import { type Construct } from 'constructs';
 // Specify allowed origins, avoiding trailing slashes
 const NONPROD_ORIGINS =  [
         'https://iapp-akeneo-sandbox.mybigcommerce.com',
-        'https://store.iapp.org',
-        'https://sandbox-iapp.mybigcommerce.com/'
+        'https://sandbox-iapp.mybigcommerce.com'
       ]
       
 // Specify allowed origins, avoiding trailing slashes

@@ -89,6 +89,7 @@ jobs:
           # at this point, the old site is still live at /active in cloudfront
           # NEXT, sync local build to S3 /active prefix, --delete old files
           aws s3 sync --delete dist s3://${{ vars.S3_BUCKET_PRODUCTION }}/active
+          aws s3api put-object-tagging --bucket ${{ vars.S3_BUCKET_PRODUCTION }} --key active/auto-loader.js --tagging '{"TagSet": [{ "Key": "github_commit_sha", "Value": "${{ github.sha }}" }]}'
 
       - name: Reset CloudFront origin path to active if set to rollback from a previous rollback
         run: |

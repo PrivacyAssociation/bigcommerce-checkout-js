@@ -51,13 +51,14 @@ jobs:
       - name: upload assets to S3
         run: |
           echo "GITHUB sha: ${{ github.sha }}"
-
           # copy current "active" build to a versioned folder for potential rollbacks
           # from /active prefix, sync everything to /rollback prefix 
           aws s3 sync s3://${{ vars.S3_BUCKET_TEST }}/active s3://${{ vars.S3_BUCKET_TEST }}/rollback
           # at this point, the old site is still live at /active in cloudfront
           # NEXT, sync local build to S3 /active prefix, --delete old files
           aws s3 sync --delete dist s3://${{ vars.S3_BUCKET_TEST }}/active
+          aws s3api put-object-tagging --bucket ${{ vars.S3_BUCKET_TEST }} --key active/auto-loader.js --tagging '{"TagSet": [{ "Key": "github_commit_sha", "Value": "${{ github.sha }}" }]}'
+
 
       - name: Reset CloudFront origin path to active if set to rollback from a previous rollback
         run: |
