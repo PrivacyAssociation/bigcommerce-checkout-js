@@ -90,7 +90,7 @@ jobs:
           # NEXT, sync local build to S3 /active prefix, --delete old files
           aws s3 sync --delete dist s3://${{ vars.S3_BUCKET_TEST }}/active
 
-      - name: Clear CloudFront origin path if set from a previous rollback
+      - name: Reset CloudFront origin path to active if set to rollback from a previous rollback
         run: |
           echo "Detecting CloudFront origin path. Origin path should only be set after a rollback - will clear this if set."
           aws cloudfront wait distribution-deployed --id ${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_PRODUCTION }}
@@ -101,7 +101,7 @@ jobs:
           config=`echo $DIST_CONFIG | jq .DistributionConfig`
           ORIGIN_PATH=`echo "$config" | jq -r ".Origins.Items[0].OriginPath"`
           echo "ORIGIN_PATH=$ORIGIN_PATH"
-          if [[ "$ORIGIN_PATH" == "rollback" ]]; then
+          if [[ "$ORIGIN_PATH" == "/rollback" ]]; then
             echo "CloudFront origin path is set to $ORIGIN_PATH, clearing origin path"
             updated_config=$(echo "$config" | jq ".Origins.Items[0].OriginPath = \"/active\"")
             aws cloudfront update-distribution --id ${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_TEST }} --if-match "$ETAG" --distribution-config "$updated_config"
