@@ -51,8 +51,8 @@ jobs:
         run: |
           # copy current "active" build to a versioned folder for potential rollbacks
           # from /active prefix, sync everything to /rollback prefix 
-          echo "Copying /active build to /rollback folder"
-          aws s3 sync s3://${{ vars.S3_BUCKET_TEST }}/active s3://${{ vars.S3_BUCKET_TEST }}/rollback     
+          echo "Copying /active build to /rollback folder" deleting anything already in /rollback
+          aws s3 sync --delete s3://${{ vars.S3_BUCKET_TEST }}/active s3://${{ vars.S3_BUCKET_TEST }}/rollback     
       
       - name: upload assets to S3
         run: |
