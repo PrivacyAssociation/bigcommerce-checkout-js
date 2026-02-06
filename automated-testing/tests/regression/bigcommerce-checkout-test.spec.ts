@@ -27,14 +27,6 @@ test.afterEach(async ({ page }, testInfo) => {
   }
 });
 
-/*
-  1. start at a store page for a known item like /aigp-exam/
-  2. wait for add to cart button to appear on page
-  3. add to cart
-  4.
-
-
-*/
 test.describe('BigCommerce Store checkout should trigger MyIapp Login and return on success', () => {
   test('should navigate successfully to the BC Store and login via MyIapp at checkout', async ({
     browser,
@@ -58,20 +50,22 @@ test.describe('BigCommerce Store checkout should trigger MyIapp Login and return
     await acceptOneTrustIfPresent(page);
     await addAigpExamToCart(page);
     // if this direct link breaks, people are probably impacted so its likely fine having this in automation instead of clicking buttons in the UI to get here
-    await page.goto('/checkout'); // "/checkout" -> https://iapp-akeneo-sandbox.mybigcommerce.com/checkout
-    // TODO is this worthwhile?
-    // check that the S3 call was successful and called the correct S3?
-    // https://d25zeaeldlj8pj.cloudfront.net/auto-loader.js
-    // can we even look at the ETag? and verify its the one we just deployed?
-    await waitForApiCalls(page, [
-      'https://d25zeaeldlj8pj.cloudfront.net/auto-loader.js',
-    ]);
+    await page.goto('/checkout'); // "/checkout"
+
+    // TODO can we even look at the ETag? and verify its the one we just deployed?
+    const s3CheckoutUrl = process.env.BC_CHECKOUT_URL ?? '';
+
+    await waitForApiCalls(page, [s3CheckoutUrl]);
     // wait for the sign in button to appear and click it
     await page.getByRole('button', { name: 'Sign In' }).click();
     await myIappLogin(page, username, password);
-    // TODO await return to store checkout page
-    // TODO Validation that we loaded the cart successfully?
-    // await expect(page).toHaveScreenshot(`bigcommerce-${loginId}-checkout-logged-in.png`);
+    await page.waitForTimeout(12000); // wait to visually confirm logged in state
+    // TODO the same deal as MyIapp UI - need a manual Action to update snapshots on a linux os
+    // await expect(page).toHaveScreenshot(
+    //   `bigcommerce-${loginId}-checkout-logged-in.png`
+    // );
+    await page.waitForURL('/');
+
     await authenticatedContext.close();
   });
 });
@@ -83,9 +77,7 @@ async function waitForApiCalls(page: Page, expectedApiCalls: string[]) {
       const apiCalls = entries.filter((entry) =>
         expectedApiCalls.some((term) => entry.name.includes(term))
       );
-      // if (apiCalls.length > 0) { // uncomment to debug api calls
-      //   console.log(`## ${JSON.stringify(apiCalls)}`);
-      // }
+
       return apiCalls.length >= expectedApiCalls.length;
     }, expectedApiCalls);
   } catch (error) {
@@ -106,6 +98,11 @@ async function addWafHeader(page: Page) {
 }
 
 async function myIappLogin(page: Page, username: string, password: string) {
+  await page.evaluate(() => {
+    // skip the "have you done this before?" prompts go to sign in directly
+    window.localStorage.setItem('hasVisitedPrev', 'true');
+  });
+  await page.reload();
   // click the "Sign In" button
   await page
     .locator('button[type="button"]')

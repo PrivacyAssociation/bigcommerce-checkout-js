@@ -233,6 +233,7 @@ export class InfraStack extends Stack {
             's3:ListBucket',
             's3:GetObject',
             's3:DeleteObject',
+            's3:PutObjectTagging'
         ],
         resources: [this.siteBucket.bucketArn, `${this.siteBucket.bucketArn}/*`],
       }),
