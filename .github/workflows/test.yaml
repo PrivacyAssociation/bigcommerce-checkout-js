@@ -158,6 +158,7 @@ jobs:
       # needs the MyIapp WAF token to access the MyIapp TEST environment which is behind our internal network
       - name: Run visual regression tests
         env:
+          BC_PREVIEW_CODE: ${{ secrets.BC_PREVIEW_CODE }}
           MYIAPP_WAF_TOKEN: ${{ secrets.MYIAPP_WAF_TOKEN }}
           BC_CHECKOUT_URL: "https://test-checkout.iapp.org/auto-loader.js"
         run: |
