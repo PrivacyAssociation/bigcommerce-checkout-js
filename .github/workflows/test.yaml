@@ -47,6 +47,7 @@ jobs:
       - name: Build Node Assets
         run: npm run build
 
+# buiold
 # try deleting rollback folder first, as it would appear with OAC on CloudFront there isn't a way to GetObject from GitHub to support copy object, but sync seems fine internally?
       # - name: create S3 rollback folder and copy active build to it
       #   run: |

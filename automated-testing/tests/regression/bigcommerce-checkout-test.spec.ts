@@ -153,6 +153,7 @@ async function navigateToStoreWaitForLoad(page: Page) {
     await page.fill('#guestTkn', bcPreviewCode);
     await page.waitForTimeout(500); // wait a bit before submitting
     await page.locator('input[value="Submit"]').click(); // TODO submit and wait for for load below
+    await page.waitForTimeout(10000); // wait a bit before next steps
   } catch (error) {
     // ignore if not present
   }
