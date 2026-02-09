@@ -54,7 +54,16 @@ jobs:
           # from /active prefix, sync everything to /rollback prefix 
           echo "Copying /active build to /rollback folder" deleting anything already in /rollback
           aws s3 rm s3://${{ vars.S3_BUCKET_TEST }}/rollback/ --recursive
-          aws s3 cp s3://${{ vars.S3_BUCKET_TEST }}/active s3://${{ vars.S3_BUCKET_TEST }}/rollback/ --recursive
+          mkdir s3-debug
+          aws s3 cp --debug s3://${{ vars.S3_BUCKET_TEST }}/active s3://${{ vars.S3_BUCKET_TEST }}/rollback/ --recursive > s3-debug/debug-log.txt 2>&1
+
+      - name: upload s3 debug logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: "s3-debug-logs"
+          path: s3-debug
+          retention-days: 30
+
       
       - name: upload assets to S3
         run: |

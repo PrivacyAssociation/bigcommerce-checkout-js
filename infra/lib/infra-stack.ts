@@ -96,17 +96,11 @@ export class InfraStack extends Stack {
       lifecycleRules: [
         // "site/" folder is used for rollbacks, do not need to keep them beyond deployment validation and soak period
         {
-          id: 'Site folder rollbacks cleanup',
+          id: 'Rollbacks folder cleanup',
           enabled: true,
           expiration: Duration.days(30),
           noncurrentVersionExpiration: Duration.days(15),
-          prefix: 'site/' 
-        },
-        // expire the loader.js and other root files non-current versions after 15 days
-        {
-          id: 'Root objects non-current version cleanup',
-          enabled: true,
-          noncurrentVersionExpiration: Duration.days(15), 
+          prefix: 'rollback/' 
         },
       ],  
     });
