@@ -92,7 +92,7 @@ async function addWafHeader(page: Page) {
   const wafHeaderValue = process.env.WAF_TOKEN ?? '';
   await page.route('**/*', (route, request) => {
     const originalHeaders = request.headers();
-    originalHeaders['x-iapp-waf'] = wafHeaderValue;
+    originalHeaders['x-myiapp-waf'] = wafHeaderValue;
     route.continue({ headers: originalHeaders });
   });
 }
