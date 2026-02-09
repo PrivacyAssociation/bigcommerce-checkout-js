@@ -80,7 +80,6 @@ jobs:
         run: |
           # copy current "active" build to a versioned folder for potential rollbacks
           # from /active prefix, sync everything to /rollback prefix 
-          # aws s3 sync --delete s3://${{ vars.S3_BUCKET_PRODUCTION }}/active s3://${{ vars.S3_BUCKET_PRODUCTION }}/rollback
           aws s3 cp "s3://${{ vars.S3_BUCKET_PRODUCTION }}/active" "s3://${{ vars.S3_BUCKET_PRODUCTION }}/rollback/${{ github.sha }}/" --recursive
 
       - name: upload assets to S3

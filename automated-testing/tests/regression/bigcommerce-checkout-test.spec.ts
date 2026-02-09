@@ -122,15 +122,18 @@ async function myIappLogin(page: Page, username: string, password: string) {
   }
   await page.locator('button[type="submit"]').click();
 
-  while (
-    (await page.locator('input[name="password"]').inputValue()) != password
-  ) {
-    await page.waitForTimeout(200); // wait a few millis then try entering it again
-    await page
-      .locator('input[name="password"]')
-      .waitFor({ state: 'visible', timeout: 10000 });
-    await page.locator('input[name="password"]').fill(password);
-  }
+  await page
+    .locator('input[name="password"]')
+    .waitFor({ state: 'visible', timeout: 10000 });
+  // while (
+  //   (await page.locator('input[name="password"]').inputValue()) != password
+  // ) {
+  await page.waitForTimeout(200); // wait a few millis then try entering it again
+  await page
+    .locator('input[name="password"]')
+    .waitFor({ state: 'visible', timeout: 10000 });
+  await page.locator('input[name="password"]').fill(password);
+  // }
   await page.locator('button[type="submit"]').click();
   await page.waitForTimeout(5000);
 }
