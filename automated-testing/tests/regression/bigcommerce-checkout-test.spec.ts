@@ -8,9 +8,9 @@ test.beforeAll(async ({ browser }) => {
   const page = await context.newPage();
 });
 
-test.beforeEach(async ({ page }) => {
-  await addWafHeader(page);
-});
+// test.beforeEach(async ({ page }) => {
+//   await addWafHeader(page);
+// });
 
 test.afterEach(async ({ page }, testInfo) => {
   if (testInfo.status !== testInfo.expectedStatus) {
@@ -98,6 +98,7 @@ async function addWafHeader(page: Page) {
 }
 
 async function myIappLogin(page: Page, username: string, password: string) {
+  await page.waitForTimeout(5000); // wait a bit for the sign in page to load before trying to interact with it
   await page.evaluate(() => {
     // skip the "have you done this before?" prompts go to sign in directly
     window.localStorage.setItem('hasVisitedPrev', 'true');

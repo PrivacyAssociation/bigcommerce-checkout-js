@@ -159,7 +159,7 @@ jobs:
       - name: Run visual regression tests
         env:
           BC_PREVIEW_CODE: ${{ secrets.BC_PREVIEW_CODE }}
-          MYIAPP_WAF_TOKEN: ${{ secrets.MYIAPP_WAF_TOKEN }}
+          WAF_TOKEN: ${{ secrets.MYIAPP_WAF_TOKEN }}
           BC_CHECKOUT_URL: "https://test-checkout.iapp.org/auto-loader.js"
         run: |
           (cd automated-testing && npx playwright test --project=test-regression)
