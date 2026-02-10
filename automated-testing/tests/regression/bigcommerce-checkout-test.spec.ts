@@ -98,6 +98,7 @@ async function addWafHeader(page: Page) {
 }
 
 async function myIappLogin(page: Page, username: string, password: string) {
+  console.log('Attempting to log in with username:', username);
   await page.waitForTimeout(5000); // wait a bit for the sign in page to load before trying to interact with it
   await page.evaluate(() => {
     // skip the "have you done this before?" prompts go to sign in directly
@@ -111,15 +112,15 @@ async function myIappLogin(page: Page, username: string, password: string) {
   await page.locator('button[type="button"]').click();
 
   // this will try until the test timeout is exceeded
-  while (
-    (await page.locator('input[name="username"]').inputValue()) != username
-  ) {
-    await page.waitForTimeout(200); // wait a few millis then try entering it again
-    await page
-      .locator('input[name="username"]')
-      .waitFor({ state: 'visible', timeout: 10000 });
-    await page.locator('input[name="username"]').fill(username);
-  }
+  await page
+    .locator('input[name="username"]')
+    .waitFor({ state: 'visible', timeout: 10000 });
+
+  await page.waitForTimeout(200); // wait a few millis then try entering it again
+  await page
+    .locator('input[name="username"]')
+    .waitFor({ state: 'visible', timeout: 10000 });
+  await page.locator('input[name="username"]').fill(username);
 
   await page.screenshot({ path: 'test-results/debug-screenshot-1.png' });
 
