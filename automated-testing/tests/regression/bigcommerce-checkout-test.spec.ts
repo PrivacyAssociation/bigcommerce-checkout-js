@@ -120,11 +120,17 @@ async function myIappLogin(page: Page, username: string, password: string) {
       .waitFor({ state: 'visible', timeout: 10000 });
     await page.locator('input[name="username"]').fill(username);
   }
+
+  await page.screenshot({ path: 'test-results/debug-screenshot-1.png' });
+
   await page.locator('button[type="submit"]').click();
+
+  await page.waitForTimeout(5000); // wait a bit for the password field to load before trying to interact with it
+  await page.screenshot({ path: 'test-results/debug-screenshot-2.png' });
 
   await page
     .locator('input[name="password"]')
-    .waitFor({ state: 'visible', timeout: 10000 });
+    .waitFor({ state: 'visible', timeout: 20000 });
   // while (
   //   (await page.locator('input[name="password"]').inputValue()) != password
   // ) {
