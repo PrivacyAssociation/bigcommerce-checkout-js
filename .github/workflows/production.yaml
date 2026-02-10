@@ -177,6 +177,7 @@ jobs:
       - name: Run visual regression tests
         env:
           BC_CHECKOUT_URL: "https://checkout.iapp.org/auto-loader.js"
+          RUNTIME_ENVIRONMENT: "production"
         run: |
           (cd automated-testing && npx playwright test --project=production-regression)
 

@@ -140,8 +140,6 @@ jobs:
           TEST_USERNAME="${{ secrets.VISUAL_REGRESSION_TEST_USERNAME }}"
           TEST_USER_PASSWORD="${{ secrets.VISUAL_REGRESSION_TEST_USER_PASSWORD }}"
 
-          echo "TEST USERNAME $TEST_USERNAME"
-
           # Construct the JSON string
           JSON_CONTENT=$(cat <<EOF
           {
@@ -158,6 +156,7 @@ jobs:
           BC_PREVIEW_CODE: ${{ secrets.BC_PREVIEW_CODE }}
           WAF_TOKEN: ${{ secrets.MYIAPP_WAF_TOKEN }}
           BC_CHECKOUT_URL: "https://test-checkout.iapp.org/auto-loader.js"
+          RUNTIME_ENVIRONMENT: "test"
         run: |
           (cd automated-testing && npx playwright test --project=test-regression)
 

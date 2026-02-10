@@ -40,7 +40,6 @@ test.describe('BigCommerce Store checkout should trigger MyIapp Login and return
     const username = userProfile.username;
     loginId = username;
     const password = userProfile.password;
-    console.log('Using username:', username);
 
     await addWafHeader(page);
     await navigateToStoreWaitForLoad(page);
@@ -56,13 +55,13 @@ test.describe('BigCommerce Store checkout should trigger MyIapp Login and return
     // wait for the sign in button to appear and click it
     await page.getByRole('button', { name: 'Sign In' }).click();
     await myIappLogin(page, username, password);
-    await page.waitForTimeout(12000); // wait to visually confirm logged in state
-    // TODO the same deal as MyIapp UI - need a manual Action to update snapshots on a linux os
+    await page.waitForTimeout(10000); // wait to visually confirm logged in state
+    // the same deal as MyIapp UI - need a manual GitHub Action Workflow to update snapshots on a linux os
+    await page.waitForURL('/');
+    // TODO enable after merge to master, we need to run the snapshot update workflow once to get the baseline snapshots before we can enable this check
     // await expect(page).toHaveScreenshot(
     //   `bigcommerce-${loginId}-checkout-logged-in.png`
     // );
-    await page.waitForURL('/');
-
     await authenticatedContext.close();
   });
 });
@@ -95,7 +94,6 @@ async function addWafHeader(page: Page) {
 }
 
 async function myIappLogin(page: Page, username: string, password: string) {
-  console.log('Attempting to log in with username:', username);
   await page.waitForTimeout(5000); // wait a bit for the sign in page to load before trying to interact with it
   await page.evaluate(() => {
     // skip the "have you done this before?" prompts go to sign in directly
@@ -118,35 +116,22 @@ async function myIappLogin(page: Page, username: string, password: string) {
     .locator('input[name="username"]')
     .waitFor({ state: 'visible', timeout: 10000 });
   await page.locator('input[name="username"]').fill(username);
-
-  await page.screenshot({ path: 'test-results/debug-screenshot-1.png' });
-
   await page.locator('button[type="submit"]').click();
-
   await page.waitForTimeout(5000); // wait a bit for the password field to load before trying to interact with it
-  await page.screenshot({ path: 'test-results/debug-screenshot-2.png' });
 
   await page
     .locator('input[name="password"]')
     .waitFor({ state: 'visible', timeout: 20000 });
-  // while (
-  //   (await page.locator('input[name="password"]').inputValue()) != password
-  // ) {
+
   await page.waitForTimeout(200); // wait a few millis then try entering it again
   await page
     .locator('input[name="password"]')
     .waitFor({ state: 'visible', timeout: 10000 });
   await page.locator('input[name="password"]').fill(password);
-  // }
+
   await page.locator('button[type="submit"]').click();
   await page.waitForTimeout(5000);
 }
-
-// TODO load BigCommerce store in TEST or PRODUCTION
-// 'https://iapp-akeneo-sandbox.mybigcommerce.com/'
-// 'https://store.iapp.org'
-// 'https://sandbox-iapp.mybigcommerce.com/'
-//
 
 async function navigateToStoreWaitForLoad(page: Page) {
   const certificationStorePageResponse = await page.goto('/aigp-exam/');
@@ -176,7 +161,13 @@ async function addAigpExamToCart(page: Page) {
     .waitFor({ state: 'visible', timeout: 10000 });
   // selects "Yes" from dropdown - Have you ever attempted the AIGP exam before OR are you a holder of any other IAPP certification?: (Required)
   await page.evaluate(() => window.scrollBy(0, 500)); // Scrolls down by 500 pixels
-  await page.selectOption('#attribute_select_2529', { label: 'Yes' });
+  // TODO this varies by environment and is very brittle, if this test breaks it may be because of this selector, we should consider adding a more robust selector strategy for this in the future
+  const runtime = process.env.RUNTIME_ENVIRONMENT;
+  if (runtime === 'production') {
+    await page.selectOption('#attribute_select_287', { label: 'Yes' }); //attribute_select_287 in prod...this does not bode well
+  } else {
+    await page.selectOption('#attribute_select_2529', { label: 'Yes' }); //attribute_select_287 in prod...this does not bode well
+  }
   await page.locator('input[type="submit"][value="Add to Cart"]').click();
   // wait for "added to cart" confirmation popup screen before navigating to checkout
   await page
