@@ -8,10 +8,6 @@ test.beforeAll(async ({ browser }) => {
   const page = await context.newPage();
 });
 
-// test.beforeEach(async ({ page }) => {
-//   await addWafHeader(page);
-// });
-
 test.afterEach(async ({ page }, testInfo) => {
   if (testInfo.status !== testInfo.expectedStatus) {
     const screenshotPath = testInfo.outputPath(
@@ -44,6 +40,7 @@ test.describe('BigCommerce Store checkout should trigger MyIapp Login and return
     const username = userProfile.username;
     loginId = username;
     const password = userProfile.password;
+    console.log('Using username:', username);
 
     await addWafHeader(page);
     await navigateToStoreWaitForLoad(page);

@@ -140,6 +140,8 @@ jobs:
           TEST_USERNAME="${{ secrets.VISUAL_REGRESSION_TEST_USERNAME }}"
           TEST_USER_PASSWORD="${{ secrets.VISUAL_REGRESSION_TEST_USER_PASSWORD }}"
 
+          echo "TEST USERNAME $TEST_USERNAME"
+
           # Construct the JSON string
           JSON_CONTENT=$(cat <<EOF
           {
