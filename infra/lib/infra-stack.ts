@@ -161,6 +161,34 @@ export class InfraStack extends Stack {
           allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           originRequestPolicy: cloudfront.OriginRequestPolicy.CORS_S3_ORIGIN,
+          responseHeadersPolicy: new cloudfront.ResponseHeadersPolicy(
+              this,
+              'CorsResponseHeadersPolicy',
+              {
+                  responseHeadersPolicyName: `${repoName}-CORS-response-headers-policy`,
+                  comment:
+                      'CORS Headers Policy enables access control headers evaluated by BigCommerce Store',
+                  corsBehavior: {
+                      accessControlAllowCredentials: false,
+                      accessControlAllowOrigins: [
+                          runtimeEnvironment === 'production'
+                              ? 'https://store.iapp.org'
+                              : 'https://sandbox-iapp.mybigcommerce.com',
+                      ],
+                      accessControlAllowMethods: [
+                          'GET',
+                          'OPTIONS',
+                          'HEAD',
+                      ],
+                      accessControlAllowHeaders: [
+                          'Content-Type',
+                          'Authorization',
+                      ],
+                      accessControlMaxAge: Duration.seconds(600),
+                      originOverride: true,
+                  },
+              },
+          ),
           cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED, // 'CachingOptimized' is the default setting, AWS recommends for S3 origins
           cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD, // this is the default when we applied it, also the only methods currently allowed
         },
