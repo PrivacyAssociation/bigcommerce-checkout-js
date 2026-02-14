@@ -2,14 +2,25 @@
 
 - [Automated Testing Goals](#goals-of-automated-testing)
 - [Test Execution](#test-execution)
-  - [Local Dev Server Testing](#run-playwright-against-local-dev-server)
   - [Headed mode](#headed-mode)
-- [Test Scenarios](#test-scenarios)
-  - [Test Results](#test-results)
 - [Development guide](#development)
-  - [TODOs](#todos)
+  - [Test Scenario Files](#test-scenarios)
+  - [Test Results](#test-results)
 
 # Goals of Automated Testing
+
+Validate in a given environment either TEST or PRODUCTION, that the IAPP BigCommerce Store corretly displays the "Sign In" button which this repository maintains.
+
+This project runs Playwright automation to invoke the following UI flow in a chrome headless browser.
+
+1. Navigate to the store page for AIGP certification
+2. Ensure all required fields are selected
+3. Add to cart
+4. Go to the `/checkout` page
+5. Verify the `SignIn` button renders, and that it was requested from `checkout.iapp.org`
+6. Click the `SignIn` button, and log in to MyIapp as `shanyetest` user.
+7. Waits for the redirect back to BigCommerce store, then goes back to `/checkout`
+8. Confirms user is still logged in, and correct screen is rendered at checkout
 
 # Test Execution
 
@@ -25,12 +36,6 @@
 npm install
 npx playwright test --project=test-regression
 ```
-
-## run playwright against local dev server
-
-1. start local dev server `nohup npm run dev &`
-2. invoke playwright test suite against local project
-   `npx playwright test --project=local-regression`
 
 ## Headed mode
 
@@ -67,18 +72,26 @@ Indicates which test scenarios run which test folder.
 },
 ```
 
-# Test Scenarios
+## Test Users Config
+
+Test user data can be loaded locally or in GitHub Actions into the file [tests/regression/user-config.json](tests/regression/user-config.json).
+
+The content must be in the following format:
+
+```json
+{
+  "users": [{ "username": "shanyetest", "password": "1234abcd" }]
+}
+```
+
+## Test Scenarios
 
 The tests should be fairly self documented as much as possible.
 
-- [automated-testing/tests/regression](tests/regression) is currently the only test suite. The goal is lightweight page navigation and validation.
-
-## TODO
-
-Currently there are NO visual regression tests due to the large volume of dynamic content. We should pick a page with the least dynamic content and code playwright to validate this page visually to ensure no layout issues were introduced.
-
-Currently there are NO content validation tests. At least one page should be validated that the most recent content from contentStack is showing up in searches or on the news page, and can be navigated to.
+- [automated-testing/tests/regression](tests/regression/bigcommerce-checkout-test.spec.ts) is currently the only test suite. The goal is lightweight page navigation and validation.
 
 ## Test Results
 
-when running locally, playwright will open a browser tab with the results on failure, otherwise it prints a link to a localhost address at the end of the test run which can be opened.
+When running locally, Playwright will open a browser tab with the results on failure, otherwise it prints a link to a localhost address at the end of the test run which can be opened.
+
+Otherwise you can usually find previous test runs in the [test-results](test-results) folder.

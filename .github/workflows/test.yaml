@@ -47,6 +47,9 @@ jobs:
       - name: Build Node Assets
         run: npm run build
 
+      - name: run unit tests
+        run: npm run test
+
       - name: create S3 rollback folder and copy active build to it
         run: |
           # copy current "active" build to a versioned folder for potential rollbacks

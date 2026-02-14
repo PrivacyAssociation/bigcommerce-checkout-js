@@ -1,6 +1,6 @@
 # Infrastructure project for BigCommerce Checkout JS assets
 
-IaC is run locally.
+IaC is run locally using AWS CDK with NodeJS 22.
 
 **AWS Accounts and Runtime Environments:**
 
@@ -12,8 +12,8 @@ IaC is run locally.
 - IAM role and policies for GitHub Actions to build and deploy assets to S3, and invalidate CloudFront cache
 - S3 Bucket for hosting Assets
 - CloudFront Distribution which caches for the S3 Origin
-- WAF?
-- 
+- WAF
+- CloudWatch Alerts
 
 The [package.json](./package.json) contains minimal dependencies for deploying CDK app.
 
@@ -28,10 +28,10 @@ The [BigCommerceCheckoutJsInfraStack](../infra/lib/infra-stack.ts) describes the
 
 
 ## WAF Management
-Since this is a public website, the WAF is set to ALLOW traffic by default if no rule matches the traffic. Since there are very few inputs beyond forms and search(which are both client side), and no authenticated login, there is little that needs protection. Our goal should be to minimize the cost of protections in terms of real dollars on spent on WAF and of blocking legitimate traffic while implementing general purpose protections against server exploits, DoS attacks (infra expense), and invalid form submissions.
 
-Reasoning for rules should be transferred from [the wiki](https://iappadmin.atlassian.net/wiki/spaces/CMSIAPPorg/pages/4163010590/WAF+rule+proposal) as they are implemented.
+Since this is a public web store, the WAF is set to ALLOW traffic by default if no rule matches the traffic. 
 
+Everything is currently configured to `count` as opposed to `block` as we stand up the new store checkout experience, we should evaluate the WAF logs and metrics to determine how well those rules are configured, and harden the WAF configuration via the CDK infra code.
 
 ## Run IaC locally
 
@@ -59,10 +59,22 @@ Reasoning for rules should be transferred from [the wiki](https://iappadmin.atla
 
 > this CDK project relies on STS caller identity based off the AWS credentials on the terminal to auto-detect environment
 
+For changes to IAM roles and permissions, CloudFront, S3:
+
 ```
 cd infra
 npm install
 npm run cdk synth BigCommerceCheckoutJsInfraStack
 npm run cdk diff BigCommerceCheckoutJsInfraStack
 npm run cdk deploy BigCommerceCheckoutJsInfraStack
+```
+
+For changes to the Alerts:
+
+```
+cd infra
+npm install
+npm run cdk synth BigCommerceCheckoutJsAlertsStack
+npm run cdk diff BigCommerceCheckoutJsAlertsStack
+npm run cdk deploy BigCommerceCheckoutJsAlertsStack
 ```
