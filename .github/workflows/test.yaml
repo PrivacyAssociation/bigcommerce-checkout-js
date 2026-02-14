@@ -23,7 +23,7 @@ permissions:
 jobs:
   build-assets-upload-to-s3:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -48,7 +48,7 @@ jobs:
         run: npm run build
 
       - name: run unit tests
-        run: npm run test
+        run: npm run test > results.txt
 
       - name: create S3 rollback folder and copy active build to it
         run: |
