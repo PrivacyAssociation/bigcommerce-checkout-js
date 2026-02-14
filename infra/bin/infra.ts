@@ -3,6 +3,7 @@ import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { App, Tags } from 'aws-cdk-lib';
 
 import { InfraStack } from '../lib/infra-stack';
+import { AlertsStack } from '../lib/alerts-stack';
 
 const app = new App({});
 const repoName = 'bigcommerce-checkout-js';
@@ -81,6 +82,21 @@ async function main() {
   Tags.of(bigCommerceCheckoutJsInfraStack).add(
     'stack-name',
     bigCommerceCheckoutJsInfraStack.stackName,
+  );
+
+  const alertsStack = new AlertsStack(
+    app,
+    'BigCommerceCheckoutJsAlertsStack',
+    repoName,
+    runtimeEnvironment,
+    bigCommerceCheckoutJsInfraStack.cloudFrontDistributionId,
+  );
+
+  Tags.of(alertsStack).add('iapp-github-repository', repoName);
+  Tags.of(alertsStack).add('iapp-product', 'BigCommerceCheckoutJS');
+  Tags.of(alertsStack).add(
+    'stack-name',
+    alertsStack.stackName,
   );
 }
 

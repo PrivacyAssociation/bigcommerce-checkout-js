@@ -2,7 +2,15 @@
 
 Hello fellow IAPP developer. First of all, you might be like "Why all this nonsense for a single page on a third party site?". Wellp the BigCommerce storefront is pulling in tens of millions of dollars per year in revenue, and using the Storefront->Script Manager to over write the default login behavior frequently broke whenever BC updated their markup. Not exactly optimal uptime for an enterprise ecommerce app. We also wanted finer control over checkout experience (maybe add in some promotional code), so here we are!
 
-## Big Commerce Links
+- [Design and Development](#design-and-development)
+- [Network Architecture and Infrastructure as Code](infra/README.md)
+  - [Alerts](infra/README.md#alerts)
+- [Build and Deploy](.github/workflows/README.md)
+  - [Playwright Automated Tests](automated-testing/README.md)
+
+# Design and Development
+
+**Big Commerce Links**
 
 [![BC DeepWiki (ai powered)](https://deepwiki.com/badge.svg)](https://deepwiki.com/bigcommerce/checkout-js)\
 [Optimized One-Page Checkout](https://support.bigcommerce.com/s/article/Optimized-Single-Page-Checkout)\
@@ -89,6 +97,22 @@ If you see an "Index of / " web page, with a bunch of linked files including "au
 
 ## Local Development
 
+This repository uses trunk based development, with `master` being the main branch. There is a [GitHub Actions Workflow](.github/workflows/README.md) which orchestrates moving code from feature branch, to the TEST and PRODUCTION environments
+
+1. Create a new feature branch off `master`
+2. Follow below steps to [run docker locally](#run-docker-locally-and-validate-the-store-locally) and validate changes to the assets with localDev
+3. Open a Pull Request against the `master` branch in GitHub
+4. If any [CDK IaC](infra/README.md) changes are needed, deploy those locally first as they are not part of the pipeline
+5. The PR will kick off the GitHub Actions workflow for the TEST Store Checkout Assets
+6. The [Playwright Automated Tests](automated-testing/README.md) will validate the TEST store, block the merge to `master` if they fail
+7. PR requires 2 approvals
+8. Once merged, the GitHub Actions workflow for the PRODUCTION Store Checkout Assets kicks off
+9. The Playwright Automated Tests will validate the PRODUCTION environment for regressions
+9* Follow the [Rollback Plan](https://iappadmin.atlassian.net/wiki/spaces/DevOps/pages/4230381994/BigCommerce+Store+Checkout+Page+Pipeline+-+Runbook#Roll-Back) from the Confluence runbooks
+10. Ensure no alerts are firing off and validate manually any changes to the page
+
+### Run Docker Locally and validate the store locally
+
 From [My Apps](https://myapps.microsoft.com/), click on BigCommerce, and login to the IAPP Akeneo Sandbox. This BC Instance is configured to import into your browser the files served at http://localhost:8080. So this instance of Sandbox will break for other people using it, as their computers won't be serving those files.
 
 If you are familiar with Docker, most of the time you would mount your repo into the container, so that files you make on your local machine, would be treated as local files by the container. Because we need the NPM run build from the Linux environment, mounting the volume didn't work so hot. So we are going to make edits to our files in our local VS_Code IDE, Copy the files into the docker container via a terminal command, and manually run the NPM build inside of the container.
@@ -112,7 +136,7 @@ npm run build
 
 You should be able to view your changes in the checkout app inside of the IAPP Akeneo Sandbox instance, or (more likely) extremely verbose errors in your npm build terminal.
 
-## Custom Checkout installation into your store
+#### Custom Checkout installation into your store
 
 Follow [this guide](https://developer.bigcommerce.com/stencil-docs/customizing-checkout/installing-custom-checkouts) for instructions on how to fork and install this app as a Custom Checkout in your store.
 

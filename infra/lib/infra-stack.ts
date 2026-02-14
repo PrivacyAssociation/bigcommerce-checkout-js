@@ -26,6 +26,8 @@ const PROD_ORIGINS =  [
 */
 export class InfraStack extends Stack {
   public readonly siteBucket: aws_s3.Bucket;
+  public readonly cloudFrontDistributionId: string;
+
   constructor(
     scope: Construct,
     id: string,
@@ -197,6 +199,8 @@ export class InfraStack extends Stack {
         publishAdditionalMetrics: cloudfrontAdditionalMetrics, // only publish additional metrics in prod for now
       },
     );
+
+    this.cloudFrontDistributionId = distribution.distributionId;
 
     const bucketPolicy = new aws_s3.BucketPolicy(this, 'BucketPolicy', {
       bucket: this.siteBucket,
