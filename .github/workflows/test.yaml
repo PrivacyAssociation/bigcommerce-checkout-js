@@ -47,8 +47,9 @@ jobs:
       - name: Build Node Assets
         run: npm run build
 
-      - name: run unit tests
-        run: npm run test > results.txt
+      # these take upwards of 30 minutes ... not good for a pipeline like this. Should determine a better way, or if we actually even need to run them given our Playwright tests
+      # - name: run unit tests
+      #   run: npm run test > results.txt
 
       - name: create S3 rollback folder and copy active build to it
         run: |

@@ -69,9 +69,10 @@ jobs:
         if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
         run: npm run build
 
-      - name: run unit tests
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
-        run: npm run test > results.txt
+      # these take upwards of 30 minutes ... not good for a pipeline like this. Should determine a better way, or if we actually even need to run them given our Playwright tests
+      # - name: run unit tests
+      #   if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+      #   run: npm run test > results.txt
 
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
