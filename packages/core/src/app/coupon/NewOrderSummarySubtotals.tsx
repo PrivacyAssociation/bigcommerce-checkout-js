@@ -6,7 +6,7 @@ import { TranslatedString } from '@bigcommerce/checkout/locale';
 
 import { isOrderFee, OrderSummaryDiscount, OrderSummaryPrice }  from '../order';
 
-import { CouponForm, Discounts } from './components';
+import { AppliedGiftCertificates, CouponForm, Discounts } from './components';
 import { useMultiCoupon } from './useMultiCoupon';
 
 interface MultiCouponProps {
@@ -16,6 +16,7 @@ interface MultiCouponProps {
     isTaxIncluded?: boolean;
     storeCreditAmount?: number;
     taxes?: Tax[];
+    isOrderConfirmation?: boolean;
 }
 
 const NewOrderSummarySubtotals: FunctionComponent<MultiCouponProps> = ({
@@ -25,10 +26,18 @@ const NewOrderSummarySubtotals: FunctionComponent<MultiCouponProps> = ({
     isTaxIncluded,
     storeCreditAmount,
     taxes,
+    isOrderConfirmation = false,
 }) => {
-    const { isCouponCodeCollapsed } = useMultiCoupon();
+    const {
+        appliedGiftCertificates,
+        isCouponFormCollapsed,
+        uiDetails:{
+            shipping,
+            shippingBeforeDiscount,
+        }
+    } = useMultiCoupon();
 
-    const [isCouponFormVisible, setIsCouponFormVisible] = useState(isCouponCodeCollapsed);
+    const [isCouponFormVisible, setIsCouponFormVisible] = useState(!isCouponFormCollapsed);
 
     const toggleCouponForm = () => {
         setIsCouponFormVisible((prevState) => !prevState);
@@ -36,24 +45,34 @@ const NewOrderSummarySubtotals: FunctionComponent<MultiCouponProps> = ({
 
     return (
         <>
-            <section className="cart-section optimizedCheckout-orderSummary-cartSection">
-                <a
-                    aria-controls="coupon-form-collapsable"
-                    aria-expanded={isCouponFormVisible}
-                    className="redeemable-label"
-                    data-test="redeemable-label"
-                    href="#"
-                    onClick={preventDefault(toggleCouponForm)}
-                >
-                    <TranslatedString id="redeemable.toggle_action" />
-                </a>
+            {!isOrderConfirmation && (
+                <section className="cart-section optimizedCheckout-orderSummary-cartSection">
+                    <a
+                        aria-controls="coupon-form-collapsable"
+                        aria-expanded={isCouponFormVisible}
+                        className="redeemable-label body-cta"
+                        data-test="redeemable-label"
+                        href="#"
+                        onClick={preventDefault(toggleCouponForm)}
+                    >
+                        <TranslatedString id="redeemable.toggle_action" />
+                    </a>
 
-                {isCouponFormVisible && (
-                    <CouponForm />
-                )}
-            </section>
+                    {isCouponFormVisible && (
+                        <CouponForm />
+                    )}
+                </section>
+            )}
             <section className="subtotals-with-multi-coupon cart-section optimizedCheckout-orderSummary-cartSection">
                 <Discounts />
+
+                <OrderSummaryPrice
+                    amount={shipping}
+                    amountBeforeDiscount={shippingBeforeDiscount}
+                    label={<TranslatedString id="cart.shipping_text" />}
+                    testId="cart-shipping"
+                    zeroLabel={<TranslatedString id="cart.free_text" />}
+                />
 
                 {!!giftWrappingAmount && (
                     <OrderSummaryPrice
@@ -88,6 +107,8 @@ const NewOrderSummarySubtotals: FunctionComponent<MultiCouponProps> = ({
                         testId="cart-taxes"
                     />
                 ))}
+
+                <AppliedGiftCertificates giftCertificates={appliedGiftCertificates}/>
 
                 {!!storeCreditAmount && (
                     <OrderSummaryDiscount

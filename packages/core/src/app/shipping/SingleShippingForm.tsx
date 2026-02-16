@@ -25,6 +25,7 @@ import {
     mapAddressFromFormValues,
     mapAddressToFormValues,
 } from '../address';
+import { isErrorWithType } from '../common/error';
 import { withFormikExtended } from '../common/form';
 import { getCustomFormFieldsValidationSchema } from '../formFields';
 import { PaymentMethodId } from '../payment/paymentMethod';
@@ -105,7 +106,7 @@ class SingleShippingForm extends PureComponent<
     ) {
         super(props);
 
-        const { updateAddress } = this.props;
+        const { updateAddress, onUnhandledError = noop } = this.props;
 
         this.debouncedUpdateAddress = debounce(
             async (address: Address, includeShippingOptions: boolean) => {
@@ -120,6 +121,10 @@ class SingleShippingForm extends PureComponent<
 
                     if (includeShippingOptions) {
                         this.setState({ hasRequestedShippingOptions: true });
+                    }
+                } catch (error) {
+                    if (isErrorWithType(error) && error.type === 'empty_cart') {
+                        return onUnhandledError(error);
                     }
                 } finally {
                     this.setState({ isUpdatingShippingData: false });
@@ -378,7 +383,7 @@ export default withLanguage(
                 ? object({
                       shippingAddress: lazy<Partial<AddressFormValues>>((formValues) =>
                           getCustomFormFieldsValidationSchema({
-                              translate: getTranslateAddressError(language),
+                              translate: getTranslateAddressError(getFields(formValues && formValues.countryCode), language),
                               formFields: getFields(formValues && formValues.countryCode),
                           }),
                       ),

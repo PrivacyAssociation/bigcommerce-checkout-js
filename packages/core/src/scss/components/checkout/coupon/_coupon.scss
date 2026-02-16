@@ -28,16 +28,21 @@
     flex-wrap: wrap;
     gap: spacing('half');
 
+    .alertBox-icon {
+        padding-right: 0;
+        padding-left: spacing('quarter');
+    }
+
     ul {
         background: $color-greyLightest;
         color: $color-primary;
         display: inline-block;
         padding: spacing('quarter');
-        font-weight: fontWeight("thin");
+        font-weight: fontWeight('thin');
         word-break: break-all;
         margin: 0;
 
-        .coupon-icon {
+        .coupon-icon, .gift-certificate-icon {
             vertical-align: middle;
             margin-right: spacing('quarter');
         }
@@ -56,8 +61,8 @@
         display: flex;
         justify-content: space-between;
         padding: spacing('quarter');
+        padding-left: spacing('half');
         width: 100%;
-        margin-bottom: spacing('half');
         gap: spacing('half');
         word-break: auto-phrase;
 
@@ -90,10 +95,22 @@
 .subtotals-with-multi-coupon {
     .cart-priceItem {
         margin-top: spacing('half');
+
+        .cart-priceItem-before-discount {
+            color: $color-secondaryDarkest;
+            text-decoration: line-through;
+            margin-right: spacing('quarter');
+            font-weight: fontWeight('medium');
+        }
+    }
+
+    .gift-certificate-code {
+        color: $color-secondaryDarkest;
+        font-weight: fontWeight('thin');
     }
 }
 
-.coupon-discount-toggle,.shipping-discount-toggle {
+.coupon-discount-toggle{
     cursor: pointer;
 
     .toggle-button {
@@ -106,19 +123,11 @@
     }
 }
 
-.shipping-discount-toggle{
-    .shipping-cost-before-discount {
-        color: $color-secondaryDarkest;
-        text-decoration: line-through;
-        margin-right: spacing('quarter');
-    }
-}
-
 .applied-discounts-list {
     span {
         color: $color-secondaryDarkest;
         font-family: $fontFamily-montserrat;
-        font-weight: fontWeight("thin");
+        font-weight: fontWeight('thin');
         vertical-align: baseline;
     }
 
@@ -142,8 +151,9 @@
 
 // Total savings styles
 .total-savings {
-    color: $color-secondaryDarkest;
+    color: $color-primary;
     text-align: right;
+    font-weight: fontWeight('medium');
 
     .total-savings-highlight {
         color: $color-totalSavingsHighlight;

@@ -57,6 +57,7 @@
             "discount_text": "Descuento",
             "downloads_action": "Ir a descargas",
             "edit_cart_action": "Editar carrito",
+            "go_to_cart_action": "Cart",
             "edit_multi_shipping_cart_message": "Los nuevos artículos tendrán como destino de envío predeterminado el n.º 1. Reasígnalos si quieres que se envíen a otros destinos.",
             "estimated_total_text": "Total estimado",
             "free_text": "Gratis",
@@ -65,12 +66,15 @@
             "item": "Artículo",
             "items": "artículos",
             "item_count_text": "{count, plural, one{1 artículo} other{# artículos} }",
+            "backorder_count_text": "{count} will be backordered",
             "print_action": "Imprimir",
             "remaining_text": "resta",
             "remove_action": "eliminar",
             "return_to_checkout": "VOLVER AL PROCESO DE PAGO",
             "see_all_action": "Ver todo",
             "see_less_action": "Ver menos",
+            "show_order_summary_action": "Show Order Summary",
+            "hide_order_summary_action": "Hide Order Summary",
             "shipping_text": "Envío",
             "gift_wrapping_text": "Envolver para regalo",
             "show_details_action": "Mostrar detalles",
@@ -289,7 +293,6 @@
             "humm_not_processable_error": "Humm no puede procesar su pago para este pedido; seleccione otro método de pago.",
             "klarna_continue_action": "Continuar con Klarna",
             "klarna_name_text": "Klarna",
-            "masterpass_name_text": "Masterpass",
             "mollie_unsupported_method_error": "Este método de pago no puede utilizarse para la compra de productos digitales. Ponte en contacto con el equipo de Atención al Cliente o inténtalo de nuevo.",
             "opy_continue_action": "Continuar con {methodName}",
             "opy_widget_slogan": "Compra ahora y paga de forma más inteligente.",
@@ -445,6 +448,7 @@
                 "three_d_secure_declined": "Hubo un problema con su pago. Compruebe los detalles del pago o póngase en contacto con el emisor de su tarjeta.",
                 "three_d_secure_failed": "No se pudo procesar el pago. Vuelva a intentarlo o use una opción de pago diferente.",
                 "three_d_secure_required": "Se requiere autenticación adicional para procesar su pago. Póngase en contacto con nosotros.",
+                "three_d_secure_payment_failed": "La información de la tarjeta de crédito no es válida o no ha superado la verificación 3D Secure. Inténtalo con otra tarjeta o prueba a efectuar el pago más tarde.",
                 "token_error": "Estamos teniendo problemas para procesar su transacción. Vuelva a intentarlo más tarde.",
                 "transaction_declined": "Su pago fue declinado. Por favor, inténtelo de nuevo.",
                 "transaction_rejected": "El pago fue rechazado. Vuelva a intentarlo.",
@@ -471,6 +475,7 @@
             }
         },
         "redeemable": {
+            "auto_promotion": "Descuento automático",
             "applied_text": "Aplicado",
             "apply_action": "Aplicar",
             "apply_store_credit_after_action": "crédito en tienda para realizar pedidos",
@@ -481,11 +486,15 @@
             "coupon_location_error": "Su dirección de envío no cumple con los requisitos de ubicación para el código de cupón que ha introducido.",
             "coupon_min_order_total": "Su pedido no alcanza el total mínimo para que se aplique este código de cupón.",
             "coupon_text": "Con cupón",
+            "coupon_placeholder": "Introduce tu código aquí",
+            "discounts_text": "Descuentos",
             "gift_certificate_remaining_text": "resta",
             "gift_certificate_text": "Cupón de regalo",
+            "manual_discount": "Descuento manual",
             "remove_action": "Eliminar",
             "store_credit_available_text": "Tu cuenta tiene actualmente disponible un total de {storeCredit} de crédito en tienda",
-            "toggle_action": "Cupón de regalo"
+            "toggle_action": "Cupón de regalo",
+            "total_savings_text": "¡Has ahorrado <span class=\"total-savings-highlight\">{totalDiscount}</span> en total!"
         },
         "remote": {
             "browser_unsupported": "El método de pago seleccionado requiere un navegador web diferente. Elija otro método de pago.",
@@ -543,6 +552,8 @@
             "multishipping_left_to_allocate_items_table_item": "Artículo",
             "multishipping_left_to_allocate_items_table_left_to_allocate": "Por asignar",
             "multishipping_left_to_allocate_items_table_quantity": "Cantidad",
+            "no_countries_available_heading": "Tenemos problemas para cargar tu país de envío",
+            "no_countries_available_message": "Actualiza la página o vuelve a intentarlo en un momento. Si el problema continúa, contacta con nuestro equipo de soporte y te ayudaremos a completar tu pedido.",
             "multishipping_item_split_tooltip_message": "Las cantidades de estos artículos se dividen en una fila separada debido a una promoción por cantidad o a un precio personalizado.",
             "ship_to_multi": "Enviar a varias direcciones",
             "ship_to_single": "Enviar a una sola dirección",
@@ -593,7 +604,8 @@
         "order_confirmation": {
             "mandate": {
                 "adyenv3": {
-                    "boletobancario": "Ticket Boleto Bancário"
+                    "boletobancario": "Ticket Boleto Bancário",
+                    "oxxo": "Ticket OXXO"
                 },
                 "bluesnapdirect": {
                     "sepa_direct_debit": "Referencia del mandato de adeudo directo SEPA: {mandate}"

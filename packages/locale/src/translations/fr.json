@@ -57,6 +57,7 @@
             "discount_text": "Remise",
             "downloads_action": "Accéder aux téléchargements",
             "edit_cart_action": "Modifier le panier",
+            "go_to_cart_action": "Cart",
             "edit_multi_shipping_cart_message": "Les nouveaux articles seront placés par défaut sur la destination d'expédition n° 1. Réaffectez-les si vous voulez qu'ils soient expédiés vers d'autres destinations.",
             "estimated_total_text": "Total estimé",
             "free_text": "Gratuit",
@@ -65,12 +66,15 @@
             "item": "Article",
             "items": "articles",
             "item_count_text": "{count, plural, one{1 article} other{# articles} }",
+            "backorder_count_text": "{count} will be backordered",
             "print_action": "Imprimer",
             "remaining_text": "restant·s",
             "remove_action": "supprimer",
             "return_to_checkout": "REVENIR AU PAIEMENT",
             "see_all_action": "Tout voir",
             "see_less_action": "Voir moins",
+            "show_order_summary_action": "Show Order Summary",
+            "hide_order_summary_action": "Hide Order Summary",
             "shipping_text": "Livraison",
             "gift_wrapping_text": "Emballage Cadeau",
             "show_details_action": "Afficher les détails",
@@ -289,7 +293,6 @@
             "humm_not_processable_error": "Humm ne peut pas traiter votre paiement pour cette commande, veuillez sélectionner un autre mode de paiement.",
             "klarna_continue_action": "Poursuivre avec Klarna",
             "klarna_name_text": "Klarna",
-            "masterpass_name_text": "Masterpass",
             "mollie_unsupported_method_error": "Ce mode de paiement ne peut pas être utilisé pour l'achat de produits numériques. Veuillez contacter l'assistance client ou réessayer.",
             "opy_continue_action": "Continuer avec {methodName}",
             "opy_widget_slogan": "Achetez maintenant. Payez malin.",
@@ -445,6 +448,7 @@
                 "three_d_secure_declined": "Une erreur s'est produite avec votre paiement. Veuillez vérifier vos données de paiement ou contacter la banque émettrice de la carte.",
                 "three_d_secure_failed": "Échec du paiement. Veuillez réessayer ou utiliser un autre moyen de paiement.",
                 "three_d_secure_required": "Une authentification supplémentaire est requise pour traiter votre paiement. Veuillez nous contacter.",
+                "three_d_secure_payment_failed": "Les informations de la carte de crédit sont invalides ou la vérification 3D Secure a échoué. Veuillez essayer une autre carte ou réessayer d'effectuer le paiement ultérieurement.",
                 "token_error": "Nous avons des difficultés à traiter votre transaction. Veuillez réessayer plus tard.",
                 "transaction_declined": "Votre paiement a été refusé. Veuillez réessayer.",
                 "transaction_rejected": "Le paiement a été refusé. Veuillez réessayer.",
@@ -471,6 +475,7 @@
             }
         },
         "redeemable": {
+            "auto_promotion": "Réduction automatique",
             "applied_text": "Appliqué",
             "apply_action": "Appliquer",
             "apply_store_credit_after_action": "avoir à utiliser",
@@ -481,11 +486,15 @@
             "coupon_location_error": "Votre adresse de livraison ne répond pas aux exigences géographiques du code promotionnel saisi.",
             "coupon_min_order_total": "Votre commande n'atteint pas le montant total minimum pour que ce code promotionnel puisse être appliqué.",
             "coupon_text": "Code promotionnel",
+            "coupon_placeholder": "Saisissez votre code ici",
+            "discounts_text": "Remises",
             "gift_certificate_remaining_text": "restant·s",
             "gift_certificate_text": "Chèque-cadeau",
+            "manual_discount": "Remise manuelle",
             "remove_action": "Supprimer",
             "store_credit_available_text": "Un avoir de {storeCredit} est actuellement disponible sur votre compte",
-            "toggle_action": "Code promotionnel/chèque-cadeau"
+            "toggle_action": "Code promotionnel/chèque-cadeau",
+            "total_savings_text": "Vous avez économisé <span class=\"total-savings-highlight\">{totalDiscount}</span> au total !"
         },
         "remote": {
             "browser_unsupported": "Vous devez utiliser un autre navigateur Web pour le mode de paiement sélectionné. Veuillez choisir un autre mode de paiement.",
@@ -543,6 +552,8 @@
             "multishipping_left_to_allocate_items_table_item": "Article",
             "multishipping_left_to_allocate_items_table_left_to_allocate": "Articles restants pour attribution",
             "multishipping_left_to_allocate_items_table_quantity": "Quantité",
+            "no_countries_available_heading": "Nous rencontrons des difficultés à charger votre pays de livraison",
+            "no_countries_available_message": "Veuillez actualiser la page ou réessayer dans un instant. Si le problème persiste, contactez notre équipe d’assistance et nous vous aiderons à finaliser votre commande.",
             "multishipping_item_split_tooltip_message": "Ces quantités d'articles sont réparties sur une ligne distincte en raison d'une promotion basée sur la quantité ou d'un prix personnalisé.",
             "ship_to_multi": "Livrer à plusieurs adresses",
             "ship_to_single": "Livrer à une seule adresse",
@@ -593,7 +604,8 @@
         "order_confirmation": {
             "mandate": {
                 "adyenv3": {
-                    "boletobancario": "Ticket Boleto Bancário"
+                    "boletobancario": "Ticket Boleto Bancário",
+                    "oxxo": "Ticket OXXO"
                 },
                 "bluesnapdirect": {
                     "sepa_direct_debit": "Référence du mandat de prélèvement SEPA : {mandate}"

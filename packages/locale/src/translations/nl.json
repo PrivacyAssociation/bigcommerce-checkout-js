@@ -57,6 +57,7 @@
             "discount_text": "Korting",
             "downloads_action": "Ga naar Downloads",
             "edit_cart_action": "Winkelmandje bewerken",
+            "go_to_cart_action": "Cart",
             "edit_multi_shipping_cart_message": "Nieuwe artikelen worden standaard toegewezen aan verzendbestemming 1. Wijs ze opnieuw toe als je ze naar andere bestemmingen wilt laten verzenden.",
             "estimated_total_text": "Geschat totaal",
             "free_text": "Gratis",
@@ -65,12 +66,15 @@
             "item": "Artikel",
             "items": "artikelen",
             "item_count_text": "{count, plural, one{1 item} other{# items} }",
+            "backorder_count_text": "{count} will be backordered",
             "print_action": "Afdrukken",
             "remaining_text": "resterend",
             "remove_action": "verwijderen",
             "return_to_checkout": "TERUG NAAR AFREKENEN",
             "see_all_action": "Alles weergeven",
             "see_less_action": "Minder weergeven",
+            "show_order_summary_action": "Show Order Summary",
+            "hide_order_summary_action": "Hide Order Summary",
             "shipping_text": "Verzending",
             "gift_wrapping_text": "Cadeauverpakking",
             "show_details_action": "Details weergeven",
@@ -289,7 +293,6 @@
             "humm_not_processable_error": "Humm kan uw betaling voor deze bestelling niet verwerken. Selecteer een andere betaalmethode.",
             "klarna_continue_action": "Doorgaan met Klarna",
             "klarna_name_text": "Klarna",
-            "masterpass_name_text": "Masterpass",
             "mollie_unsupported_method_error": "Deze betaalmethode kan niet worden gebruikt voor de aankoop van digitale producten. Neem contact op met de klantenservice of probeer het opnieuw.",
             "opy_continue_action": "Doorgaan met {methodName}",
             "opy_widget_slogan": "Nu kopen, slimmer betalen.",
@@ -445,6 +448,7 @@
                 "three_d_secure_declined": "Er is een probleem opgetreden met uw betaling, controleer uw betalingsgegevens of neem contact op met uw creditcarduitgever.",
                 "three_d_secure_failed": "De betaling is mislukt. Probeer het opnieuw of gebruik een andere betaalmethode.",
                 "three_d_secure_required": "Verdere authenticatie is vereist om uw betaling te verwerken. Neem contact met ons op.",
+                "three_d_secure_payment_failed": "De creditcardgegevens zijn ongeldig of de 3D Secure-verificatie is mislukt. Probeer een andere kaart of probeer de betaling later opnieuw.",
                 "token_error": "Er is een probleem opgetreden bij het verwerken van uw transactie. Probeer het later opnieuw.",
                 "transaction_declined": "Uw betaling is geweigerd. Probeer het opnieuw.",
                 "transaction_rejected": "Betaling is geweigerd. Probeer het opnieuw.",
@@ -471,6 +475,7 @@
             }
         },
         "redeemable": {
+            "auto_promotion": "Automatische korting",
             "applied_text": "Toegepast",
             "apply_action": "Toepassen",
             "apply_store_credit_after_action": "winkeltegoed om te bestellen",
@@ -481,11 +486,15 @@
             "coupon_location_error": "Uw verzendadres voldoet niet aan de locatievereisten voor de couponcode die u heeft ingevoerd.",
             "coupon_min_order_total": "Uw bestelling voldoet niet aan het minimale totaalbedrag voor deze couponcode.",
             "coupon_text": "Coupon",
+            "coupon_placeholder": "Voer hier je code in",
+            "discounts_text": "Kortingen",
             "gift_certificate_remaining_text": "resterend",
             "gift_certificate_text": "Cadeaubon",
+            "manual_discount": "Handmatige korting",
             "remove_action": "Verwijderen",
             "store_credit_available_text": "Je account beschikt momenteel over een totaal winkeltegoed van {storeCredit}",
-            "toggle_action": "Coupon/cadeaubon"
+            "toggle_action": "Coupon/cadeaubon",
+            "total_savings_text": "Je hebt in totaal <span class=\"total-savings-highlight\">{totalDiscount}</span> bespaard!"
         },
         "remote": {
             "browser_unsupported": "Voor de geselecteerde betaalmethode is een andere webbrowser vereist. Kies een andere betaalmethode.",
@@ -543,6 +552,8 @@
             "multishipping_left_to_allocate_items_table_item": "Artikel",
             "multishipping_left_to_allocate_items_table_left_to_allocate": "Nog toe te wijzen",
             "multishipping_left_to_allocate_items_table_quantity": "Aantal",
+            "no_countries_available_heading": "We hebben problemen met het laden van je verzendland",
+            "no_countries_available_message": "Vernieuw de pagina of probeer het over enkele ogenblikken opnieuw. Als het probleem zich blijft voordoen, neem dan contact op met onze klantenservice. Dan helpen we je om je bestelling te voltooien.",
             "multishipping_item_split_tooltip_message": "Deze artikelaantallen zijn opgesplitst in een aparte rij vanwege een promotie op basis van aantal of een aangepaste prijs.",
             "ship_to_multi": "Verzenden naar meerdere adressen",
             "ship_to_single": "Verzenden naar een enkel adres",
@@ -593,7 +604,8 @@
         "order_confirmation": {
             "mandate": {
                 "adyenv3": {
-                    "boletobancario": "Boleto Bancário-ticket"
+                    "boletobancario": "Boleto Bancário-ticket",
+                    "oxxo": "OXXO-ticket"
                 },
                 "bluesnapdirect": {
                     "sepa_direct_debit": "Referentie SEPA-machtiging tot automatische incasso: {mandate}"
