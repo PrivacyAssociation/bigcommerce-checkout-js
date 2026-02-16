@@ -3,15 +3,21 @@ concurrency:
   group: ${{ github.workflow }}
 
 on:
+  # trigger on sync to BC Main from UI or CLI, or from PR merges to master
   push:
     branches:
-      # TODO create a prod.yml for master, we need a test branch for org-nonprod to test these before pushing out
-      # TODO do we want some rollback mechanism for prod?
-      #    maybe at least some sort of s3 tag linked to git commit hash or versions?
-      - test
-      - feature/iac-deploy-pipeline-2
-
-# TODO what env does dave use when building locally?
+      - master
+  workflow_dispatch: # allow manual trigger from GitHub Actions UI for testing and redeploys from master
+  pull_request:
+    branches:
+      - master
+  # invoke from the sync cron workflow because the sync cron trigger will NOT auto-trigger this workflow due to GitHub Action built in protections
+  workflow_call:
+    inputs:
+      build_run_id:
+        required: true
+        type: string
+  
 env:
   AWS_REGION: 'us-east-1'
 
@@ -172,13 +178,13 @@ jobs:
           path: automated-testing/playwright-report/
           retention-days: 30
 
+  # deploy to prod if its NOT a pull_request. Merges are still blocked by branch protection rules on passing playwright tests above
   production-deploy:
     needs: visual-regression-test
-    if: (needs.visual-regression-test.result == 'success')
+    if: (needs.visual-regression-test.result == 'success' && github.event_name != 'pull_request' )
     uses: ./.github/workflows/production.yaml
     secrets: inherit
     with:
-      environment: production
       build_artifact_key: "bc-checkout-js-build-artifact-${{ github.sha }}"
       github_sha: ${{ github.sha }}
       s3_bucket_name: ${{ vars.S3_BUCKET_PRODUCTION }}

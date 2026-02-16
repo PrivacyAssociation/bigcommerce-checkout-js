@@ -3,16 +3,6 @@ concurrency:
   group: prod-deploy # only one deployment per environment at a time
 
 on:
-  # should only be invoked via workflow_call from test.yaml after a successful validation of the TEST environment with MyIapp Login
-  # TODO what are the options to push code to production IF TEST is down or Playwright is failing?
-  # push:
-  #   branches:
-  #     # TODO create a prod.yml for master, we need a test branch for org-nonprod to test these before pushing out
-  #     # TODO do we want some rollback mechanism for prod?
-  #     #    maybe at least some sort of s3 tag linked to git commit hash or versions?
-  #     - master
-  #     - feature/iac-deploy-pipeline
-  workflow_dispatch:
   workflow_call:
     inputs:
       environment:
