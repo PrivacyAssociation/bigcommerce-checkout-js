@@ -6,11 +6,6 @@
 #    - if this fails, TODO open a PR to master and have a human resolve the conflicts and merge
 #  3. invoke the test.yaml workflow to continue deployment as usual since the sync push event will NOT auto-trigger test.yaml coming from a workflow due to GitHub Action built in protections
 #
-# SECRETS (From GitHub Environment secrets):
-#
-# VARS (from GitHub Environment variables):
-#  environment_name - the target environment to update snapshots for (test or production)
-#
 #########################################################################################################################
 name: Sync BigCommerce Checkout Main to Repo Master
 concurrency:
@@ -45,26 +40,6 @@ jobs:
           # git remote -v
           # git fetch upstream
           gh repo sync owner/cli-fork -b master
-                  
-      # TODO when no changes are present this will fail, only run this if changes are present
-      # - name: Create Pull Request with gh CLI
-      #   env:
-      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Or a PAT with appropriate scopes
-      #   run: |
-      #     git config --global user.email "devops@iapp.org"
-      #     git config --global user.name "devops IAPP"
-      #     NEW_BRANCH_NAME="feature/playwright-snapshots-update-${{github.sha}}"
-      #     git checkout -b $NEW_BRANCH_NAME
-      #     echo "NEW BRANCH NAME: $NEW_BRANCH_NAME""
-      #     git add automated-testing
-      #     git commit -m "newly updated snapshots"
-      #     git push -u origin "$NEW_BRANCH_NAME"
-      #     # opening a PR against master from within a Actions Workflow will NEVER trigger the pre-merge checks, meaning we can't merge it
-      #     #  - must manually open a PR as a human or invest more backlog effort into a more complex workflow
-      #     if [ "${{ github.head_ref }}" != "master" ]; then
-      #       echo "Creating PR against feature branch ${{ github.head_ref }}"
-      #       gh pr create --base "${{ github.head_ref }}" --head "$NEW_BRANCH_NAME" --title "Playwright snapshot updates ${{ github.head_ref }}" --body "This PR was created automatically by GitHub Actions."
-      #     fi
 
   invoke-test-workflow:
     needs: sync-bc-main-to-master
@@ -72,4 +47,4 @@ jobs:
     uses: ./.github/workflows/test.yaml
     secrets: inherit
     with:
-      build_run_id: ${{ github.run_id }} # pass the current
+      build_run_id: ${{ github.run_id }} 

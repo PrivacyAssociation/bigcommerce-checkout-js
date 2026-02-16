@@ -7,7 +7,9 @@ on:
   push:
     branches:
       - master
-  workflow_dispatch: # allow manual trigger from GitHub Actions UI for testing and redeploys from master
+  # allow manual trigger from GitHub Actions UI for testing and redeploys from master
+  workflow_dispatch: 
+  # trigger from PullRequests to deploy IAPP custom changes to the test environment for testing, but not trigger production deploys since those are gated behind branch protection rules and require manual merges to master
   pull_request:
     branches:
       - master
