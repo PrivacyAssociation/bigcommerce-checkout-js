@@ -94,7 +94,7 @@ export class InfraStack extends Stack {
       accessControl: aws_s3.BucketAccessControl.BUCKET_OWNER_FULL_CONTROL,
       versioned: true,
       encryption: aws_s3.BucketEncryption.S3_MANAGED,
-      removalPolicy: RemovalPolicy.DESTROY,
+      removalPolicy: RemovalPolicy.RETAIN,
       lifecycleRules: [
         // "site/" folder is used for rollbacks, do not need to keep them beyond deployment validation and soak period
         {
