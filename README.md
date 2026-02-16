@@ -1,81 +1,157 @@
-# Checkout JS
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/bigcommerce/checkout-js)
+# IAPP BigCommerce Checkout JS
 
-Checkout JS is a browser-based application providing a seamless UI for BigCommerce shoppers to complete their checkout. It is also known as [Optimized One-Page Checkout](https://support.bigcommerce.com/s/article/Optimized-Single-Page-Checkout), which is currently the recommended checkout option for all BigCommerce stores.
+Hello fellow IAPP developer. First of all, you might be like "Why all this nonsense for a single page on a third party site?". Wellp the BigCommerce storefront is pulling in tens of millions of dollars per year in revenue, and using the Storefront->Script Manager to over write the default login behavior frequently broke whenever BC updated their markup. Not exactly optimal uptime for an enterprise ecommerce app. We also wanted finer control over checkout experience (maybe add in some promotional code), so here we are!
+
+- [Design and Development](#design-and-development)
+- [Network Architecture and Infrastructure as Code](infra/README.md)
+  - [Alerts](infra/README.md#alerts)
+- [Build and Deploy](.github/workflows/README.md)
+  - [Playwright Automated Tests](automated-testing/README.md)
+
+# Design and Development
+
+**Big Commerce Links**
+
+[![BC DeepWiki (ai powered)](https://deepwiki.com/badge.svg)](https://deepwiki.com/bigcommerce/checkout-js)\
+[Optimized One-Page Checkout](https://support.bigcommerce.com/s/article/Optimized-Single-Page-Checkout)\
+[Installing the checkout](https://developer.bigcommerce.com/stencil-docs/customizing-checkout/installing-custom-checkouts)\
+[BC CI/CD pipeline: CircleCI](https://circleci.com/gh/bigcommerce/workflows/checkout-js/tree/master)\
+[BigCommerce Checkout Git repo we forked](https://github.com/bigcommerce/checkout-js)\
+[IAPP Runbook](https://iappadmin.atlassian.net/wiki/spaces/DevOps/pages/4120051744/Runbook+-+BigCommerce+One-Page+Checkout)
 
 ## Requirements
 
-In order to build from the source code, you must have the following set up in your development environment.
+The repo requires the below environment to compile.
 
-* Node >= v22.
-* NPM >= v10.
-* Unix-based operating system. (WSL on Windows)
+- Node >= v22.
+- NPM >= v10.
+- Unix-based operating system. (WSL on Windows (they are fibbing here))
 
-One of the simplest ways to install Node is using [NVM](https://github.com/nvm-sh/nvm#installation-and-update). You can follow their instructions to set up your environment if it is not already set up.
+But that is really hard to get working on a standard IAPP development laptop because Nicole hates us having Macs.
+To work around this we are going to install a docker environment locally and build from there.
 
-## Development
+To install Docker on your local machine, use the "company portal" application installed on your machine (just type that into the search bar).
+[Company Portal](https://iappadmin.atlassian.net/servicedesk/customer/portal/30/article/2616819713?source=search)
+You may need to install windows WSL and some other dependencies too, you can request local admin access using our PIM system.
+[PIM](https://iappadmin.atlassian.net/servicedesk/customer/article/2921693187)
 
-Once you have cloned the repository and set up your environment, you can start developing with it.
+## Docker Setup
 
-First, you have to pull in the dependencies required for the application.
+1. Head on over to your local repo directory, which in my case is at: C:\Users\DavidOstrander\00_IappWork\ .
+2. Next open up a GitBash terminal.
+3. Run `git clone https://github.com/bigcommerce/checkout-js.git` to grab a local copy.
+4. RUN `cd bigcommerce-checkout-js`
+5. RUN
 
 ```sh
+# Add the original repository as upstream
+git remote add upstream https://github.com/bigcommerce/checkout-js
+# should see the original repo listed
+git remote -v
+# Get updates from parent repo
+git fetch upstream
+# merge the master repo's main branch into your local repo:
+git merge upstream master
+# Make sure when you create your PR's "privacy association" as root and destination.
+
+```
+
+6. RUN
+
+```sh
+# Build your local Linux/Node image
+docker build -t bigcommerce-checkout .
+```
+
+7. RUN
+
+```sh
+# Boot up your image into a working container
+docker run -p 8080:8080 -d --name bc-checkout-dev bigcommerce-checkout
+```
+
+8. RUN
+
+```sh
+# Login to our container and access a terminal
+docker exec -it bc-checkout-dev sh
+```
+
+9. RUN
+
+```sh
+# install all dependencies (ci = clean install)
 npm ci
 ```
 
-After that, you can make changes to the source code and run the following command to build it.
+10. RUN
 
 ```sh
-npm run build
-```
-
-If you are developing the application locally and want to build the source code in watch mode, you can run the following command:
-
-```sh
+# This will create the build folder in the container and should make your files available locally
 npm run dev
 ```
 
-If you want to create a prerelease (i.e.: `alpha`) for testing in the integration environment, you can run the following command:
+11. Test to see if your container is serving files: [Localhost](http://localhost:8080) .
+
+If you see an "Index of / " web page, with a bunch of linked files including "auto-loader-dev.js". You are good to go!
+
+## Local Development
+
+This repository uses trunk based development, with `master` being the main branch. There is a [GitHub Actions Workflow](.github/workflows/README.md) which orchestrates moving code from feature branch, to the TEST and PRODUCTION environments
+
+1. Create a new feature branch off `master`
+2. Follow below steps to [run docker locally](#run-docker-locally-and-validate-the-store-locally) and validate changes to the assets with localDev
+3. Open a Pull Request against the `master` branch in GitHub
+4. If any [CDK IaC](infra/README.md) changes are needed, deploy those locally first as they are not part of the pipeline
+5. The PR will kick off the GitHub Actions workflow for the TEST Store Checkout Assets
+6. The [Playwright Automated Tests](automated-testing/README.md) will validate the TEST store, block the merge to `master` if they fail
+7. PR requires 2 approvals
+8. Once merged, the GitHub Actions workflow for the PRODUCTION Store Checkout Assets kicks off
+9. The Playwright Automated Tests will validate the PRODUCTION environment for regressions
+9* Follow the [Rollback Plan](https://iappadmin.atlassian.net/wiki/spaces/DevOps/pages/4230381994/BigCommerce+Store+Checkout+Page+Pipeline+-+Runbook#Roll-Back) from the Confluence runbooks
+10. Ensure no alerts are firing off and validate manually any changes to the page
+
+### Run Docker Locally and validate the store locally
+
+From [My Apps](https://myapps.microsoft.com/), click on BigCommerce, and login to the IAPP Akeneo Sandbox. This BC Instance is configured to import into your browser the files served at http://localhost:8080. So this instance of Sandbox will break for other people using it, as their computers won't be serving those files.
+
+If you are familiar with Docker, most of the time you would mount your repo into the container, so that files you make on your local machine, would be treated as local files by the container. Because we need the NPM run build from the Linux environment, mounting the volume didn't work so hot. So we are going to make edits to our files in our local VS_Code IDE, Copy the files into the docker container via a terminal command, and manually run the NPM build inside of the container.
+
+I suggest opening two gitbash terminals, one for copying the file, and one logged into the container to build the files.
 
 ```sh
-npm run release:alpha
+# First terminal: copy files from your local machine to the container
+docker cp ./packages/core/src/app/customer/LoginForm.tsx bc-checkout-dev:/usr/src/app/packages/core/src/app/customer/LoginForm.tsx
 ```
-
-After that, you need to push the prerelease tag to your fork so it can be referenced remotely.
-
-### Testing
-
-To run E2E tests, use the following command:
 
 ```sh
-npm run e2e
+#Second terminal: Login to the container
+docker exec -it bc-checkout-dev sh
 ```
-
-The E2E tests in this project use HAR files to stub network calls. If you need to manually update the HAR files to make minor changes to the requests, you must run the command below to regenerate the ID for each updated request. Otherwise, the stubs will not function properly.
 
 ```sh
-npm run regenerate-har
+#Second terminal: After copying your files into ther container from your local, build them.
+npm run build
 ```
 
-## Custom Checkout installation
+You should be able to view your changes in the checkout app inside of the IAPP Akeneo Sandbox instance, or (more likely) extremely verbose errors in your npm build terminal.
+
+#### Custom Checkout installation into your store
 
 Follow [this guide](https://developer.bigcommerce.com/stencil-docs/customizing-checkout/installing-custom-checkouts) for instructions on how to fork and install this app as a Custom Checkout in your store.
 
-If you want to test your checkout implementation, you can run:
-```sh
-npm run dev:server
-```
-
 And enter the local URL for `auto-loader-dev.js` in Checkout Settings, e.g `http://127.0.0.1:8080/auto-loader-dev.js`
 
-## Release
+## BC CI/CD Release
 
-Everytime a PR is merged to the master branch, CircleCI will trigger a build automatically. However, it won't create a new Git release until it is approved by a person with write access to the repository. If you have write access, you can approve a release job by going to [CircleCI](https://circleci.com/gh/bigcommerce/workflows/checkout-js/tree/master) and look for the job you wish to approve. You can also navigate directly to the release job by clicking on the yellow dot next to the merged commit.
+Everytime a BC PR is merged to the master branch, CircleCI will trigger a build automatically. However, it won't create a new Git release until it is approved by a person with write access to the repository. We should periodically merge in the BC master branch into our fork. That includes adding the parent repo as a git upstream repo and doing some git magic:
 
-
-## Contribution
-
-More information can be found in the [contribution guide](CONTRIBUTING.md) and [code of conduct](CODE_OF_CONDUCT.md) for this project.
-
-
-Copyright (C) 2019-Present BigCommerce Inc. All rights reserved.
+```sh
+git remote add upstream https://github.com/bigcommerce/checkout-js
+git remote -v
+git fetch upstream
+git checkout master
+git merge upstream/master
+git push origin master
+#at this point our remote fork will be synced with the BC main
+```
