@@ -1,0 +1,50 @@
+#########################################################################################################################
+#
+# Workflow to sync our repo master with BigCommerce checkout main
+#  1. fetch upstream changes from BigCommerce checkout main
+#  2. attempt to auto-merge into master -> triggers our push event GitHub Action workflows to deploy
+#    - if this fails, TODO open a PR to master and have a human resolve the conflicts and merge
+#  3. invoke the test.yaml workflow to continue deployment as usual since the sync push event will NOT auto-trigger test.yaml coming from a workflow due to GitHub Action built in protections
+#
+#########################################################################################################################
+name: Sync BigCommerce Checkout Main to Repo Master
+concurrency:
+  group: ${{ github.workflow }}
+run-name: Sync master with BigCommerce Checkout main
+
+on:
+  schedule:
+    # Runs every Thursday at 9 AM EST (which is 14:00 UTC)
+    - cron: '0 14 * * 4'
+  # Allows manual triggering of the workflow from the GitHub UI to test
+  workflow_dispatch:
+
+env:
+  AWS_REGION: 'us-east-1'
+
+permissions:
+  contents: write # This is required for actions/checkout
+  pull-requests: write # necessary to create PR with gh CLI for updated snapshots
+
+jobs:
+  sync-bc-main-to-master:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Sync upstream main to master
+        run: |
+          # git remote add upstream https://github.com/bigcommerce/checkout-js
+          # git remote -v
+          # git fetch upstream
+          gh repo sync owner/cli-fork -b master
+
+  invoke-test-workflow:
+    needs: sync-bc-main-to-master
+    if: (needs.sync-bc-main-to-master.result == 'success')
+    uses: ./.github/workflows/test.yaml
+    secrets: inherit
+    with:
+      build_run_id: ${{ github.run_id }} 
