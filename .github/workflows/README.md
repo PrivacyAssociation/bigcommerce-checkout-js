@@ -22,8 +22,6 @@ The Playwright automated tests [automated-testing](../../automated-testing/READM
 
 Run it from `master` branch against the desired `test` or `production` environment, and new snapshots will be updated in a PR which the GitHub Actions workflow will trigger aginst `master` branch. You can also run this from a feature branch, if you need to get snapshots updated to set up a new branch which you expect changes for when merging to master, this way the Playwright tests will not fail, and you will be able to merge.
 
-
-
 ## TODO 
 
 - Build Failure Alerts should be more in your face, GitHub emails maybe aren't enough and need more visibility to Lonnie and Dave
