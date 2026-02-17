@@ -126,7 +126,7 @@ jobs:
           git config --global user.name "devops IAPP"
           NEW_BRANCH_NAME="feature/playwright-snapshots-update-${{github.sha}}"
           git checkout -b $NEW_BRANCH_NAME
-          echo "NEW BRANCH NAME: $NEW_BRANCH_NAME""
+          echo "NEW BRANCH NAME: $NEW_BRANCH_NAME"
           git add automated-testing
           git commit -m "newly updated snapshots"
           git push -u origin "$NEW_BRANCH_NAME"
@@ -136,5 +136,3 @@ jobs:
             echo "Creating PR against feature branch ${{ github.head_ref }}"
             gh pr create --base "${{ github.head_ref }}" --head "$NEW_BRANCH_NAME" --title "Playwright snapshot updates ${{ github.head_ref }}" --body "This PR was created automatically by GitHub Actions."
           fi
-
-# feature branch -> local dev -> PR -> Bowen runs the Action for test against PR branch from Actions UI

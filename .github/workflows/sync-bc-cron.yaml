@@ -13,8 +13,8 @@ concurrency:
 run-name: Sync master with BigCommerce Checkout main
 
 on:
+  # Runs every Thursday at 9 AM EST (which is 14:00 UTC)
   schedule:
-    # Runs every Thursday at 9 AM EST (which is 14:00 UTC)
     - cron: '0 14 * * 4'
   # Allows manual triggering of the workflow from the GitHub UI to test
   workflow_dispatch:
@@ -25,6 +25,7 @@ env:
 permissions:
   contents: write # This is required for actions/checkout
   pull-requests: write # necessary to create PR with gh CLI for updated snapshots
+  id-token: write # This is required for requesting the JWT for AWS
 
 jobs:
   sync-bc-main-to-master:
@@ -36,10 +37,7 @@ jobs:
 
       - name: Sync upstream main to master
         run: |
-          # git remote add upstream https://github.com/bigcommerce/checkout-js
-          # git remote -v
-          # git fetch upstream
-          gh repo sync owner/cli-fork -b master
+          gh repo sync -b master
 
   invoke-test-workflow:
     needs: sync-bc-main-to-master
