@@ -55,10 +55,19 @@ test.describe('BigCommerce Store checkout should trigger MyIapp Login and return
     // wait for the sign in button to appear and click it
     await page.getByRole('button', { name: 'Sign In' }).click();
     await myIappLogin(page, username, password);
-    await page.waitForTimeout(10000); // wait to visually confirm logged in state
+    await page.waitForTimeout(2000); // wait to visually confirm logged in state
     // the same deal as MyIapp UI - need a manual GitHub Action Workflow to update snapshots on a linux os
-    await page.waitForURL('/checkout'); // expect to redirect back to checkout page after login
-    await page.locator('').waitFor({ state: 'visible', timeout: 10000 }); // wait for some element on the checkout page that only appears when logged in, this is pretty brittle and could be improved with a more robust selector strategy
+    await page.waitForURL('/'); // expect to redirect back to store home page after login
+    await page.goto('/checkout'); // navigate back to checkout after login
+    // shipping should be loaded after login
+    await page
+      .locator('#firstNameInput')
+      .waitFor({ state: 'visible', timeout: 10000 }); // wait for some element on the checkout page that only appears when logged in, this is pretty brittle and could be improved with a more robust selector strategy
+
+    await page.waitForTimeout(2000); // wait to visually confirm logged in state
+    await page
+      .locator('#checkout-shipping-continue')
+      .waitFor({ state: 'visible', timeout: 10000 }); // wait for some element on the checkout page that only appears when logged in, this is pretty brittle and could be improved with a more robust selector strategy
     await expect(page).toHaveScreenshot(
       `bigcommerce-${loginId}-checkout-logged-in.png`
     );

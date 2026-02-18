@@ -22,6 +22,16 @@ This project runs Playwright automation to invoke the following UI flow in a chr
 7. Waits for the redirect back to BigCommerce store, then goes back to `/checkout`
 8. Confirms user is still logged in, and correct screen is rendered at checkout
 
+# Environment Variables
+
+- `BC_CHECKOUT_URL` : entrypoint into our S3 hosting
+  - `https://test-checkout.iapp.org/auto-loader.js`
+  - `https://checkout.iapp.org/auto-loader.js`
+- `BC_PREVIEW_CODE` : nonprod only, the sandbox BC Store is behind a code to keep it blocked from public view
+- `WAF_TOKEN` : for nonprod only, to get thru to our IAPP internal network
+  - look this up in the AWS WAF Console
+- `RUNTIME_ENVIRONMENT` : test or production
+
 # Test Execution
 
 > **projects e.g. test modes**
