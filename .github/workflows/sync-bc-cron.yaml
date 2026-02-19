@@ -34,12 +34,21 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+      
+      - name: Fetch upstream changes
+        run: git fetch upstream
 
       - name: Sync upstream main to master
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh repo sync -b master
+          # gh repo sync -b master
+          git merge upstream/master --no-edit
+
+      - name: Push changes to fork
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: git push origin main
 
   invoke-test-workflow:
     needs: sync-bc-main-to-master
