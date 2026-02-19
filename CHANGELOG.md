@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.742.0](https://github.com/bigcommerce/checkout-js/compare/v1.741.1...v1.742.0) (2026-02-19)
+
+
+### Features
+
+* **other:** LOCAL-1444 delivery translation ([#2833](https://github.com/bigcommerce/checkout-js/issues/2833)) ([6b21c7e](https://github.com/bigcommerce/checkout-js/commit/6b21c7e2a5883b82efb9ba55d7363a90d0fd0d3e))
+
+
+### Bug Fixes
+
+* **shipping:** CHECKOUT-9768 Update address form validation to respect form fields max length setting ([#2839](https://github.com/bigcommerce/checkout-js/issues/2839)) ([faef131](https://github.com/bigcommerce/checkout-js/commit/faef1311b4281aa725dca066999e52b1e77a63b0))
+
+### [1.741.1](https://github.com/bigcommerce/checkout-js/compare/v1.741.0...v1.741.1) (2026-02-18)
+
+## [1.741.0](https://github.com/bigcommerce/checkout-js/compare/v1.740.0...v1.741.0) (2026-02-18)
+
+
+### Features
+
+* **checkout:** CHECKOUT-9808 fix order confirmation page subtotal value ([#2835](https://github.com/bigcommerce/checkout-js/issues/2835)) ([f469cf4](https://github.com/bigcommerce/checkout-js/commit/f469cf4de594500ce57d5993ec4d5f56615179f2))
+
+## [1.740.0](https://github.com/bigcommerce/checkout-js/compare/v1.739.4...v1.740.0) (2026-02-17)
+
+
+### Features
+
+* **payment:** Add Stripe Checkout Session strategy ([#2837](https://github.com/bigcommerce/checkout-js/issues/2837)) ([2eb53e2](https://github.com/bigcommerce/checkout-js/commit/2eb53e276da7d4fd9ee0ae12d83d8a314776bfff))
+
+### [1.739.4](https://github.com/bigcommerce/checkout-js/compare/v1.739.3...v1.739.4) (2026-02-17)
+
 ### [1.739.3](https://github.com/bigcommerce/checkout-js/compare/v1.739.2...v1.739.3) (2026-02-16)
 
 ### [1.739.2](https://github.com/bigcommerce/checkout-js/compare/v1.739.1...v1.739.2) (2026-02-16)
