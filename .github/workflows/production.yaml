@@ -32,7 +32,8 @@ jobs:
 
       # download from GitHub Artifacts the build artifact from test.yaml
       - name: Download build artifact from test workflow_call
-        if: github.event_name == 'workflow_call'
+        id: download_build_artifact
+        if: inputs.build_artifact_key != ''
         uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.build_artifact_key }}
@@ -43,17 +44,17 @@ jobs:
       # only need to build again if we did not pass in the build artifact from test?
       # no caching of packages, this thing should run infrequently, and we likely want to ensure a full build each time
       - name: Set up Node.js
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+        if: ${{ steps.download_build_artifact.outcome == 'skipped' }}
         uses: actions/setup-node@v6
         with:
           node-version: '22' # DOES NOT WORK WITH NODE 24
 
       - name: Install dependencies
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+        if: ${{ steps.download_build_artifact.outcome == 'skipped' }}
         run: npm ci
 
       - name: Build Node Assets
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+        if: ${{ steps.download_build_artifact.outcome == 'skipped' }}
         run: npm run build
 
       # these take upwards of 30 minutes ... not good for a pipeline like this. Should determine a better way, or if we actually even need to run them given our Playwright tests
