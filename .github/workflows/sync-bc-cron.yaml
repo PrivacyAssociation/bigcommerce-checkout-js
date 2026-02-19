@@ -53,13 +53,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # gh repo sync -b master
+          gh repo sync PrivacyAssociation/bigcommerce-checkout-js \
+            --source bigcommerce/checkout-js \
+            --branch master
           # git checkout master
           # git merge upstream/master --no-edit
-          gh api -X POST \
-            -H "Accept: application/vnd.github+json" \
-            repos/PrivacyAssociation/bigcommerce-checkout-js/merge-upstream \
-            -f branch=master
+          # gh api -X POST \
+          #   -H "Accept: application/vnd.github+json" \
+          #   repos/PrivacyAssociation/bigcommerce-checkout-js/merge-upstream \
+          #   -f branch=master
 
       # - name: Push changes to fork
       #   env:
