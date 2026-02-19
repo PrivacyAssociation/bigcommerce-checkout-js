@@ -1,9 +1,10 @@
+import classNames from 'classnames';
 import { type FormikProps, withFormik } from 'formik';
 import { noop } from 'lodash';
 import React, { type FunctionComponent, memo,  MouseEvent } from 'react';
 import { object, string } from 'yup';
 
-import { useCheckout } from '@bigcommerce/checkout/contexts';
+import { useCheckout, useThemeContext } from '@bigcommerce/checkout/contexts';
 import { preventDefault } from '@bigcommerce/checkout/dom-utils';
 import {
     TranslatedString,
@@ -48,6 +49,7 @@ const LoginForm: FunctionComponent<
     onContinueAsGuest,
     viewType = CustomerViewType.Login,
 }) => {
+    const { themeV2 } = useThemeContext();
     const { checkoutState } = useCheckout();
 
     const {
@@ -128,7 +130,8 @@ const LoginForm: FunctionComponent<
 
                     {viewType === CustomerViewType.SuggestedLogin && (
                         <a
-                            className="button optimizedCheckout-buttonSecondary body-bold"
+                            className={classNames('button optimizedCheckout-buttonSecondary',
+                                { 'body-bold': themeV2 })}
                             data-test="customer-guest-continue"
                             href="#"
                             id="checkout-guest-continue"
@@ -142,7 +145,8 @@ const LoginForm: FunctionComponent<
                         viewType !== CustomerViewType.EnforcedLogin &&
                         viewType !== CustomerViewType.SuggestedLogin && (
                             <a
-                            className="button optimizedCheckout-buttonSecondary body-bold"
+                            className={classNames('button optimizedCheckout-buttonSecondary',
+                                { 'body-bold': themeV2 })}
                                 data-test="customer-cancel-button"
                                 href="#"
                                 id="checkout-customer-cancel"
