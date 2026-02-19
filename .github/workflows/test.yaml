@@ -1,6 +1,6 @@
 name: Test Build and Deploy
 concurrency:
-  group: ${{ github.workflow }}
+  group: test-build-and-deploy
 
 on:
   # trigger on sync to BC Main from UI or CLI, or from PR merges to master
