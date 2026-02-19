@@ -38,6 +38,11 @@ jobs:
           ref: master
           fetch-depth: 0 # Fetch all history for all branches and tags
       
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "devops@iapp.org"
+      
       - name: Fetch upstream changes
         run: |
           git remote add upstream https://github.com/bigcommerce/checkout-js
