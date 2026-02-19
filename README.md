@@ -111,6 +111,10 @@ This repository uses trunk based development, with `master` being the main branc
 9* Follow the [Rollback Plan](https://iappadmin.atlassian.net/wiki/spaces/DevOps/pages/4230381994/BigCommerce+Store+Checkout+Page+Pipeline+-+Runbook#Roll-Back) from the Confluence runbooks
 10. Ensure no alerts are firing off and validate manually any changes to the page
 
+> **NOTE** IF the Playwright automation fails at the stage of running against the TEST environment, there is no auto-rollback. This means the "failed" code will be active in the sandbox BC store. 
+ 1. make sure the BC store works in TEST, and that the code changes resulting in playwright failure were non-breaking. Most commonly there are style changes that break automation
+ 2. take a new snapshot by using the GitHub Action for updating snapshots as described in [Playwright Automated Tests](.github/workflows/README.md#updating-automated-test-snapshots)
+
 ### Run Docker Locally and validate the store locally
 
 From [My Apps](https://myapps.microsoft.com/), click on BigCommerce, and login to the IAPP Akeneo Sandbox. This BC Instance is configured to import into your browser the files served at http://localhost:8080. So this instance of Sandbox will break for other people using it, as their computers won't be serving those files.

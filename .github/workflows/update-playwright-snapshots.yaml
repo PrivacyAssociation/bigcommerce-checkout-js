@@ -132,7 +132,6 @@ jobs:
           git push -u origin "$NEW_BRANCH_NAME"
           # opening a PR against master from within a Actions Workflow will NEVER trigger the pre-merge checks, meaning we can't merge it
           #  - must manually open a PR as a human or invest more backlog effort into a more complex workflow
-          if [ "${{ github.head_ref }}" != "master" ]; then
-            echo "Creating PR against feature branch ${{ github.head_ref }}"
-            gh pr create --base "${{ github.head_ref }}" --head "$NEW_BRANCH_NAME" --title "Playwright snapshot updates ${{ github.head_ref }}" --body "This PR was created automatically by GitHub Actions."
-          fi
+          echo "Creating PR against branch ${{ github.ref_name }}"
+          gh pr create --base "${{ github.ref_name }}" --head "$NEW_BRANCH_NAME" --title "Playwright snapshot updates ${{ github.ref_name }}" --body "This PR was created automatically by GitHub Actions."
+          
