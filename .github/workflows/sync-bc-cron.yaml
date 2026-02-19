@@ -35,7 +35,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
-          # ref: master
+          ref: master
           fetch-depth: 0 # Fetch all history for all branches and tags
       
       - name: Fetch upstream changes
