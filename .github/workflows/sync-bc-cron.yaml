@@ -34,7 +34,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-        with: 
+        with:
+          # ref: master
           fetch-depth: 0 # Fetch all history for all branches and tags
       
       - name: Fetch upstream changes
@@ -54,7 +55,7 @@ jobs:
       - name: Push changes to fork
         env:
           GH_TOKEN: ${{ github.token }}
-        run: git push origin main
+        run: git push origin master
 
   invoke-test-workflow:
     needs: sync-bc-main-to-master
