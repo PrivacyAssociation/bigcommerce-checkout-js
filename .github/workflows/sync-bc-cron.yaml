@@ -37,6 +37,7 @@ jobs:
         with:
           ref: master
           fetch-depth: 0 # Fetch all history for all branches and tags
+          token: ${{ secrets.UPSTREAM_SYNC_GITHUB_PAT }} # Use the PAT with repo permissions
       
       - name: Configure Git
         run: |
@@ -50,8 +51,8 @@ jobs:
           git fetch upstream
 
       - name: Sync upstream main to master
-        env:
-          GH_TOKEN: ${{ secrets.UPSTREAM_SYNC_GITHUB_PAT }}
+        # env:
+        #   GH_TOKEN: ${{ secrets.UPSTREAM_SYNC_GITHUB_PAT }}
         run: |
           # gh repo sync PrivacyAssociation/bigcommerce-checkout-js \
           #   --source bigcommerce/checkout-js \
@@ -64,8 +65,8 @@ jobs:
           #   -f branch=master
 
       - name: Push changes to fork
-        env:
-          GH_TOKEN: ${{ secrets.UPSTREAM_SYNC_GITHUB_PAT }}
+        # env:
+        #   GH_TOKEN: ${{ secrets.UPSTREAM_SYNC_GITHUB_PAT }}
         run: |
           echo "token: $GH_TOKEN"
           git push origin master
