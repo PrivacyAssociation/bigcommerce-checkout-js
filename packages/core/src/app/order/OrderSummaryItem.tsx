@@ -1,10 +1,14 @@
 import classNames from 'classnames';
 import { isNumber } from 'lodash';
-import React, { type FunctionComponent, memo, type ReactNode } from 'react';
+import React, { type FunctionComponent, memo, type ReactNode, useRef } from 'react';
+
+import { useCheckout } from '@bigcommerce/checkout/contexts';
+import { TranslatedString } from '@bigcommerce/checkout/locale';
+import { CollapseCSSTransition } from '@bigcommerce/checkout/ui';
 
 import { ShopperCurrency } from '../currency';
 
-export interface OrderSummaryItemProps {
+export interface OrderItemType {
     id: string | number;
     amount: number;
     quantity: number;
@@ -13,6 +17,14 @@ export interface OrderSummaryItemProps {
     image?: ReactNode;
     description?: ReactNode;
     productOptions?: OrderSummaryItemOption[];
+    quantityBackordered?: number;
+    quantityOnHand?: number;
+    backorderMessage?: string;
+}
+
+interface OrderSummaryItemProps {
+    orderItem: OrderItemType;
+    shouldExpandBackorderDetails: boolean;
 }
 
 export interface OrderSummaryItemOption {
@@ -20,15 +32,70 @@ export interface OrderSummaryItemOption {
     content: ReactNode;
 }
 
+const OrderSummaryItemBackorderDetails = ({ isExpanded, quantityBackordered, quantityOnHand, backorderMessage }: { isExpanded: boolean, quantityBackordered?: number, quantityOnHand?: number, backorderMessage?: string }) => {
+    const backorderDetailsRef = useRef<HTMLDivElement>(null);
+    const { checkoutState } = useCheckout();
+    const config = checkoutState.data.getConfig();
+
+    const inventorySettings = config?.inventorySettings;
+    const showQuantityOnBackorder = !!inventorySettings?.showQuantityOnBackorder;
+    const showBackorderMessage = !!inventorySettings?.showBackorderMessage;
+    const shouldDisplayBackorderMessagesOnStorefront = !!inventorySettings?.shouldDisplayBackorderMessagesOnStorefront;
+
+    if (!shouldDisplayBackorderMessagesOnStorefront || (!showQuantityOnBackorder && !showBackorderMessage)) {
+        return null;
+    }
+
+    const shouldDisplayQuantityOnHand = showQuantityOnBackorder && !!quantityOnHand;
+    const shouldDisplayQuantityOnBackorder = showQuantityOnBackorder && !!quantityBackordered;
+    const shouldDisplayBackorderMessage = showBackorderMessage && !!backorderMessage && !!quantityBackordered;
+
+    return (
+        <CollapseCSSTransition isVisible={isExpanded} nodeRef={backorderDetailsRef}>
+            <div className="product-backorder-details-container" ref={backorderDetailsRef}>
+                {shouldDisplayQuantityOnHand && (
+                    <div className="sub-text" data-test="cart-item-onhand-qty">
+                        <TranslatedString
+                            data={{ count: quantityOnHand }}
+                            id="cart.ready_to_ship_count_text"
+                        />
+                    </div>
+                )}
+                {shouldDisplayQuantityOnBackorder && (
+                    <div className="sub-text" data-test="cart-item-backorder-qty">
+                        <TranslatedString
+                            data={{ count: quantityBackordered }}
+                            id="cart.backorder_count_text"
+                        />
+                    </div>
+                )}
+                {shouldDisplayBackorderMessage && (
+                    <div className="sub-text" data-test="cart-item-backorder-message">
+                        {backorderMessage}
+                    </div>
+                )}
+            </div>
+        </CollapseCSSTransition>
+    );
+};
+
 const OrderSummaryItem: FunctionComponent<OrderSummaryItemProps> = ({
-    amount,
-    amountAfterDiscount,
-    image,
-    name,
-    productOptions,
-    quantity,
-    description,
+    orderItem,
+    shouldExpandBackorderDetails,
 }) => {
+    const {
+        amount,
+        amountAfterDiscount,
+        image,
+        name,
+        productOptions,
+        quantity,
+        description,
+        quantityBackordered,
+        quantityOnHand,
+        backorderMessage,
+    } = orderItem;
+
     return (
         <div className="product" data-test="cart-item">
             <figure className="product-column product-figure">{image}</figure>
@@ -63,6 +130,7 @@ const OrderSummaryItem: FunctionComponent<OrderSummaryItemProps> = ({
                         {description}
                     </div>
                 )}
+                <OrderSummaryItemBackorderDetails backorderMessage={backorderMessage} isExpanded={shouldExpandBackorderDetails} quantityBackordered={quantityBackordered} quantityOnHand={quantityOnHand} />
             </div>
 
             <div className="product-column product-actions">
