@@ -1,4 +1,5 @@
 /* istanbul ignore file */
+export { CollapseCSSTransition } from './animation';
 export { Alert, AlertType } from './alert';
 export {
     Accordion,

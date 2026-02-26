@@ -43,7 +43,7 @@ import {
     isCartChangedError,
     isErrorWithType,
 } from '../common/error';
-import { EMPTY_ARRAY } from '../common/utility';
+import { EMPTY_ARRAY, isExperimentEnabled } from '../common/utility';
 import { TermsConditionsType } from '../termsConditions';
 
 import mapSubmitOrderErrorMessage, { mapSubmitOrderErrorTitle } from './mapSubmitOrderErrorMessage';
@@ -149,6 +149,7 @@ interface WithCheckoutPaymentProps {
     methods: PaymentMethod[];
     shouldExecuteSpamCheck: boolean;
     shouldLocaliseErrorMessages: boolean;
+    shouldShowSubmitPaymentButton: boolean;
     submitOrderError?: Error;
     termsConditionsText?: string;
     termsConditionsUrl?: string;
@@ -598,15 +599,16 @@ const Payment= (props: PaymentProps & WithCheckoutPaymentProps & WithLanguagePro
     const { selectedMethod = props.defaultMethod } = state;
     const uniqueSelectedMethodId =
         selectedMethod && getUniquePaymentMethodId(selectedMethod.id, selectedMethod.gateway);
+    const shouldShowPaymentForm = props.shouldShowSubmitPaymentButton || (!isEmpty(props.methods) && props.defaultMethod);
 
     return (
         <PaymentContext.Provider value={getContextValue()}>
             <ChecklistSkeleton isLoading={!state.isReady}>
-                {!isEmpty(props.methods) && props.defaultMethod && (
+                {shouldShowPaymentForm &&
                     <PaymentForm
                         availableStoreCredit={props.availableStoreCredit}
-                        defaultGatewayId={props.defaultMethod.gateway}
-                        defaultMethodId={props.defaultMethod.id}
+                        defaultGatewayId={props.defaultMethod?.gateway}
+                        defaultMethodId={props.defaultMethod?.id || ''}
                         didExceedSpamLimit={state.didExceedSpamLimit}
                         isEmbedded={props.isEmbedded}
                         isInitializingPayment={props.isInitializingPayment}
@@ -628,7 +630,7 @@ const Payment= (props: PaymentProps & WithCheckoutPaymentProps & WithLanguagePro
                         usableStoreCredit={props.usableStoreCredit}
                         validationSchema={(uniqueSelectedMethodId && validationSchemasRef.current[uniqueSelectedMethodId]) || undefined}
                     />
-                )}
+                }
             </ChecklistSkeleton>
 
             {renderOrderErrorModal()}
@@ -707,6 +709,7 @@ export function mapToPaymentProps({
         shouldExecuteSpamCheck: checkout.shouldExecuteSpamCheck,
         shouldLocaliseErrorMessages:
             features['PAYMENTS-6799.localise_checkout_payment_error_messages'],
+        shouldShowSubmitPaymentButton: isExperimentEnabled(config.checkoutSettings, 'CHECKOUT-9729.show_submit_button_when_payment_not_required', false),
         submitOrder: checkoutService.submitOrder,
         submitOrderError: getSubmitOrderError(),
         checkoutServiceSubscribe: checkoutService.subscribe,

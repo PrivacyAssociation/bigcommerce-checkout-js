@@ -2,6 +2,75 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.748.1](https://github.com/bigcommerce/checkout-js/compare/v1.748.0...v1.748.1) (2026-02-25)
+
+## [1.748.0](https://github.com/bigcommerce/checkout-js/compare/v1.747.0...v1.748.0) (2026-02-25)
+
+
+### Features
+
+* **checkout:** CHECKOUT-9783 Add transition to summary drawer ([#2849](https://github.com/bigcommerce/checkout-js/issues/2849)) ([612d385](https://github.com/bigcommerce/checkout-js/commit/612d38505ec1cc5160c8c56b3598b10446adec43))
+
+## [1.747.0](https://github.com/bigcommerce/checkout-js/compare/v1.746.0...v1.747.0) (2026-02-24)
+
+
+### Features
+
+* **checkout:** BACK-330 Apply BO quantities on digital items ([293610c](https://github.com/bigcommerce/checkout-js/commit/293610c0de69606967bff9d82ef1370d70b28766))
+* **checkout:** BACK-330 Apply review comments ([219eec1](https://github.com/bigcommerce/checkout-js/commit/219eec16f6aeacf74b171ae2b31cb65115e1763e))
+* **checkout:** BACK-330 Display backorder details on order summery ([65b2b53](https://github.com/bigcommerce/checkout-js/commit/65b2b53bb0e77f0938b890ef78ba39c472d1b8e0))
+* **checkout:** BACK-330 Respect user-set BO inventory settings ([848414b](https://github.com/bigcommerce/checkout-js/commit/848414b8f4374954b64c591bd6312957d286a25b))
+
+
+### Bug Fixes
+
+* **checkout:** BACK-330 Fix typo ([d07b02a](https://github.com/bigcommerce/checkout-js/commit/d07b02a8c73909a0fad236e53c72b29f51598066))
+
+## [1.746.0](https://github.com/bigcommerce/checkout-js/compare/v1.745.2...v1.746.0) (2026-02-24)
+
+
+### Features
+
+* **payment:** Update Stripe Accordion styling to match ThemeV2 ([2aa9b5f](https://github.com/bigcommerce/checkout-js/commit/2aa9b5fc204e0780481397c0643c91549a16878f))
+
+### [1.745.2](https://github.com/bigcommerce/checkout-js/compare/v1.745.1...v1.745.2) (2026-02-24)
+
+
+### Bug Fixes
+
+* **checkout:** CHECKOUT-9729 Fix payment step empty issue ([#2845](https://github.com/bigcommerce/checkout-js/issues/2845)) ([3612032](https://github.com/bigcommerce/checkout-js/commit/3612032074f4c8c4cc8ee084abcfa9cb456e2d9a))
+
+### [1.745.1](https://github.com/bigcommerce/checkout-js/compare/v1.745.0...v1.745.1) (2026-02-23)
+
+
+### Bug Fixes
+
+* **payment:** CHECKOUT-9773 Fix Empty CC Containers Issue ([#2842](https://github.com/bigcommerce/checkout-js/issues/2842)) ([b3e740c](https://github.com/bigcommerce/checkout-js/commit/b3e740cbd948733bc1272b098e038cdb69f634ac))
+
+## [1.745.0](https://github.com/bigcommerce/checkout-js/compare/v1.744.1...v1.745.0) (2026-02-23)
+
+
+### Features
+
+* **shipping:** BACK-424 Add bacorder details to multi-shipping line items ([ecc5a99](https://github.com/bigcommerce/checkout-js/commit/ecc5a99c471439597c33e4710ee580de4720d42e))
+* **shipping:** BACK-424 Respect showQuantityOnBackorder inventory setting ([b2ef5d5](https://github.com/bigcommerce/checkout-js/commit/b2ef5d59eb4d85b9961ab02922b0b36a2accffcc))
+
+### [1.744.1](https://github.com/bigcommerce/checkout-js/compare/v1.744.0...v1.744.1) (2026-02-23)
+
+## [1.744.0](https://github.com/bigcommerce/checkout-js/compare/v1.743.0...v1.744.0) (2026-02-23)
+
+
+### Features
+
+* **checkout:** CHECKOUT-8842 Display shipping cost after discount ([#2841](https://github.com/bigcommerce/checkout-js/issues/2841)) ([a02d743](https://github.com/bigcommerce/checkout-js/commit/a02d74351eefb733dbcad03df32b5e8aa6345b73))
+
+## [1.743.0](https://github.com/bigcommerce/checkout-js/compare/v1.742.0...v1.743.0) (2026-02-19)
+
+
+### Features
+
+* **checkout:** CHECKOUT-9760 Transition animation for order summary ([#2773](https://github.com/bigcommerce/checkout-js/issues/2773)) ([2f2e9db](https://github.com/bigcommerce/checkout-js/commit/2f2e9db0d21140062b70491f1b122637ca155098))
+
 ## [1.742.0](https://github.com/bigcommerce/checkout-js/compare/v1.741.1...v1.742.0) (2026-02-19)
 
 
