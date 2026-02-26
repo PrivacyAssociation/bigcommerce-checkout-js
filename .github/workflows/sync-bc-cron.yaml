@@ -66,7 +66,9 @@ jobs:
       - name: Push changes to fork
         env:
           GH_TOKEN: ${{ secrets.UPSTREAM_SYNC_GITHUB_PAT }}
-        run: git push origin master
+        run: |
+          echo "token: $GH_TOKEN"
+          git push origin master
 
   invoke-test-workflow:
     needs: sync-bc-main-to-master
