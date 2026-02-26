@@ -71,10 +71,13 @@ jobs:
           echo "token: $GH_TOKEN"
           git push origin master
 
-  invoke-test-workflow:
-    needs: sync-bc-main-to-master
-    if: (needs.sync-bc-main-to-master.result == 'success')
-    uses: ./.github/workflows/test.yaml
-    secrets: inherit
-    with:
-      build_run_id: ${{ github.run_id }} 
+ # TODO it looks like the prior git push will in fact trigger the push event GitHub Actions workflows to deploy to test and prod
+ #   this is because we are now using a personal access token to trigger the push as opposed to the default github actions token
+  
+  # invoke-test-workflow:
+  #   needs: sync-bc-main-to-master
+  #   if: (needs.sync-bc-main-to-master.result == 'success')
+  #   uses: ./.github/workflows/test.yaml
+  #   secrets: inherit
+  #   with:
+  #     build_run_id: ${{ github.run_id }} 
