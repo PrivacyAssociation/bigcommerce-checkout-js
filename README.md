@@ -2,7 +2,15 @@
 
 Hello fellow IAPP developer. First of all, you might be like "Why all this nonsense for a single page on a third party site?". Wellp the BigCommerce storefront is pulling in tens of millions of dollars per year in revenue, and using the Storefront->Script Manager to over write the default login behavior frequently broke whenever BC updated their markup. Not exactly optimal uptime for an enterprise ecommerce app. We also wanted finer control over checkout experience (maybe add in some promotional code), so here we are!
 
-## Big Commerce Links
+- [Design and Development](#design-and-development)
+- [Network Architecture and Infrastructure as Code](infra/README.md)
+  - [Alerts](infra/README.md#alerts)
+- [Build and Deploy](.github/workflows/README.md)
+  - [Playwright Automated Tests](automated-testing/README.md)
+
+# Design and Development
+
+**Big Commerce Links**
 
 [![BC DeepWiki (ai powered)](https://deepwiki.com/badge.svg)](https://deepwiki.com/bigcommerce/checkout-js)\
 [Optimized One-Page Checkout](https://support.bigcommerce.com/s/article/Optimized-Single-Page-Checkout)\
@@ -14,7 +22,6 @@ Hello fellow IAPP developer. First of all, you might be like "Why all this nonse
 ## Requirements
 
 The repo requires the below environment to compile.
-The repo requires the below environment to compile.
 
 - Node >= v22.
 - NPM >= v10.
@@ -65,77 +72,21 @@ docker run -p 8080:8080 -d --name bc-checkout-dev bigcommerce-checkout
 
 8. RUN
 
-- Node >= v22.
-- NPM >= v10.
-- Unix-based operating system. (WSL on Windows (they are fibbing here))
-
-But that is really hard to get working on a standard IAPP development laptop because Nicole hates us having Macs.
-To work around this we are going to install a docker environment locally and build from there.
-
-To install Docker on your local machine, use the "company portal" application installed on your machine (just type that into the search bar).
-[Company Portal](https://iappadmin.atlassian.net/servicedesk/customer/portal/30/article/2616819713?source=search)
-You may need to install windows WSL and some other dependencies too, you can request local admin access using our PIM system.
-[PIM](https://iappadmin.atlassian.net/servicedesk/customer/article/2921693187)
-
-## Docker Setup
-
-1. Head on over to your local repo directory, which in my case is at: C:\Users\DavidOstrander\00_IappWork\ .
-2. Next open up a GitBash terminal.
-3. Run `git clone https://github.com/bigcommerce/checkout-js.git` to grab a local copy.
-4. RUN `cd bigcommerce-checkout-js`
-5. RUN
-
 ```sh
-# Add the original repository as upstream
-git remote add upstream https://github.com/bigcommerce/checkout-js
-# should see the original repo listed
-git remote -v
-# Get updates from parent repo
-git fetch upstream
-# merge the master repo's main branch into your local repo:
-git merge upstream master
-# Make sure when you create your PR's "privacy association" as root and destination.
-
-```
-
-6. RUN
-
-```sh
-# Build your local Linux/Node image
-docker build -t bigcommerce-checkout .
-```
-
-7. RUN
-
-```sh
-# Boot up your image into a working container
-docker run -p 8080:8080 -d --name bc-checkout-dev bigcommerce-checkout
-```
-
-8. RUN
-
-```sh
-# Login to our container and access a terminal
-docker exec -it bc-checkout-dev sh
 # Login to our container and access a terminal
 docker exec -it bc-checkout-dev sh
 ```
 
 9. RUN
-10. RUN
 
 ```sh
-# install all dependencies (ci = clean install)
-npm ci
 # install all dependencies (ci = clean install)
 npm ci
 ```
 
 10. RUN
-11. RUN
 
 ```sh
-# This will create the build folder in the container and should make your files available locally
 # This will create the build folder in the container and should make your files available locally
 npm run dev
 ```
@@ -145,6 +96,27 @@ npm run dev
 If you see an "Index of / " web page, with a bunch of linked files including "auto-loader-dev.js". You are good to go!
 
 ## Local Development
+
+This repository uses trunk based development, with `master` being the main branch. There is a [GitHub Actions Workflow](.github/workflows/README.md) which orchestrates moving code from feature branch, to the TEST and PRODUCTION environments
+
+1. Create a new feature branch off `master`
+2. Follow below steps to [run docker locally](#run-docker-locally-and-validate-the-store-locally) and validate changes to the assets with localDev
+3. Open a Pull Request against the `master` branch in GitHub
+4. If any [CDK IaC](infra/README.md) changes are needed, deploy those locally first as they are not part of the pipeline
+5. The PR will kick off the GitHub Actions workflow for the TEST Store Checkout Assets
+6. The [Playwright Automated Tests](automated-testing/README.md) will validate the TEST store, block the merge to `master` if they fail
+7. PR requires 2 approvals
+8. Once merged, the GitHub Actions workflow for the PRODUCTION Store Checkout Assets kicks off
+9. The Playwright Automated Tests will validate the PRODUCTION environment for regressions
+   9\* Follow the [Rollback Plan](https://iappadmin.atlassian.net/wiki/spaces/DevOps/pages/4230381994/BigCommerce+Store+Checkout+Page+Pipeline+-+Runbook#Roll-Back) from the Confluence runbooks
+10. Ensure no alerts are firing off and validate manually any changes to the page
+
+> **NOTE** IF the Playwright automation fails at the stage of running against the TEST environment, there is no auto-rollback. This means the "failed" code will be active in the sandbox BC store.
+
+1.  make sure the BC store works in TEST, and that the code changes resulting in playwright failure were non-breaking. Most commonly there are style changes that break automation
+2.  take a new snapshot by using the GitHub Action for updating snapshots as described in [Playwright Automated Tests](.github/workflows/README.md#updating-automated-test-snapshots)
+
+### Run Docker Locally and validate the store locally
 
 From [My Apps](https://myapps.microsoft.com/), click on BigCommerce, and login to the IAPP Akeneo Sandbox. This BC Instance is configured to import into your browser the files served at http://localhost:8080. So this instance of Sandbox will break for other people using it, as their computers won't be serving those files.
 
@@ -157,49 +129,25 @@ I suggest opening two gitbash terminals, one for copying the file, and one logge
 docker cp ./packages/core/src/app/customer/LoginForm.tsx bc-checkout-dev:/usr/src/app/packages/core/src/app/customer/LoginForm.tsx
 ```
 
-# First terminal: copy files from your local machine to the container
-
-docker cp ./packages/core/src/app/customer/LoginForm.tsx bc-checkout-dev:/usr/src/app/packages/core/src/app/customer/LoginForm.tsx
-
-````
-
 ```sh
 #Second terminal: Login to the container
 docker exec -it bc-checkout-dev sh
-#Second terminal: Login to the container
-docker exec -it bc-checkout-dev sh
-````
+```
 
 ```sh
-#Second terminal: After copying your files into ther container from your local, build them.
-npm run build
 #Second terminal: After copying your files into ther container from your local, build them.
 npm run build
 ```
 
 You should be able to view your changes in the checkout app inside of the IAPP Akeneo Sandbox instance, or (more likely) extremely verbose errors in your npm build terminal.
 
-## Custom Checkout installation into your store
+#### Custom Checkout installation into your store
 
 Follow [this guide](https://developer.bigcommerce.com/stencil-docs/customizing-checkout/installing-custom-checkouts) for instructions on how to fork and install this app as a Custom Checkout in your store.
 
 And enter the local URL for `auto-loader-dev.js` in Checkout Settings, e.g `http://127.0.0.1:8080/auto-loader-dev.js`
 
 ## BC CI/CD Release
-
-## BC CI/CD Release
-
-Everytime a BC PR is merged to the master branch, CircleCI will trigger a build automatically. However, it won't create a new Git release until it is approved by a person with write access to the repository. We should periodically merge in the BC master branch into our fork. That includes adding the parent repo as a git upstream repo and doing some git magic:
-
-```sh
-git remote add upstream https://github.com/bigcommerce/checkout-js
-git remote -v
-git fetch upstream
-git checkout master
-git merge upstream/master
-git push origin master
-#at this point our remote fork will be synced with the BC main
-```
 
 Everytime a BC PR is merged to the master branch, CircleCI will trigger a build automatically. However, it won't create a new Git release until it is approved by a person with write access to the repository. We should periodically merge in the BC master branch into our fork. That includes adding the parent repo as a git upstream repo and doing some git magic:
 
