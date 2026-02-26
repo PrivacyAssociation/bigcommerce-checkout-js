@@ -4,9 +4,9 @@ import React from 'react';
 import { TranslatedString } from '@bigcommerce/checkout/locale';
 
 import getOrderSummaryItemImage from './getOrderSummaryItemImage';
-import { type OrderSummaryItemOption, type OrderSummaryItemProps } from './OrderSummaryItem';
+import { type OrderItemType, type OrderSummaryItemOption } from './OrderSummaryItem';
 
-function mapFromDigital(item: DigitalItem): OrderSummaryItemProps {
+function mapFromDigital(item: DigitalItem): OrderItemType {
     return {
         id: item.id,
         quantity: item.quantity,
@@ -21,6 +21,9 @@ function mapFromDigital(item: DigitalItem): OrderSummaryItemProps {
             })),
             getDigitalItemDescription(item),
         ],
+        quantityBackordered: item.stockPosition?.quantityBackordered,
+        quantityOnHand: item.stockPosition?.quantityOnHand,
+        backorderMessage: item.stockPosition?.backorderMessage || undefined,
     };
 }
 

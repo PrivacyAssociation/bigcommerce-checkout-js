@@ -660,17 +660,30 @@ describe('Shipping step', () => {
         await userEvent.type(screen.getByLabelText('Custom Message'), 'Custom message text');
         await userEvent.type(screen.getByLabelText('Custom Number'), '123');
 
-        // TODO: CHECKOUT-9049 bug to be fixed (should be no more than 6 characters)
-        expect(screen.getByText('Custom Number should be no more than 6 characters')).toBeInTheDocument();
+        expect(screen.getByText('Custom Number must be between 3 and 5')).toBeInTheDocument();
 
         await userEvent.clear(screen.getByLabelText('Custom Number'));
         await userEvent.type(screen.getByLabelText('Custom Number'), '2');
 
-        // TODO: CHECKOUT-9049 bug to be fixed (should be no less than 2 characters)
-        expect(screen.getByText('Custom Number should be no less than 2 characters')).toBeInTheDocument();
+        expect(screen.getByText('Custom Number must be between 3 and 5')).toBeInTheDocument();
 
         await userEvent.clear(screen.getByLabelText('Custom Number'));
         await userEvent.type(screen.getByLabelText('Custom Number'), '3');
+
+        await userEvent.type(screen.getByLabelText('Number with min validation (Optional)'), '2');
+
+        expect(screen.getByText('Number with min validation must be greater than or equal to 5')).toBeInTheDocument();
+
+        await userEvent.clear(screen.getByLabelText('Number with min validation (Optional)'));
+        await userEvent.type(screen.getByLabelText('Number with min validation (Optional)'), '6');
+
+        await userEvent.clear(screen.getByLabelText('Number with max validation (Optional)'));
+        await userEvent.type(screen.getByLabelText('Number with max validation (Optional)'), '11');
+
+        expect(screen.getByText('Number with max validation must be less than or equal to 10')).toBeInTheDocument();
+
+        await userEvent.clear(screen.getByLabelText('Number with max validation (Optional)'));
+        await userEvent.type(screen.getByLabelText('Number with max validation (Optional)'), '9');
 
         const customCheckbox = screen.getByText('Custom Checkbox');
 
@@ -777,6 +790,43 @@ describe('Shipping step', () => {
             expect(checkoutService.selectConsignmentShippingOption).toHaveBeenCalled();
             // eslint-disable-next-line testing-library/no-container,testing-library/no-node-access
             expect(container.getElementsByClassName('form-checklist-item--selected')[0]).toHaveTextContent('Flat Rate$10.00');
+        });
+
+        it('displays strikethrough on shipping option when costAfterDiscount differs from cost', async () => {
+            checkoutService = checkout.use(CheckoutPreset.CheckoutWithBillingEmail);
+
+            jest.spyOn(checkoutService, 'updateShippingAddress');
+
+            render(<CheckoutTest {...defaultProps} />);
+
+            await checkout.waitForShippingStep();
+
+            checkout.updateCheckout(
+                'post',
+                '/checkouts/xxxxxxxxxx-xxxx-xxax-xxxx-xxxxxx/consignments',
+                {
+                    ...checkoutWithBillingEmail,
+                    consignments: [
+                        {
+                            ...consignment,
+                            selectedShippingOption: undefined,
+                        },
+                    ],
+                },
+            );
+            checkout.updateCheckout(
+                'put',
+                '/checkouts/xxxxxxxxxx-xxxx-xxax-xxxx-xxxxxx/consignments/consignment-1',
+                {
+                    ...checkoutWithShipping,
+                },
+            );
+
+            await checkout.fillAddressForm();
+
+            expect(screen.getByRole('radio', { name: 'Pickup In Store $3.00' })).toBeInTheDocument();
+            expect(screen.getByRole('radio', { name: 'Flat Rate $10.00' })).toBeInTheDocument();
+            expect(screen.getByRole('radio', { name: 'Ship by Weight $30.00 $20.00' })).toBeInTheDocument();
         });
     });
 

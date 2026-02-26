@@ -4,11 +4,10 @@ import {
     type ShopperCurrency,
     type StoreCurrency,
 } from '@bigcommerce/checkout-sdk/essential';
-import classNames from 'classnames';
-import React, { type FunctionComponent, type ReactNode, useMemo } from 'react';
+import React, { type FunctionComponent, type ReactNode } from 'react';
 
 import { Extension } from '@bigcommerce/checkout/checkout-extension';
-import { useCheckout, useThemeContext } from '@bigcommerce/checkout/contexts';
+import { useCheckout, useLocale } from '@bigcommerce/checkout/contexts';
 import { TranslatedHtml, TranslatedString } from '@bigcommerce/checkout/locale';
 
 import { isExperimentEnabled } from '../common/utility';
@@ -20,7 +19,6 @@ import OrderSummaryPrice from './OrderSummaryPrice';
 import OrderSummarySection from './OrderSummarySection';
 import OrderSummarySubtotals, { type OrderSummarySubtotalsProps } from './OrderSummarySubtotals';
 import OrderSummaryTotal from './OrderSummaryTotal';
-import removeBundledItems from './removeBundledItems';
 
 export interface OrderSummaryProps {
     lineItems: LineItemMap;
@@ -29,6 +27,7 @@ export interface OrderSummaryProps {
     storeCurrency: StoreCurrency;
     shopperCurrency: ShopperCurrency;
     additionalLineItems?: ReactNode;
+    showHeader?: boolean;
 }
 
 const OrderSummary: FunctionComponent<OrderSummaryProps & OrderSummarySubtotalsProps> = ({
@@ -40,40 +39,65 @@ const OrderSummary: FunctionComponent<OrderSummaryProps & OrderSummarySubtotalsP
     storeCurrency,
     taxes,
     total,
+    showHeader = true,
     ...orderSummarySubtotalsProps
 }) => {
-    const { checkoutState } = useCheckout();
-    const { checkoutSettings } = checkoutState.data.getConfig() ?? {};
-
-    // TODO: When removing the experiment, rename `NewOrderSummarySubtotals` to `OrderSummarySubtotals`.
-    const isMultiCouponEnabled = isExperimentEnabled(checkoutSettings, 'PROJECT-7321-5991.multi-coupon-cart-checkout', false);
-
-    const nonBundledLineItems = useMemo(() => removeBundledItems(lineItems), [lineItems]);
     const displayInclusiveTax = isTaxIncluded && taxes && taxes.length > 0;
 
-    const { themeV2 } = useThemeContext();
+    const { currency } = useLocale();
+
+    // TODO: When removing the experiment, rename `NewOrderSummarySubtotals` to `OrderSummarySubtotals`.
+    const { checkoutState } = useCheckout();
+    const { checkoutSettings } = checkoutState.data.getConfig() ?? {};
+    const checkout = checkoutState.data.getCheckout();
+    const order = checkoutState.data.getOrder();
+    
+    const isMultiCouponEnabled = isExperimentEnabled(checkoutSettings, 'CHECKOUT-9674.multi_coupon_cart_checkout', false);
+    const isMultiCouponEnabledForCheckout = isMultiCouponEnabled && !!checkout;
+    const isMultiCouponEnabledForOrder = isMultiCouponEnabled && !checkout && !!order;
+    
+    let totalDiscount;
+    
+    if (isMultiCouponEnabledForCheckout) {
+        totalDiscount = checkout.totalDiscount;
+    }
+
+    if (isMultiCouponEnabledForOrder) {
+        totalDiscount = order.totalDiscount;
+    }
+
+    if (!currency) {
+        return null;
+    }
+
+    const isTotalDiscountVisible = Boolean(totalDiscount && totalDiscount > 0);
 
     return (
         <article className="cart optimizedCheckout-orderSummary" data-test="cart">
-            <OrderSummaryHeader>{headerLink}</OrderSummaryHeader>
+            {showHeader && <OrderSummaryHeader>{headerLink}</OrderSummaryHeader>}
 
             <OrderSummarySection>
-                <OrderSummaryItems displayLineItemsCount items={nonBundledLineItems} themeV2={themeV2} />
+                <OrderSummaryItems displayLineItemsCount items={lineItems} />
             </OrderSummarySection>
 
             <Extension region={ExtensionRegion.SummaryLastItemAfter} />
 
-            {isMultiCouponEnabled
+            {isMultiCouponEnabledForCheckout || isMultiCouponEnabledForOrder
                 ? <NewOrderSummarySubtotals
                         fees={orderSummarySubtotalsProps.fees}
                         giftWrappingAmount={orderSummarySubtotalsProps.giftWrappingAmount}
                         handlingAmount={orderSummarySubtotalsProps.handlingAmount}
+                        isOrderConfirmation={isMultiCouponEnabledForOrder}
                         isTaxIncluded={isTaxIncluded}
                         storeCreditAmount={orderSummarySubtotalsProps.storeCreditAmount}
                         taxes={taxes}
                     />
                 : <OrderSummarySection>
-                    <OrderSummarySubtotals isTaxIncluded={isTaxIncluded} taxes={taxes} {...orderSummarySubtotalsProps} />
+                    <OrderSummarySubtotals
+                        isTaxIncluded={isTaxIncluded}
+                        taxes={taxes}
+                        {...orderSummarySubtotalsProps}
+                    />
                     {additionalLineItems}
                 </OrderSummarySection>
             }
@@ -84,10 +108,10 @@ const OrderSummary: FunctionComponent<OrderSummaryProps & OrderSummarySubtotalsP
                     shopperCurrencyCode={shopperCurrency.code}
                     storeCurrencyCode={storeCurrency.code}
                 />
-                {isMultiCouponEnabled &&
+                {(isTotalDiscountVisible && totalDiscount) &&
                     <div className="total-savings">
                         <TranslatedHtml
-                            data={{ totalSaving: '$75.64' }}
+                            data={{ totalDiscount: currency.toCustomerCurrency(totalDiscount) }}
                             id="redeemable.total_savings_text"
                         />
                     </div>
@@ -96,8 +120,7 @@ const OrderSummary: FunctionComponent<OrderSummaryProps & OrderSummarySubtotalsP
 
             {displayInclusiveTax && <OrderSummarySection>
                 <h5
-                    className={classNames('cart-taxItem cart-taxItem--subtotal optimizedCheckout-contentPrimary',
-                        { 'body-regular': themeV2 })}
+                    className="cart-taxItem cart-taxItem--subtotal optimizedCheckout-contentPrimary body-regular"
                     data-test="tax-text"
                 >
                     <TranslatedString

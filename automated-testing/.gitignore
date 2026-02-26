@@ -1,0 +1,11 @@
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+state.json
+**/win32/**.png
+**/user-config.json

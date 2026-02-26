@@ -25,6 +25,7 @@ import {
     mapAddressFromFormValues,
     mapAddressToFormValues,
 } from '../address';
+import { isErrorWithType } from '../common/error';
 import { withFormikExtended } from '../common/form';
 import { getCustomFormFieldsValidationSchema } from '../formFields';
 import { PaymentMethodId } from '../payment/paymentMethod';
@@ -51,6 +52,7 @@ export interface SingleShippingFormProps {
     shouldShowOrderComments: boolean;
     isInitialValueLoaded: boolean;
     shippingFormRenderTimestamp?: number;
+    validateMaxLength: boolean;
     deinitialize(options: ShippingRequestOptions): Promise<CheckoutSelectors>;
     deleteConsignments(): Promise<Address | undefined>;
     getFields(countryCode?: string): FormField[];
@@ -105,7 +107,7 @@ class SingleShippingForm extends PureComponent<
     ) {
         super(props);
 
-        const { updateAddress } = this.props;
+        const { updateAddress, onUnhandledError = noop } = this.props;
 
         this.debouncedUpdateAddress = debounce(
             async (address: Address, includeShippingOptions: boolean) => {
@@ -120,6 +122,10 @@ class SingleShippingForm extends PureComponent<
 
                     if (includeShippingOptions) {
                         this.setState({ hasRequestedShippingOptions: true });
+                    }
+                } catch (error) {
+                    if (isErrorWithType(error) && error.type === 'empty_cart') {
+                        return onUnhandledError(error);
                     }
                 } finally {
                     this.setState({ isUpdatingShippingData: false });
@@ -186,6 +192,7 @@ class SingleShippingForm extends PureComponent<
             values: { shippingAddress: addressForm },
             isShippingStepPending,
             shippingFormRenderTimestamp,
+            validateMaxLength,
         } = this.props;
 
         const { isResettingAddress, isUpdatingShippingData, hasRequestedShippingOptions } =
@@ -213,6 +220,7 @@ class SingleShippingForm extends PureComponent<
                         onUnhandledError={onUnhandledError}
                         onUseNewAddress={this.onUseNewAddress}
                         shippingAddress={shippingAddress}
+                        validateMaxLength={validateMaxLength}
                     />
                     {shouldShowBillingSameAsShipping && (
                         <div className="form-body">
@@ -363,22 +371,24 @@ export default withLanguage(
                 shippingAddress,
             ),
         }),
-        isInitialValid: ({ shippingAddress, getFields, language }) =>
+        isInitialValid: ({ shippingAddress, getFields, language, validateMaxLength }) =>
             !!shippingAddress &&
             getAddressFormFieldsValidationSchema({
                 language,
                 formFields: getFields(shippingAddress.countryCode),
+                validateMaxLength,
             }).isValidSync(shippingAddress),
         validationSchema: ({
             language,
             getFields,
             methodId,
+            validateMaxLength,
         }: SingleShippingFormProps & WithLanguageProps) =>
             shouldHaveCustomValidation(methodId)
                 ? object({
                       shippingAddress: lazy<Partial<AddressFormValues>>((formValues) =>
                           getCustomFormFieldsValidationSchema({
-                              translate: getTranslateAddressError(language),
+                              translate: getTranslateAddressError(getFields(formValues && formValues.countryCode), language),
                               formFields: getFields(formValues && formValues.countryCode),
                           }),
                       ),
@@ -388,6 +398,7 @@ export default withLanguage(
                           getAddressFormFieldsValidationSchema({
                               language,
                               formFields: getFields(formValues && formValues.countryCode),
+                              validateMaxLength,
                           }),
                       ),
                   }),

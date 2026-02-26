@@ -18,6 +18,9 @@
             "custom_required_error": "{label} måste anges",
             "custom_min_error": "{label} får inte vara mindre än {min} tecken",
             "custom_max_error": "{label} får inte vara mer än {max} tecken",
+            "custom_min_number_error": "{label} must be greater than or equal to {min}",
+            "custom_max_number_error": "{label} must be less than or equal to {max}",
+            "custom_range_error": "{label} must be between {min} and {max}",
             "invalid_characters_error": "{label} innehåller ogiltiga tecken",
             "custom_valid_error": "{label} är inte giltig",
             "edit_address_action": "Redigera adress",
@@ -57,6 +60,7 @@
             "discount_text": "Rabatt",
             "downloads_action": "Gå till nedladdningar",
             "edit_cart_action": "Redigera kundvagn",
+            "go_to_cart_action": "Kundvagn",
             "edit_multi_shipping_cart_message": "Nya objekt skickas som standard till leveransdestination nr 1. Byt destination om du vill att de ska skickas någon annanstans.",
             "estimated_total_text": "Beräknad totalsumma",
             "free_text": "Gratis",
@@ -65,12 +69,15 @@
             "item": "Vara",
             "items": "varor",
             "item_count_text": "{count, plural, one{1 Item} other{# Items} }",
+            "backorder_count_text": "{count} kommer att restnoteras",
             "print_action": "Skriva ut",
             "remaining_text": "återstående",
             "remove_action": "Ta bort",
             "return_to_checkout": "GÅ TILLBAKA TILL KASSAN",
             "see_all_action": "Visa alla",
             "see_less_action": "Se mindre",
+            "show_order_summary_action": "Visa beställningssammanfattning",
+            "hide_order_summary_action": "Dölj beställningssammanfattning",
             "shipping_text": "Frakt",
             "gift_wrapping_text": "Paketomslag",
             "show_details_action": "Visa detaljer",
@@ -289,7 +296,6 @@
             "humm_not_processable_error": "Humm kan inte behandla din betalning för denna beställning. Vänligen välj en annan betalningsmetod.",
             "klarna_continue_action": "Fortsätt med Klarna",
             "klarna_name_text": "Klarna",
-            "masterpass_name_text": "Masterpass",
             "mollie_unsupported_method_error": "Denna betalningsmetod kan inte användas för köp av digitala produkter. Kontakta kundtjänsten eller försök igen.",
             "opy_continue_action": "Fortsätt med {methodName}",
             "opy_widget_slogan": "Köp nu. Betala smartare.",
@@ -445,6 +451,7 @@
                 "three_d_secure_declined": "Det har uppstått ett problem med din betalning. Kontrollera dina betalningsuppgifter eller kontakta din kortutgivare",
                 "three_d_secure_failed": "Betalningen misslyckades. Vänligen försök igen, eller använd ett annat betalningsalternativ.",
                 "three_d_secure_required": "Ytterligare autentisering krävs för att bearbeta din betalning. Kontakta oss.",
+                "three_d_secure_payment_failed": "Ogiltiga kreditkortsuppgifter eller misslyckad 3D Secure-verifiering. Försök med ett annat kort eller prova att betala igen senare.",
                 "token_error": "Vi kan inte bearbeta din transaktion. Försök igen senare.",
                 "transaction_declined": "Din betalning nekades. Vänligen försök igen.",
                 "transaction_rejected": "Betalningen nekades. Vänligen försök igen.",
@@ -471,6 +478,7 @@
             }
         },
         "redeemable": {
+            "auto_promotion": "Automatisk rabatt",
             "applied_text": "Applicerad",
             "apply_action": "Tillämpa",
             "apply_store_credit_after_action": "lagra kredit för beställning",
@@ -481,11 +489,15 @@
             "coupon_location_error": "Din leveransadress uppfyller inte platskraven för den kupongkod du angav.",
             "coupon_min_order_total": "Din beställning uppfyller inte den minsta summan för att denna kupongkod ska tillämpas.",
             "coupon_text": "Kupong",
+            "coupon_placeholder": "Ange din kod här",
+            "discounts_text": "Rabatter",
             "gift_certificate_remaining_text": "återstående",
             "gift_certificate_text": "Presentkort",
+            "manual_discount": "Manuell rabatt",
             "remove_action": "Ta bort",
             "store_credit_available_text": "Ditt konto har för närvarande totalt {storeCredit} tillgängliga butikskrediter",
-            "toggle_action": "Kupong/presentkort"
+            "toggle_action": "Kupong/presentkort",
+            "total_savings_text": "Du sparade <span class=\"total-savings-highlight\">{totalDiscount}</span> totalt!"
         },
         "remote": {
             "browser_unsupported": "Den valda betalningsmetoden kräver en annan webbläsare. Välj en annan betalningsmetod.",
@@ -543,6 +555,8 @@
             "multishipping_left_to_allocate_items_table_item": "Vara",
             "multishipping_left_to_allocate_items_table_left_to_allocate": "Kvar att tilldela",
             "multishipping_left_to_allocate_items_table_quantity": "Kvantitet",
+            "no_countries_available_heading": "Det gick inte att läsa in ditt leveransland",
+            "no_countries_available_message": "Uppdatera sidan eller försök igen om en stund. Om problemet kvarstår kan du kontakta vårt supportteam, så hjälper vi dig att slutföra beställningen.",
             "multishipping_item_split_tooltip_message": "Dessa artikelkvantiteter är uppdelade på en separat rad på grund av en kvantitetsbaserad kampanj eller ett anpassat pris.",
             "ship_to_multi": "Skicka till flera adresser",
             "ship_to_single": "Skicka till en enda adress",
@@ -593,7 +607,13 @@
         "order_confirmation": {
             "mandate": {
                 "adyenv3": {
-                    "boletobancario": "Boleto Bancário-ticket"
+                    "boletobancario": "Boleto Bancário-ticket",
+                    "multibanco": {
+                        "reference": "Payment reference",
+                        "entity": "Entity number",
+                        "expires_at": "Förfallodatum"
+                    },
+                    "oxxo": "OXXO-ticket"
                 },
                 "bluesnapdirect": {
                     "sepa_direct_debit": "Referens för SEPA-direktdebiteringsfullmakt: {mandate}"

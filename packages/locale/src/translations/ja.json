@@ -18,6 +18,9 @@
             "custom_required_error": "{label}が必要です",
             "custom_min_error": "{label} は {min} 文字以上である必要があります",
             "custom_max_error": "{label} は {max} 文字以内である必要があります",
+            "custom_min_number_error": "{label} must be greater than or equal to {min}",
+            "custom_max_number_error": "{label} must be less than or equal to {max}",
+            "custom_range_error": "{label} must be between {min} and {max}",
             "invalid_characters_error": "{label}に無効な文字が含まれています",
             "custom_valid_error": "{label}は無効です",
             "edit_address_action": "住所を編集",
@@ -57,6 +60,7 @@
             "discount_text": "割引",
             "downloads_action": "ダウンロードに移動",
             "edit_cart_action": "カートを編集",
+            "go_to_cart_action": "ショッピングカート",
             "edit_multi_shipping_cart_message": "新しい商品は、デフォルトで配送先#1となります。他の配送先に発送したい場合は、再割り当てしてください。",
             "estimated_total_text": "見積合計",
             "free_text": "無料",
@@ -65,12 +69,15 @@
             "item": "お品物",
             "items": "お品物",
             "item_count_text": "{count, plural, one{1 Item} other{# Items} }",
+            "backorder_count_text": "{count}はバックオーダーになります",
             "print_action": "印刷",
             "remaining_text": "残り",
             "remove_action": "除去",
             "return_to_checkout": "決済に戻る",
             "see_all_action": "すべて表示",
             "see_less_action": "表示を減らす",
+            "show_order_summary_action": "注文概要を表示",
+            "hide_order_summary_action": "注文概要を非表示",
             "shipping_text": "配送",
             "gift_wrapping_text": "ギフトラッピング",
             "show_details_action": "詳細の表示",
@@ -289,7 +296,6 @@
             "humm_not_processable_error": "この注文を処理できません。別の支払方法を選択してください。",
             "klarna_continue_action": "Klarnaで続ける",
             "klarna_name_text": "Klarna",
-            "masterpass_name_text": "Masterpass",
             "mollie_unsupported_method_error": "この支払方法はデジタル製品の購入には使用できません。カスタマーサポートに連絡するか、もう一度やり直してください。",
             "opy_continue_action": "{methodName}で続ける",
             "opy_widget_slogan": "Pay smarterで今すぐ購入",
@@ -445,6 +451,7 @@
                 "three_d_secure_declined": "お支払いに問題がありました。お支払いの詳細をご確認いただくか、カード発行会社にお問い合わせください。",
                 "three_d_secure_failed": "支払に失敗しました。 もう一度お試しになるか、他の支払オプションを使用してください。",
                 "three_d_secure_required": "支払を処理するには追加認証が必要です。 お問い合わせください。",
+                "three_d_secure_payment_failed": "クレジットカード情報が無効であるか、3Dセキュア認証に失敗しました。別のカードを試すか、後でもう一度お支払いをお試しください。",
                 "token_error": "取引を処理できません。しばらくたってからもう一度お試しください。",
                 "transaction_declined": "支払を拒否されました。 もう一度お試しください。",
                 "transaction_rejected": "支払が拒否されました。 もう一度お試しください。",
@@ -471,6 +478,7 @@
             }
         },
         "redeemable": {
+            "auto_promotion": "自動割引",
             "applied_text": "適用済み",
             "apply_action": "適用",
             "apply_store_credit_after_action": "ストアクレジットで注文する",
@@ -481,11 +489,15 @@
             "coupon_location_error": "配送先住所が、入力したクーポンコードの所在地要件を満たしていません。",
             "coupon_min_order_total": "顧客のご注文は、このクーポンコードを適用するための最小合計金額を満たしていません。",
             "coupon_text": "クーポン",
+            "coupon_placeholder": "ここにメモを入力してください",
+            "discounts_text": "割引",
             "gift_certificate_remaining_text": "残り",
             "gift_certificate_text": "ギフト券",
+            "manual_discount": "手動割引",
             "remove_action": "除去",
             "store_credit_available_text": "現在、アカウントには合計 {storeCredit} のストアクレジットが利用可能です",
-            "toggle_action": "クーポン/ギフトコード"
+            "toggle_action": "クーポン/ギフト券",
+            "total_savings_text": "合計で<span class=\"total-savings-highlight\">{totalDiscount}</span>節約できました!"
         },
         "remote": {
             "browser_unsupported": "選択した支払方い法には、別のWebブラウザが必要です。他の支払方法を選んでください。",
@@ -543,6 +555,8 @@
             "multishipping_left_to_allocate_items_table_item": "項目",
             "multishipping_left_to_allocate_items_table_left_to_allocate": "割り当て残り分",
             "multishipping_left_to_allocate_items_table_quantity": "数量",
+            "no_countries_available_heading": "配送先の国を読み込めません",
+            "no_countries_available_message": "ページを更新するか、しばらくしてからもう一度お試しください。問題が解決しない場合は、サポート チームにご連絡ください。ご注文の完了をお手伝いいたします。",
             "multishipping_item_split_tooltip_message": "これらの商品の数量は、数量ベースの割引またはカスタム価格のため、別の行に分けて記載されています。",
             "ship_to_multi": "複数の住所に配送する",
             "ship_to_single": "一か所の住所に配送する",
@@ -593,7 +607,13 @@
         "order_confirmation": {
             "mandate": {
                 "adyenv3": {
-                    "boletobancario": "Boleto Bancário チケット"
+                    "boletobancario": "Boleto Bancário チケット",
+                    "multibanco": {
+                        "reference": "Payment reference",
+                        "entity": "Entity number",
+                        "expires_at": "有効期限"
+                    },
+                    "oxxo": "OXXOチケット"
                 },
                 "bluesnapdirect": {
                     "sepa_direct_debit": "SEPA 口座引き落とし委任状参照: {mandate}"

@@ -121,8 +121,13 @@ const LoginForm: FunctionComponent<
                             className={themeV2 ? 'body-bold' : ''}
                             id="checkout-customer-continue"
                             onClick={handleRedirect}
+                            onClick={handleRedirect}
                             testId="customer-continue-button"
                             variant={ButtonVariant.Primary}
+                        >
+                            <TranslatedString id="customer.sign_in_action" />
+                        </Button>
+                    }
                         >
                             <TranslatedString id="customer.sign_in_action" />
                         </Button>

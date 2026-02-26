@@ -1,21 +1,35 @@
-import React, { type FunctionComponent, useState } from 'react';
+import React, { type FunctionComponent, useRef, useState } from 'react';
 
 import { TranslatedString } from '@bigcommerce/checkout/locale';
-import { IconCoupon, IconDownArrow, IconUpArrow } from '@bigcommerce/checkout/ui';
+import { CollapseCSSTransition, IconCoupon, IconDownArrow, IconUpArrow } from '@bigcommerce/checkout/ui';
 
+import { ShopperCurrency } from '../../currency';
+import { type DiscountItem, useMultiCoupon } from '../useMultiCoupon';
 
-export const Discounts: FunctionComponent = () => {
+const DiscountItems: FunctionComponent<{ coupons: DiscountItem[] }> = ({ coupons }) => (
+    <>
+        {coupons.map((coupon) => (
+            <div data-test={coupon.testId} key={coupon.name}>
+                <div
+                    aria-live="polite"
+                    className="cart-priceItem optimizedCheckout-contentPrimary"
+                >
+                    <span className="cart-priceItem-label"><IconCoupon />{coupon.name}</span>
+                    <span className="cart-priceItem-value" data-test="cart-price-value">
+                        -<ShopperCurrency amount={coupon.amount} />
+                    </span>
+                </div>
+            </div>
+        ))}
+    </>
+);
+
+const DiscountsCollapsible: FunctionComponent<{ discounts: number; discountItems: DiscountItem[] }> = ({ discounts, discountItems }) => {
     const [isCouponDiscountsVisible, setIsCouponDiscountsVisible] = useState(true);
-    const [isShippingDiscountsVisible, setIsShippingDiscountsVisible] = useState(true);
+    const discountsRef = useRef<HTMLDivElement>(null);
 
     return (
-        <>
-            <div aria-live="polite" className="cart-priceItem optimizedCheckout-contentPrimary">
-                <span className="cart-priceItem-label">
-                    <TranslatedString id="cart.subtotal_text" />
-                </span>
-                <span className="cart-priceItem-value">$40.00</span>
-            </div>
+        <div>
             <div
                 aria-controls="applied-coupon-discounts-collapsable"
                 aria-expanded={isCouponDiscountsVisible}
@@ -29,69 +43,45 @@ export const Discounts: FunctionComponent = () => {
                         {isCouponDiscountsVisible ? <IconDownArrow /> : <IconUpArrow />}
                     </div>
                 </span>
-                <span className="cart-priceItem-value">-$16.00</span>
-            </div>
-            {isCouponDiscountsVisible && (
-                <div className="applied-discounts-list" id="applied-coupon-discounts-collapsable">
-                    <div aria-live="polite" className="cart-priceItem optimizedCheckout-contentPrimary">
-                        <span className="cart-priceItem-label">
-                            <IconCoupon /> HAPPY NEW YEAR
-                        </span>
-                        <span className="cart-priceItem-value">-$4.00</span>
-                    </div>
-                    <div aria-live="polite" className="cart-priceItem optimizedCheckout-contentPrimary">
-                        <span className="cart-priceItem-label">
-                            <IconCoupon /> Long Long Long Long Long Long Long Long Long Long Long Long Long Automatic promotion
-                        </span>
-                        <span className="cart-priceItem-value">-$4.00</span>
-                    </div>
-                    <div aria-live="polite" className="cart-priceItem optimizedCheckout-contentPrimary">
-                        <span className="cart-priceItem-label">
-                            <IconCoupon /> New customer 10% off Loooooooooooooooooong(EXTRA12345)
-                        </span>
-                        <span className="cart-priceItem-value">-$4.00</span>
-                    </div>
-                    <div aria-live="polite" className="cart-priceItem optimizedCheckout-contentPrimary">
-                        <span className="cart-priceItem-label">
-                            <IconCoupon /> NEW10OFF
-                        </span>
-                        <span className="cart-priceItem-value">-$4.00</span>
-                    </div>
-                </div>
-            )}
-            <div
-                aria-controls="applied-shipping-discounts-collapsable"
-                aria-expanded={isShippingDiscountsVisible}
-                aria-live="polite"
-                className="shipping-discount-toggle cart-priceItem optimizedCheckout-contentPrimary"
-                onClick={() => setIsShippingDiscountsVisible(!isShippingDiscountsVisible)}
-            >
-                <span className="cart-priceItem-label">
-                    <div className="toggle-button">
-                        <TranslatedString id="shipping.shipping_heading" />
-                        {isShippingDiscountsVisible ? <IconDownArrow /> : <IconUpArrow />}
-                    </div>
-                </span>
                 <span className="cart-priceItem-value">
-                    <span className="shipping-cost-before-discount">$10.00</span> $6.00
+                    -<ShopperCurrency amount={discounts} />
                 </span>
             </div>
-            {isShippingDiscountsVisible && (
-                <div className="applied-discounts-list" id="applied-shipping-discounts-collapsable">
-                    <div aria-live="polite" className="cart-priceItem optimizedCheckout-contentPrimary">
-                        <span className="cart-priceItem-label">
-                            <IconCoupon /> Save on shipping (SHIPPINGSAVE)
-                        </span>
-                        <span className="cart-priceItem-value">-$1.00</span>
-                    </div>
-                    <div aria-live="polite" className="cart-priceItem optimizedCheckout-contentPrimary">
-                        <span className="cart-priceItem-label">
-                            <IconCoupon /> Automatic promotion
-                        </span>
-                        <span className="cart-priceItem-value">-$3.00</span>
-                    </div>
+            <CollapseCSSTransition isVisible={isCouponDiscountsVisible} nodeRef={discountsRef}>
+                <div
+                    className="applied-discounts-list"
+                    id="applied-coupon-discounts-collapsable"
+                    ref={discountsRef}
+                >
+                    <DiscountItems coupons={discountItems} />
                 </div>
+            </CollapseCSSTransition>
+        </div>
+    );
+};
+
+export const Discounts: FunctionComponent = () => {
+    const {
+        uiDetails: {
+            subtotal,
+            discounts,
+            discountItems,
+        },
+    } = useMultiCoupon();
+
+    return (
+        <div data-test="cart-subtotal">
+            <div aria-live="polite" className="cart-priceItem optimizedCheckout-contentPrimary">
+                <span className="cart-priceItem-label">
+                    <TranslatedString id="cart.subtotal_text" />
+                </span>
+                <span className="cart-priceItem-value" data-test="cart-price-value">
+                    <ShopperCurrency amount={subtotal} />
+                </span>
+            </div>
+            {(discounts > 0 || discountItems.length > 0) && (
+                <DiscountsCollapsible discountItems={discountItems} discounts={discounts} />
             )}
-        </>
+        </div>
     );
 };

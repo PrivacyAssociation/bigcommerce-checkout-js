@@ -3,18 +3,19 @@ import {
     type ShopperCurrency as ShopperCurrencyType,
     type StoreCurrency,
 } from '@bigcommerce/checkout-sdk';
+import classNames from 'classnames';
 import React, { cloneElement, type FunctionComponent, isValidElement, type ReactNode } from 'react';
 
-import { useCheckout } from '@bigcommerce/checkout/contexts';
+import { useCheckout, useLocale, useThemeContext } from '@bigcommerce/checkout/contexts';
 import { preventDefault } from '@bigcommerce/checkout/dom-utils';
-import { TranslatedString } from '@bigcommerce/checkout/locale';
+import { TranslatedHtml, TranslatedString } from '@bigcommerce/checkout/locale';
 import { Button, IconCloseWithBorder } from '@bigcommerce/checkout/ui';
 
 import { isExperimentEnabled } from '../common/utility';
 import { NewOrderSummarySubtotals } from '../coupon';
 import { ShopperCurrency } from '../currency';
 import { Modal, ModalHeader } from '../ui/modal';
-import { isSmallScreen } from '../ui/responsive';
+import { isMobileView } from '../ui/responsive';
 
 import OrderModalSummarySubheader from './OrderModalSummarySubheader';
 import OrderSummaryItems from './OrderSummaryItems';
@@ -52,11 +53,33 @@ const OrderSummaryModal: FunctionComponent<
     total,
     ...orderSummarySubtotalsProps
 }) => {
+    const { currency } = useLocale();
     const { checkoutState } = useCheckout();
+    const { themeV2 } = useThemeContext();
     const { checkoutSettings } = checkoutState.data.getConfig() ?? {};
-    const isMultiCouponEnabled = isExperimentEnabled(checkoutSettings, 'PROJECT-7321-5991.multi-coupon-cart-checkout', false);
+    const checkout = checkoutState.data.getCheckout();
+    const order = checkoutState.data.getOrder();
 
+    const isMultiCouponEnabled = isExperimentEnabled(checkoutSettings, 'CHECKOUT-9674.multi_coupon_cart_checkout', false);
+    const isMultiCouponEnabledForCheckout = isMultiCouponEnabled && !!checkout;
+    const isMultiCouponEnabledForOrder = isMultiCouponEnabled && !checkout && !!order;
+
+    if (!currency) {
+        return null;
+    }
+
+    let totalDiscount;
+    
+    if (isMultiCouponEnabledForCheckout) {
+        totalDiscount = checkout.totalDiscount;
+    }
+
+    if (isMultiCouponEnabledForOrder) {
+        totalDiscount = order.totalDiscount;
+    }
+   
     const displayInclusiveTax = isTaxIncluded && taxes && taxes.length > 0;
+    const isTotalDiscountVisible = Boolean(totalDiscount && totalDiscount > 0);
 
     const subHeaderText = <OrderModalSummarySubheader
         amountWithCurrency={<ShopperCurrency amount={total} />}
@@ -65,7 +88,7 @@ const OrderSummaryModal: FunctionComponent<
         storeCurrencyCode={storeCurrency.code}
     />;
 
-    const continueButton = isSmallScreen() && <Button
+    const continueButton = isMobileView() && <Button
         className='cart-modal-continue'
         data-test="manage-instrument-cancel-button"
         onClick={preventDefault(onRequestClose)}>
@@ -75,7 +98,7 @@ const OrderSummaryModal: FunctionComponent<
     return <Modal
         additionalBodyClassName="cart-modal-body optimizedCheckout-orderSummary"
         additionalHeaderClassName="cart-modal-header optimizedCheckout-orderSummary with-continue-button"
-        additionalModalClassName="optimizedCheckout-cart-modal"
+        additionalModalClassName={classNames("optimizedCheckout-cart-modal", { "themeV2": themeV2 })}
         footer={continueButton}
         header={renderHeader({
             headerLink,
@@ -89,11 +112,12 @@ const OrderSummaryModal: FunctionComponent<
         <OrderSummarySection>
             <OrderSummaryItems displayLineItemsCount={false} items={items} />
         </OrderSummarySection>
-        {isMultiCouponEnabled
+        {isMultiCouponEnabledForCheckout || isMultiCouponEnabledForOrder
             ? <NewOrderSummarySubtotals
                 fees={orderSummarySubtotalsProps.fees}
                 giftWrappingAmount={orderSummarySubtotalsProps.giftWrappingAmount}
                 handlingAmount={orderSummarySubtotalsProps.handlingAmount}
+                isOrderConfirmation={!!isMultiCouponEnabledForOrder}
                 isTaxIncluded={isTaxIncluded}
                 storeCreditAmount={orderSummarySubtotalsProps.storeCreditAmount}
                 taxes={taxes}
@@ -109,6 +133,14 @@ const OrderSummaryModal: FunctionComponent<
                 shopperCurrencyCode={shopperCurrency.code}
                 storeCurrencyCode={storeCurrency.code}
             />
+            {(isTotalDiscountVisible && totalDiscount) &&
+                <div className="total-savings">
+                    <TranslatedHtml
+                        data={{ totalDiscount: currency.toCustomerCurrency(totalDiscount) }}
+                        id="redeemable.total_savings_text"
+                    />
+                </div>
+            }
         </OrderSummarySection>
         {displayInclusiveTax && <OrderSummarySection>
                 <h5

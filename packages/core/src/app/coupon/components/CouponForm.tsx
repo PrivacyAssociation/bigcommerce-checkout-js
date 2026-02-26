@@ -1,72 +1,96 @@
-import classNames from 'classnames';
 import React, { type FunctionComponent, useState } from 'react';
 
-import { useLocale, useThemeContext } from '@bigcommerce/checkout/contexts';
+import { useLocale } from '@bigcommerce/checkout/contexts';
 import { TranslatedString } from '@bigcommerce/checkout/locale';
-import { IconError, IconRemoveCoupon, TextInput } from '@bigcommerce/checkout/ui';
+import { Alert, AlertType, IconRemoveCoupon, TextInput } from '@bigcommerce/checkout/ui';
 
 import { Button, ButtonVariant } from '../../ui/button';
 import { useMultiCoupon } from '../useMultiCoupon';
 
-import { AppliedCouponsOrGiftCertificates } from './AppliedCouponsOrGiftCertificates';
+import { ManageCouponsAndGiftCertificates } from './ManageCouponsAndGiftCertificates';
 
 export const CouponForm: FunctionComponent = () => {
-    const [applyCouponError, setApplyCouponError] = useState<string | null>(null);
     const [code, setCode] = useState<string>('');
 
-    const { themeV2 } = useThemeContext();
     const { language } = useLocale();
-    const { applyCouponOrGiftCertificate } = useMultiCoupon();
+    const {
+        applyCouponOrGiftCertificate,
+        couponError,
+        setCouponError,
+        isApplyingCouponOrGiftCertificate,
+        isCouponFormDisabled,
+    } = useMultiCoupon();
 
     const handleTextInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setCode(event.currentTarget.value.trim());
     };
 
+    const clearErrorOnClick = () => {
+        if (couponError) {
+            setCouponError(null);
+        }
+    };
+
     const submitForm = async () => {
+        if (!code) {
+            return;
+        }
+
         try {
             await applyCouponOrGiftCertificate(code);
 
             setCode('');
         } catch (error) {
-            // TODO: Handle different error types accordingly
-            // eslint-disable-next-line no-console
-            console.log(error);
+            if (error instanceof Error) {
+                setCouponError(error.message);
+            }
         }
     };
 
     return (
         <>
-            <div className="coupon-form" id="coupon-form-collapsable">
+            <div
+                className="coupon-form"
+                data-test="redeemable-collapsable"
+                id="coupon-form-collapsable"
+            >
+                <label className="is-srOnly" htmlFor="redeemableCode">
+                    <TranslatedString id="redeemable.toggle_action" />
+                </label>
                 <TextInput
                     additionalClassName="form-input optimizedCheckout-form-input coupon-input"
                     aria-label={language.translate('redeemable.code_label')}
+                    disabled={isCouponFormDisabled}
+                    id="redeemableCode"
+                    name="redeemableCode"
                     onChange={handleTextInputChange}
+                    onClick={clearErrorOnClick}
                     placeholder={language.translate('redeemable.coupon_placeholder')}
                     testId="redeemableEntry-input"
-                    themeV2={themeV2}
                     value={code}
                 />
                 <Button
-                    className={classNames('coupon-button', {
-                        'body-bold': themeV2,
-                    })}
+                    className="coupon-button body-bold"
+                    disabled={isCouponFormDisabled}
                     id="applyRedeemableButton"
+                    isLoading={isApplyingCouponOrGiftCertificate}
                     onClick={submitForm}
                     testId="redeemableEntry-submit"
                     variant={ButtonVariant.Secondary}
                 >
-                    <TranslatedString id="redeemable.apply_action" />
+                    <TranslatedString id="redeemable.apply_action"/>
                 </Button>
             </div>
             <div className="applied-coupons-list">
-                {Boolean(applyCouponError) &&
-                    <ul className="applied-coupon-error-message" role="alert">
-                        <IconError />
-                        <span>{applyCouponError}</span>
-                        <span onClick={() => setApplyCouponError(null)}><IconRemoveCoupon /></span>
-                    </ul>
+                {Boolean(couponError) &&
+                    <Alert additionalClassName="no-padding" type={AlertType.Error}>
+                        <ul className="applied-coupon-error-message">
+                            <span>{couponError}</span>
+                            <span onClick={() => setCouponError(null)}><IconRemoveCoupon /></span>
+                        </ul>
+                    </Alert>
                 }
-                <AppliedCouponsOrGiftCertificates />
+                <ManageCouponsAndGiftCertificates />
             </div>
         </>
     );

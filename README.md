@@ -14,6 +14,56 @@ Hello fellow IAPP developer. First of all, you might be like "Why all this nonse
 ## Requirements
 
 The repo requires the below environment to compile.
+The repo requires the below environment to compile.
+
+- Node >= v22.
+- NPM >= v10.
+- Unix-based operating system. (WSL on Windows (they are fibbing here))
+
+But that is really hard to get working on a standard IAPP development laptop because Nicole hates us having Macs.
+To work around this we are going to install a docker environment locally and build from there.
+
+To install Docker on your local machine, use the "company portal" application installed on your machine (just type that into the search bar).
+[Company Portal](https://iappadmin.atlassian.net/servicedesk/customer/portal/30/article/2616819713?source=search)
+You may need to install windows WSL and some other dependencies too, you can request local admin access using our PIM system.
+[PIM](https://iappadmin.atlassian.net/servicedesk/customer/article/2921693187)
+
+## Docker Setup
+
+1. Head on over to your local repo directory, which in my case is at: C:\Users\DavidOstrander\00_IappWork\ .
+2. Next open up a GitBash terminal.
+3. Run `git clone https://github.com/bigcommerce/checkout-js.git` to grab a local copy.
+4. RUN `cd bigcommerce-checkout-js`
+5. RUN
+
+```sh
+# Add the original repository as upstream
+git remote add upstream https://github.com/bigcommerce/checkout-js
+# should see the original repo listed
+git remote -v
+# Get updates from parent repo
+git fetch upstream
+# merge the master repo's main branch into your local repo:
+git merge upstream master
+# Make sure when you create your PR's "privacy association" as root and destination.
+
+```
+
+6. RUN
+
+```sh
+# Build your local Linux/Node image
+docker build -t bigcommerce-checkout .
+```
+
+7. RUN
+
+```sh
+# Boot up your image into a working container
+docker run -p 8080:8080 -d --name bc-checkout-dev bigcommerce-checkout
+```
+
+8. RUN
 
 - Node >= v22.
 - NPM >= v10.
@@ -67,18 +117,25 @@ docker run -p 8080:8080 -d --name bc-checkout-dev bigcommerce-checkout
 ```sh
 # Login to our container and access a terminal
 docker exec -it bc-checkout-dev sh
+# Login to our container and access a terminal
+docker exec -it bc-checkout-dev sh
 ```
 
 9. RUN
+10. RUN
 
 ```sh
+# install all dependencies (ci = clean install)
+npm ci
 # install all dependencies (ci = clean install)
 npm ci
 ```
 
 10. RUN
+11. RUN
 
 ```sh
+# This will create the build folder in the container and should make your files available locally
 # This will create the build folder in the container and should make your files available locally
 npm run dev
 ```
@@ -100,12 +157,22 @@ I suggest opening two gitbash terminals, one for copying the file, and one logge
 docker cp ./packages/core/src/app/customer/LoginForm.tsx bc-checkout-dev:/usr/src/app/packages/core/src/app/customer/LoginForm.tsx
 ```
 
+# First terminal: copy files from your local machine to the container
+
+docker cp ./packages/core/src/app/customer/LoginForm.tsx bc-checkout-dev:/usr/src/app/packages/core/src/app/customer/LoginForm.tsx
+
+````
+
 ```sh
 #Second terminal: Login to the container
 docker exec -it bc-checkout-dev sh
-```
+#Second terminal: Login to the container
+docker exec -it bc-checkout-dev sh
+````
 
 ```sh
+#Second terminal: After copying your files into ther container from your local, build them.
+npm run build
 #Second terminal: After copying your files into ther container from your local, build them.
 npm run build
 ```
@@ -119,6 +186,20 @@ Follow [this guide](https://developer.bigcommerce.com/stencil-docs/customizing-c
 And enter the local URL for `auto-loader-dev.js` in Checkout Settings, e.g `http://127.0.0.1:8080/auto-loader-dev.js`
 
 ## BC CI/CD Release
+
+## BC CI/CD Release
+
+Everytime a BC PR is merged to the master branch, CircleCI will trigger a build automatically. However, it won't create a new Git release until it is approved by a person with write access to the repository. We should periodically merge in the BC master branch into our fork. That includes adding the parent repo as a git upstream repo and doing some git magic:
+
+```sh
+git remote add upstream https://github.com/bigcommerce/checkout-js
+git remote -v
+git fetch upstream
+git checkout master
+git merge upstream/master
+git push origin master
+#at this point our remote fork will be synced with the BC main
+```
 
 Everytime a BC PR is merged to the master branch, CircleCI will trigger a build automatically. However, it won't create a new Git release until it is approved by a person with write access to the repository. We should periodically merge in the BC master branch into our fork. That includes adding the parent repo as a git upstream repo and doing some git magic:
 

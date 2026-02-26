@@ -71,33 +71,20 @@
     padding: $payment-step-spacing-top 0;
 }
 
-%button-masterpass-base {
-    background-color: color("greys", "lightest");
-    background-image: url(https://masterpass.com/dyn/img/btn/global/mp_chk_btn_180x042px.svg);
-    background-position: 50% 50%;
-    background-repeat: no-repeat;
-    background-size: 100% 100%;
-    border-color: color("greys", "lightest");
-    border-radius: remCalc(5px);
-    height: remCalc(42px);
-    padding: 0;
-    width: remCalc(180px);
+.noPaymentMethods-panel {
+    border: container("border");
+    border-radius: $global-radius;
+    display: flex;
+    min-height: 5rem;
+    text-align: center;
+    margin: spacing("base") 0;
 }
 
-/* Masterpass accordion button */
-.button-masterpass {
-    @extend %button-masterpass-base;
-
-    cursor: pointer;
-    display: none;
-}
-
-/* Masterpass widget button */
-.button-masterpass-mark {
-    @extend %button-masterpass-base;
-
-    cursor: default;
-    margin: auto;
+.noPaymentMethods-panel-message {
+    align-self: center;
+    flex: 1;
+    margin: 0;
+    padding: spacing("half");
 }
 
 // KLUDGE: We need this override when Klarna modal is open because

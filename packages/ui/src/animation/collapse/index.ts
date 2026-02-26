@@ -1,0 +1,1 @@
+export { CollapseCSSTransition } from './CollapseCSSTransition';
