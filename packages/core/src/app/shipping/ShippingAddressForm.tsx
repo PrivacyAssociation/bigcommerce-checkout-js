@@ -5,10 +5,10 @@ import {
 } from '@bigcommerce/checkout-sdk';
 import React, { type ReactElement } from 'react';
 
-import { useCheckout } from '@bigcommerce/checkout/contexts';
+import { useCheckout, useThemeContext } from '@bigcommerce/checkout/contexts';
 import { LoadingOverlay } from '@bigcommerce/checkout/ui';
 
-import { AddressForm, AddressSelect, AddressType, isValidCustomerAddress } from '../address';
+import { AddressForm, AddressSelect, AddressType, isValidCustomerAddress, reorderAddressFormFields } from '../address';
 import { connectFormik, type ConnectFormikProps } from '../common/form';
 import { Fieldset } from '../ui/form';
 
@@ -19,6 +19,7 @@ export interface ShippingAddressFormProps {
     consignments: Consignment[];
     isLoading: boolean;
     formFields: FormField[];
+    validateMaxLength: boolean;
     onUseNewAddress(): void;
     onFieldChange(fieldName: string, value: string): void;
     onAddressSelect(address: Address): void;
@@ -33,6 +34,7 @@ const ShippingAddressForm = (
         onUseNewAddress,
         formFields,
         isLoading,
+        validateMaxLength,
         formik: {
             values: { shippingAddress: formAddress },
             setFieldValue: formikSetFieldValue,
@@ -47,6 +49,7 @@ const ShippingAddressForm = (
             },
         },
     } = useCheckout();
+    const { themeV2 } = useThemeContext();
 
     const customer = getCustomer();
     const addresses = customer?.addresses || [];
@@ -85,7 +88,10 @@ const ShippingAddressForm = (
         shippingAddress,
         addresses,
         formFields,
+        validateMaxLength,
     );
+
+    const sortedFormFields = themeV2 ? reorderAddressFormFields(formFields) : formFields;
 
     return (
         <Fieldset id="checkoutShippingAddress">
@@ -110,7 +116,7 @@ const ShippingAddressForm = (
                     <AddressForm
                         countryCode={formAddress && formAddress.countryCode}
                         fieldName={addressFieldName}
-                        formFields={formFields}
+                        formFields={sortedFormFields}
                         onAutocompleteToggle={handleAutocompleteToggle}
                         onChange={handleChange}
                         setFieldValue={setFieldValue}

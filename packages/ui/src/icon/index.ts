@@ -5,7 +5,7 @@ export {
     getPaymentMethodIconComponent,
     filterInstrumentTypes,
 } from './mapFromPaymentMethodCardType';
-export { IconSize, IconProps } from './withIconContainer';
+export { IconSize, IconProps } from './IconContainer';
 export { default as IconBitCoin } from './IconBitCoin';
 export { default as IconBitCoinCash } from './IconBitCoinCash';
 export { default as IconBolt } from './IconBolt';
@@ -38,6 +38,7 @@ export { default as IconError } from './IconError';
 export { default as IconEdit } from './IconEdit';
 export { default as IconEthereum } from './IconEthereum';
 export { default as IconGiftCertificate } from './IconGiftCertificate';
+export { default as IconGiftCertificateNew } from './IconGiftCertificateNew';
 export { default as IconHelp } from './IconHelp';
 export { default as IconEye } from './IconEye';
 export { default as IconEyeSlash } from './IconEyeSlash';
@@ -55,3 +56,8 @@ export { default as IconPayPalFastlane } from './IconPayPalFastlane';
 export { default as IconNewAccount } from './IconNewAccount';
 export { default as IconUsdCoin } from './IconUsdCoin';
 export { default as IconAch } from './IconAch';
+export { default as IconRemoveCoupon } from './IconRemoveCoupon';
+export { default as IconCoupon } from './IconCoupon';
+export { default as IconDownArrow } from './IconDownArrow';
+export { default as IconUpArrow } from './IconUpArrow';
+export { default as IconArrowLeft } from './IconArrowLeft';

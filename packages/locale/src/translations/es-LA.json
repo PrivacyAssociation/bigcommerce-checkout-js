@@ -18,6 +18,9 @@
             "custom_required_error": "{label} es un campo obligatorio",
             "custom_min_error": "{label} no debe tener menos de {min} caracteres",
             "custom_max_error": "{label} no debe tener más de {max} caracteres",
+            "custom_min_number_error": "{label} must be greater than or equal to {min}",
+            "custom_max_number_error": "{label} must be less than or equal to {max}",
+            "custom_range_error": "{label} must be between {min} and {max}",
             "invalid_characters_error": "{label} contiene caracteres no válidos",
             "custom_valid_error": "{label} no es válido",
             "edit_address_action": "Editar dirección",
@@ -57,6 +60,7 @@
             "discount_text": "Descuento",
             "downloads_action": "Ir a Descargas",
             "edit_cart_action": "Editar carrito",
+            "go_to_cart_action": "Carrito",
             "edit_multi_shipping_cart_message": "Los artículos nuevos se enviarán por defecto al destino de envío n.º 1. Reasígnalos si quieres que se envíen a otros destinos.",
             "estimated_total_text": "Total estimado",
             "free_text": "Gratuito",
@@ -65,12 +69,15 @@
             "item": "Artículo",
             "items": "Artículos",
             "item_count_text": "{count, plural, one{1 Item} other{# Items} }",
+            "backorder_count_text": "{count} estará en pedido pendiente",
             "print_action": "Imprimir",
             "remaining_text": "Restante",
             "remove_action": "Quitar",
             "return_to_checkout": "REGRESAR AL ÁREA DE PAGO",
             "see_all_action": "Ver todo",
             "see_less_action": "Ver menos",
+            "show_order_summary_action": "Resumen del orden del espectáculo",
+            "hide_order_summary_action": "Resumen del orden de ocultar",
             "shipping_text": "Envío",
             "gift_wrapping_text": "Envoltura de regalo",
             "show_details_action": "Mostrar detalles",
@@ -289,7 +296,6 @@
             "humm_not_processable_error": "Humm no puede procesar el pago de este pedido; selecciona otro método de pago.",
             "klarna_continue_action": "Continuar con Klarna",
             "klarna_name_text": "Klarna",
-            "masterpass_name_text": "Masterpass",
             "mollie_unsupported_method_error": "No se puede usar este método de pago para la compra de productos digitales. Comunícate con atención al cliente o vuelve a intentarlo.",
             "opy_continue_action": "Continuar con {methodName}",
             "opy_widget_slogan": "Compra ahora. Paga de manera más inteligente.",
@@ -445,6 +451,7 @@
                 "three_d_secure_declined": "Ha habido un problema con tu pago: revisa tus detalles de pago o comunícate con el emisor de tu tarjeta.",
                 "three_d_secure_failed": "Error en el pago. Vuelve a intentarlo o utiliza una opción de pago diferente.",
                 "three_d_secure_required": "Se requiere autenticación adicional para procesar su pago. Póngase en contacto con nosotros.",
+                "three_d_secure_payment_failed": "La información de la tarjeta de crédito es inválida o falló la verificación 3D Secure. Por favor, prueba con otra tarjeta o vuelve a intentar el pago más adelante.",
                 "token_error": "En este momento tenemos dificultades para procesar tu transacción. Vuelve a intentarlo más tarde.",
                 "transaction_declined": "Su pago fue rechazado. Intente de nuevo.",
                 "transaction_rejected": "El pago fue rechazado. Vuelva a intentarlo.",
@@ -471,6 +478,7 @@
             }
         },
         "redeemable": {
+            "auto_promotion": "Descuento automático",
             "applied_text": "Aplicado",
             "apply_action": "Aplicar",
             "apply_store_credit_after_action": "crédito de la tienda para hacer un pedido",
@@ -481,11 +489,15 @@
             "coupon_location_error": "Tu dirección de envío no cumple con los requisitos de ubicación para el código de cupón que ingresaste.",
             "coupon_min_order_total": "Tu pedido no alcanza el total mínimo para que se aplique este código de cupón.",
             "coupon_text": "Cupón",
+            "coupon_placeholder": "Introduce tus notas aquí",
+            "discounts_text": "Descuentos",
             "gift_certificate_remaining_text": "Restante",
             "gift_certificate_text": "Certificado de regalo",
+            "manual_discount": "Descuento manual",
             "remove_action": "Quitar",
             "store_credit_available_text": "Actualmente, tu cuenta tiene {storeCredit} de crédito total de la tienda disponible",
-            "toggle_action": "Cupón/Certificado de regalo"
+            "toggle_action": "Cupón/Certificado de regalo",
+            "total_savings_text": "¡Has <span class=\"total-savings-highlight\">ahorrado{totalDiscount}</span> en total!"
         },
         "remote": {
             "browser_unsupported": "El método de pago seleccionado requiere un navegador web diferente. Elige otro método de pago.",
@@ -543,6 +555,8 @@
             "multishipping_left_to_allocate_items_table_item": "Artículo",
             "multishipping_left_to_allocate_items_table_left_to_allocate": "Queda por asignar",
             "multishipping_left_to_allocate_items_table_quantity": "Cantidad",
+            "no_countries_available_heading": "Estamos teniendo problemas para cargar tu país de envío",
+            "no_countries_available_message": "Por favor, actualiza la página o inténtalo de nuevo en un momento. Si el problema continúa, contacta con nuestro equipo de soporte y te ayudaremos a completar tu pedido.",
             "multishipping_item_split_tooltip_message": "Estas cantidades de artículos están divididas en una fila separada debido a una promoción por cantidad o a un precio personalizado.",
             "ship_to_multi": "Enviar a varias direcciones",
             "ship_to_single": "Enviar a una sola dirección",
@@ -593,7 +607,13 @@
         "order_confirmation": {
             "mandate": {
                 "adyenv3": {
-                    "boletobancario": "Ticket del Boleto Bancário"
+                    "boletobancario": "Ticket del Boleto Bancário",
+                    "multibanco": {
+                        "reference": "Payment reference",
+                        "entity": "Entity number",
+                        "expires_at": "Fecha de vencimiento"
+                    },
+                    "oxxo": "Ticket de OXXO"
                 },
                 "bluesnapdirect": {
                     "sepa_direct_debit": "Referencia de mandato de débito directo SEPA: {mandate}"

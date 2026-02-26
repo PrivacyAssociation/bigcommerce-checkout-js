@@ -24,8 +24,11 @@ jest.mock('../currency', () => ({
 
 describe('OrderSummary', () => {
     const checkoutService = createCheckoutService();
+    const checkoutState = checkoutService.getState();
     const extensionService = new ExtensionService(checkoutService, createErrorLogger());
     const languageService = getLanguageService();
+
+    jest.spyOn(checkoutState.data, 'getConfig').mockReturnValue(getStoreConfig());
 
     describe('when shopper has same currency as store', () => {
         beforeEach(() => {
@@ -59,7 +62,7 @@ describe('OrderSummary', () => {
             expect(screen.getByText('2 Items')).toBeInTheDocument();
             expect(screen.getByText(order.coupons[0].code)).toBeInTheDocument();
             expect(screen.getByText(order.coupons[1].code)).toBeInTheDocument();
-            expect(screen.getByText(`1 x ${order.lineItems.giftCertificates[0].name}`)).toBeInTheDocument();
+            expect(screen.getByRole('heading', { name: `1 x ${order.lineItems.giftCertificates[0].name}` })).toBeInTheDocument();
         });
 
         it('does not render currency cart note', () => {
@@ -101,7 +104,7 @@ describe('OrderSummary', () => {
             expect(screen.getByText('2 Items')).toBeInTheDocument();
             expect(screen.getByText(taxIncludedOrder.coupons[0].code)).toBeInTheDocument();
             expect(screen.getByText(taxIncludedOrder.coupons[1].code)).toBeInTheDocument();
-            expect(screen.getByText(`1 x ${taxIncludedOrder.lineItems.giftCertificates[0].name}`)).toBeInTheDocument();
+            expect(screen.getByRole('heading', { name: `1 x ${taxIncludedOrder.lineItems.giftCertificates[0].name}` })).toBeInTheDocument();
             expect(screen.getByText('Tax Included in Total:')).toBeInTheDocument();
             // eslint-disable-next-line testing-library/no-container
             expect(container.querySelector('.cart-taxItem')).toBeInTheDocument();

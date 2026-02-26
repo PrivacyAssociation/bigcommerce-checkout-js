@@ -18,6 +18,9 @@
             "custom_required_error": "{label} is required",
             "custom_min_error": "{label} should be no less than {min} characters",
             "custom_max_error": "{label} should be no more than {max} characters",
+            "custom_min_number_error": "{label} must be greater than or equal to {min}",
+            "custom_max_number_error": "{label} must be less than or equal to {max}",
+            "custom_range_error": "{label} must be between {min} and {max}",
             "invalid_characters_error": "{label} contains invalid characters",
             "custom_valid_error": "{label} is not valid",
             "edit_address_action": "Edit address",
@@ -57,6 +60,7 @@
             "discount_text": "Discount",
             "downloads_action": "Go to Downloads",
             "edit_cart_action": "Edit Cart",
+            "go_to_cart_action": "Cart",
             "edit_multi_shipping_cart_message": "New items will default to Shipping Destination #1. Reallocate if you want them shipped to other destinations.",
             "estimated_total_text": "Estimated Total",
             "free_text": "Free",
@@ -65,12 +69,15 @@
             "item": "item",
             "items": "items",
             "item_count_text": "{count, plural, one{1 Item} other{# Items} }",
+            "backorder_count_text": "{count} will be backordered",
             "print_action": "Print",
             "remaining_text": "Remaining",
             "remove_action": "remove",
             "return_to_checkout": "RETURN TO CHECKOUT",
             "see_all_action": "See All",
             "see_less_action": "See Less",
+            "show_order_summary_action": "Show Order Summary",
+            "hide_order_summary_action": "Hide Order Summary",
             "shipping_text": "Shipping",
             "gift_wrapping_text": "Gift Wrapping",
             "show_details_action": "Show Details",
@@ -289,7 +296,6 @@
             "humm_not_processable_error": "Humm cannot process your payment for this order, please select another payment method.",
             "klarna_continue_action": "Continue with Klarna",
             "klarna_name_text": "Klarna",
-            "masterpass_name_text": "Masterpass",
             "mollie_unsupported_method_error": "This payment method cannot be used towards the purchase of digital products. Please contact customer support or try again.",
             "opy_continue_action": "Continue with {methodName}",
             "opy_widget_slogan": "Buy now. Pay smarter.",
@@ -445,6 +451,7 @@
                 "three_d_secure_declined": "There has been an issue with your payment, please check your payment details or contact your card issuer.",
                 "three_d_secure_failed": "The payment failed. Please try again or use a different payment option.",
                 "three_d_secure_required": "Further authentication is required to process your payment. Please contact us.",
+                "three_d_secure_payment_failed": "The credit card information is invalid or failed 3D Secure verification. Please try another card or attempt the payment again later.",
                 "token_error": "We're experiencing difficulty processing your transaction. Please try again later.",
                 "transaction_declined": "Your payment was declined. Please try again.",
                 "transaction_rejected": "Payment was declined. Please try again.",
@@ -471,6 +478,7 @@
             }
         },
         "redeemable": {
+            "auto_promotion": "Automatic discount",
             "applied_text": "Applied",
             "apply_action": "Apply",
             "apply_store_credit_after_action": "store credit to order",
@@ -481,11 +489,15 @@
             "coupon_location_error": "Your shipping address doesn't meet the location requirements for the coupon code you entered.",
             "coupon_min_order_total": "Your order does not meet the minimum total for this coupon code to be applied.",
             "coupon_text": "Coupon",
+            "coupon_placeholder": "Enter your code here",
+            "discounts_text": "Discounts",
             "gift_certificate_remaining_text": "Remaining",
             "gift_certificate_text": "Gift Certificate",
+            "manual_discount": "Manual discount",
             "remove_action": "Remove",
             "store_credit_available_text": "Your account currently has {storeCredit} total store credit available",
-            "toggle_action": "Coupon/Gift Certificate"
+            "toggle_action": "Coupon / gift certificate",
+            "total_savings_text": "You saved <span class=\"total-savings-highlight\">{totalDiscount}</span> in total!"
         },
         "remote": {
             "browser_unsupported": "The selected payment method requires a different web browser. Please choose another payment method.",
@@ -515,7 +527,7 @@
             "save_shipping_address_error": "An error occurred while saving the shipping address to your price quote. Please try again.",
             "save_shipping_option_error": "An error occurred while saving the shipping quote to your order. Please try again.",
             "select_shipping_address_text": "Please select a shipping address in order to see shipping quotes",
-            "shipping_address_heading": "Shipping Address",
+            "shipping_address_heading": "Shipping address",
             "multishipping_consignment_index_heading": "Destination #{consignmentNumber}",
             "multishipping_incomplete_consignment_error": "Please complete the address, item allocation, and method selection for Destination #{consignmentNumber}.",
             "multishipping_add_new_destination": "Add new destination",
@@ -543,6 +555,8 @@
             "multishipping_left_to_allocate_items_table_item": "Item",
             "multishipping_left_to_allocate_items_table_left_to_allocate": "Left to allocate",
             "multishipping_left_to_allocate_items_table_quantity": "Quantity",
+            "no_countries_available_heading": "We're having trouble loading your shipping country",
+            "no_countries_available_message": "Please refresh the page or try again in a moment. If the issue continues, contact our support team and we'll help complete your order.",
             "multishipping_item_split_tooltip_message": "These item quantities are split into a separate row due to a quantity-based promotion or custom price.",
             "ship_to_multi": "Ship to multiple addresses",
             "ship_to_single": "Ship to a single address",
@@ -593,7 +607,13 @@
         "order_confirmation": {
             "mandate": {
                 "adyenv3": {
-                    "boletobancario": "Boleto Bancário Ticket"
+                    "boletobancario": "Boleto Bancário Ticket",
+                    "multibanco": {
+                        "reference": "Payment reference",
+                        "entity": "Entity number",
+                        "expires_at": "Expiry date"
+                    },
+                    "oxxo": "OXXO Ticket"
                 },
                 "bluesnapdirect": {
                     "sepa_direct_debit":  "SEPA Direct Debit Mandate Reference: {mandate}"

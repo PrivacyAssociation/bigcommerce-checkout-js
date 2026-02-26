@@ -1,0 +1,17 @@
+{
+  "name": "automated-testing",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "prettify": "prettier --write '**/*.{tsx,ts}'"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@playwright/test": "^1.54.1",
+    "@types/node": "^24.1.0",
+    "prettier": "^3.3.3"
+    }
+}

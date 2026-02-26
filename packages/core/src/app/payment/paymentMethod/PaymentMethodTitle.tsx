@@ -5,7 +5,7 @@ import { compact } from 'lodash';
 import React, { type FunctionComponent, memo, type ReactNode } from 'react';
 
 import { BigCommercePaymentsPayLaterBanner } from '@bigcommerce/checkout/bigcommerce-payments-utils'
-import { type CheckoutContextProps, useThemeContext } from '@bigcommerce/checkout/contexts';
+import { type CheckoutContextProps } from '@bigcommerce/checkout/contexts';
 import { withLanguage, type WithLanguageProps } from '@bigcommerce/checkout/locale';
 import { type PaymentFormValues } from '@bigcommerce/checkout/payment-integration-api';
 import { BraintreePaypalCreditBanner, PaypalCommerceCreditBanner } from '@bigcommerce/checkout/paypal-utils';
@@ -93,12 +93,12 @@ export function getPaymentMethodTitle(
             [PaymentMethodId.BigCommercePaymentsPayPal]: {
                 logoUrl: cdnPath('/img/payment-providers/paypal_commerce_logo.svg'),
                 titleText: '',
-                subtitle: (props: PaymentMethodSubtitleProps) => <BigCommercePaymentsPayLaterBanner {...props} />
+                subtitle: (props: PaymentMethodSubtitleProps) => <BigCommercePaymentsPayLaterBanner containerId='bigcommerce-payments-banner-container' {...props} />
             },
             [PaymentMethodId.BigCommercePaymentsPayLater]: {
                 logoUrl: cdnPath('/img/payment-providers/paypal_commerce_logo_letter.svg'),
                 titleText: methodDisplayName,
-                subtitle: (props: PaymentMethodSubtitleProps) => <BigCommercePaymentsPayLaterBanner {...props} />
+                subtitle: (props: PaymentMethodSubtitleProps) => <BigCommercePaymentsPayLaterBanner containerId='bigcommerce-payments-paylater-banner-container' {...props} />
             },
             [PaymentMethodId.BigCommercePaymentsAlternativeMethod]: {
                 logoUrl: method.logoUrl || '',
@@ -166,10 +166,6 @@ export function getPaymentMethodTitle(
             },
             [PaymentMethodId.Laybuy]: {
                 logoUrl: cdnPath('/img/payment-providers/laybuy-checkout-header.png'),
-                titleText: '',
-            },
-            [PaymentMethodId.Masterpass]: {
-                logoUrl: 'https://masterpass.com/dyn/img/acc/global/mp_mark_hor_blk.svg',
                 titleText: '',
             },
             [PaymentMethodType.Paypal]: {
@@ -332,7 +328,6 @@ const PaymentMethodTitle: FunctionComponent<
 > = ({ cdnBasePath, checkoutSettings, storeCountryCode, onUnhandledError, formik: { values }, instruments, isSelected, language, method }) => {
     const methodName = getPaymentMethodName(language)(method);
     const { logoUrl, titleText, subtitle } = getPaymentMethodTitle(language, cdnBasePath, checkoutSettings, storeCountryCode)(method);
-    const { themeV2 } = useThemeContext();
 
     const getSelectedCardType = () => {
         if (!isSelected) {
@@ -393,8 +388,7 @@ const PaymentMethodTitle: FunctionComponent<
                 )}
 
                 {titleText && (
-                    <div className={classNames('paymentProviderHeader-name',
-                        { 'sub-header': themeV2 })}
+                    <div className="paymentProviderHeader-name sub-header"
                         data-test="payment-method-name">
                         {titleText}
                     </div>

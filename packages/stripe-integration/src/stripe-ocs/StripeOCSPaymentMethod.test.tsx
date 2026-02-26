@@ -7,7 +7,10 @@ import {
     type PaymentMethod,
     type WithStripeOCSPaymentInitializeOptions,
 } from '@bigcommerce/checkout-sdk';
-import { createStripeOCSPaymentStrategy } from '@bigcommerce/checkout-sdk/integrations/stripe';
+import {
+    createStripeCSPaymentStrategy,
+    createStripeOCSPaymentStrategy,
+} from '@bigcommerce/checkout-sdk/integrations/stripe';
 import { render } from '@testing-library/react';
 import { Formik } from 'formik';
 import { noop } from 'lodash';
@@ -140,7 +143,7 @@ describe('when using Stripe OCS payment', () => {
         expect(initializePayment).toHaveBeenCalledWith({
             gatewayId,
             methodId,
-            integrations: [createStripeOCSPaymentStrategy],
+            integrations: [createStripeOCSPaymentStrategy, createStripeCSPaymentStrategy],
             [gatewayId]: {
                 containerId: expectedContainerId,
                 layout: defaultAccordionLayout,
@@ -171,7 +174,7 @@ describe('when using Stripe OCS payment', () => {
         expect(initializePayment).toHaveBeenCalledWith({
             gatewayId,
             methodId,
-            integrations: [createStripeOCSPaymentStrategy],
+            integrations: [createStripeOCSPaymentStrategy, createStripeCSPaymentStrategy],
             [gatewayId]: {
                 containerId: expectedContainerId,
                 layout: defaultAccordionLayout,
@@ -261,6 +264,15 @@ describe('when using Stripe OCS payment', () => {
         render(<PaymentMethodTest {...props} method={method} />);
 
         expect(hidePaymentSubmitButtonMock).toHaveBeenCalledWith(method, false);
+    });
+
+    it('should not initialize method if payment not required', () => {
+        jest.spyOn(checkoutState.data, 'isPaymentDataRequired').mockReturnValue(false);
+
+        render(<PaymentMethodTest {...defaultProps} method={method} />);
+
+        expect(screen.queryByTestId('stripe-accordion-skeleton')).not.toBeInTheDocument();
+        expect(checkoutService.initializePayment).not.toHaveBeenCalled();
     });
 
     describe('# Stripe OCS accordion layout', () => {

@@ -1,0 +1,183 @@
+name: Production Build and Deploy
+concurrency:
+  group: prod-deploy # only one deployment per environment at a time
+
+on:
+  workflow_call:
+    inputs:
+      s3_bucket_name:
+        required: true
+        type: string
+      build_artifact_key:
+        required: true
+        type: string
+      github_sha:
+        required: true
+        type: string
+
+env:
+  AWS_REGION: 'us-east-1'
+
+permissions:
+  id-token: write # This is required for requesting the JWT for AWS
+  contents: read # This is required for actions/checkout
+
+jobs:
+  build-assets-upload-to-s3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      # download from GitHub Artifacts the build artifact from test.yaml
+      - name: Download build artifact from test workflow_call
+        id: download_build_artifact
+        if: inputs.build_artifact_key != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.build_artifact_key }}
+          path: dist
+          # run-id: ${{ github.event.inputs.build_run_id }} # Use the provided run ID
+          github-token: ${{ secrets.GITHUB_TOKEN }} # The default token works if permissions are set
+
+      # only need to build again if we did not pass in the build artifact from test?
+      # no caching of packages, this thing should run infrequently, and we likely want to ensure a full build each time
+      - name: Set up Node.js
+        if: ${{ steps.download_build_artifact.outcome == 'skipped' }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22' # DOES NOT WORK WITH NODE 24
+
+      - name: Install dependencies
+        if: ${{ steps.download_build_artifact.outcome == 'skipped' }}
+        run: npm ci
+
+      - name: Build Node Assets
+        if: ${{ steps.download_build_artifact.outcome == 'skipped' }}
+        run: npm run build
+
+      # these take upwards of 30 minutes ... not good for a pipeline like this. Should determine a better way, or if we actually even need to run them given our Playwright tests
+      # - name: run unit tests
+      #   if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+      #   run: npm run test > results.txt
+
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@00943011d9042930efac3dcd3a170e4273319bc8 # v5.1.0
+        with:
+          role-to-assume: ${{ secrets.ACTION_RUNNER_AWS_ROLE_PRODUCTION }}
+          role-session-name: BigCommerce_Checkout_Js_Prod_GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: create S3 rollback folder and copy active build to it
+        run: |
+          # copy current "active" build to a versioned folder for potential rollbacks
+          # from /active prefix, sync everything to /rollback prefix 
+          aws s3 cp "s3://${{ vars.S3_BUCKET_PRODUCTION }}/active" "s3://${{ vars.S3_BUCKET_PRODUCTION }}/rollback/${{ github.sha }}/" --recursive
+
+      - name: upload assets to S3
+        env:
+          S3_BUCKET: ${{ inputs.s3_bucket_name || vars.S3_BUCKET_PRODUCTION }}
+          CODE_VERSION: ${{ inputs.github_sha || github.sha }}
+        run: |
+          echo "GITHUB sha: $CODE_VERSION"
+          # at this point, the old site is still live at /active in cloudfront
+          # NEXT, sync local build to S3 /active prefix, --delete old files
+          aws s3 sync --delete dist s3://${{ vars.S3_BUCKET_PRODUCTION }}/active
+          aws s3api put-object-tagging --bucket ${{ vars.S3_BUCKET_PRODUCTION }} --key active/auto-loader.js --tagging '{"TagSet": [{ "Key": "github_commit_sha", "Value": "${{ github.sha }}" }]}'
+
+      - name: Reset CloudFront origin path to active if set to rollback from a previous rollback
+        run: |
+          echo "Detecting CloudFront origin path. Origin path should only be set after a rollback - will clear this if set."
+          aws cloudfront wait distribution-deployed --id ${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_PRODUCTION }}
+          DIST_CONFIG=$(aws cloudfront get-distribution-config --id ${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_PRODUCTION }})
+          ETAG=`echo $DIST_CONFIG | jq -r .ETag`  
+          echo "ETAG: $ETAG"
+          echo "$DIST_CONFIG"
+          config=`echo $DIST_CONFIG | jq .DistributionConfig`
+          ORIGIN_PATH=`echo "$config" | jq -r ".Origins.Items[0].OriginPath"`
+          echo "ORIGIN_PATH=$ORIGIN_PATH"
+          if [[ "$ORIGIN_PATH" == "/rollback" ]]; then
+            echo "CloudFront origin path is set to $ORIGIN_PATH, clearing origin path"
+            updated_config=$(echo "$config" | jq ".Origins.Items[0].OriginPath = \"/active\"")
+            aws cloudfront update-distribution --id ${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_PRODUCTION }} --if-match "$ETAG" --distribution-config "$updated_config"
+            echo "now wait for the CloudFront Distribution to be deployed"
+            aws cloudfront wait distribution-deployed --id ${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_PRODUCTION }}
+          else
+            echo "OriginPath not set to rollback, nothing to do here."
+          fi
+
+      - name: invalidate cloudfront cache
+        run: |
+          # TODO wait 10 minutes since last invalidation
+          INVALIDATION_RESPONSE=`aws cloudfront create-invalidation --distribution-id '${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_PRODUCTION }}' --paths "/*"`
+          echo "invalidation response: $INVALIDATION_RESPONSE"
+          INVALIDATION_ID=$(echo $INVALIDATION_RESPONSE | jq -r '.Invalidation.Id')
+          echo "invalidation id: $INVALIDATION_ID"
+          aws cloudfront wait invalidation-completed --id $INVALIDATION_ID --distribution-id ${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_PRODUCTION }}
+
+  visual-regression-test:
+    needs: build-assets-upload-to-s3
+    if: |
+      always() && (needs.build-assets-upload-to-s3.result == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "npm"
+          package-manager-cache: true
+          cache-dependency-path: "automated-testing"
+
+      # TODO how to ensure updating browser versions against this cache?
+      - name: Cache playwright browsers
+        id: cache-playwright-browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('automated-testing/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install dependencies
+        run: (cd automated-testing && npm ci)
+
+      - name: Install Playwright browsers (Chromium only)
+        if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
+        run: (cd automated-testing && npx playwright install chromium --with-deps)
+
+      - name: Create JSON Credentials file using Bash
+        run: |
+          # Define variables for JSON content
+          TEST_USERNAME="${{ secrets.VISUAL_REGRESSION_TEST_USERNAME }}"
+          TEST_USER_PASSWORD="${{ secrets.VISUAL_REGRESSION_TEST_USER_PASSWORD }}"
+
+          # Construct the JSON string
+          JSON_CONTENT=$(cat <<EOF
+          {
+            "users":[{"username": "$TEST_USERNAME",
+            "password": "$TEST_USER_PASSWORD"}]
+          }
+          EOF
+          )
+          echo "$JSON_CONTENT" > automated-testing/tests/regression/user-config.json
+
+      - name: Run visual regression tests
+        env:
+          BC_CHECKOUT_URL: "https://checkout.iapp.org/auto-loader.js"
+          RUNTIME_ENVIRONMENT: "production"
+        run: |
+          (cd automated-testing && npx playwright test --project=production-regression)
+
+      - name: Capture Playwright automation results, upload to GitHub Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-production
+          path: automated-testing/playwright-report/
+          retention-days: 30

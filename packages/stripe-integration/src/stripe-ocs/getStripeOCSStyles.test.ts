@@ -23,6 +23,9 @@ describe('getStripeOCSStyles', () => {
             [`#${containerId}--error`]: {
                 color: 'red',
             },
+            [`#${containerId}--accordion-header`]: {
+                'background-color': '#fcfcfc',
+            },
             [`#${containerId}--accordion-header .form-label`]: {
                 color: 'green',
                 'font-size': '16px',
@@ -38,7 +41,7 @@ describe('getStripeOCSStyles', () => {
             },
             [`#${containerId}--accordion-header .form-label::before`]: {
                 'border-color': 'black',
-                'border-width': '1px',
+                'border-width': '1.5px',
                 'background-color': 'white',
                 width: '30px',
             },
@@ -113,6 +116,7 @@ describe('getStripeOCSStyles', () => {
                         boxShadow: '0 0 5px rgba(0, 0, 0, 0.5)',
                     },
                     '.AccordionItem': {
+                        backgroundColor: '#fcfcfc',
                         borderRadius: 0,
                         borderWidth: 0,
                         borderBottom: '1px solid black',
@@ -147,7 +151,7 @@ describe('getStripeOCSStyles', () => {
                         fill: '#4496f6',
                     },
                     '.RadioIconOuter': {
-                        strokeWidth: '2.93px',
+                        strokeWidth: '4.40px',
                         stroke: 'black',
                         fill: 'white',
                     },
@@ -192,6 +196,7 @@ describe('getStripeOCSStyles', () => {
                 expect.objectContaining({
                     rules: expect.objectContaining({
                         '.AccordionItem': {
+                            backgroundColor: '#fcfcfc',
                             borderRadius: 0,
                             borderWidth: 0,
                             borderBottom: '1px solid black',

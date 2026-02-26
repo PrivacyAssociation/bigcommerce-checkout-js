@@ -1,0 +1,137 @@
+#########################################################################################################################
+#
+# Workflow to update Playwright visual regression test snapshots in the chosen environment
+#  1.hydrates test user data from secrets
+#  2.runs visual regression tests with --update-snapshots flag to update snapshots
+#  3.creates a pull request with the updated snapshots for review
+#  4. Developer merges snapshots into feature branch
+#
+# SECRETS (From GitHub Environment secrets):
+#  VISUAL_REGRESSION_TEST_USERNAME - username for the test user used in visual regression tests
+#  VISUAL_REGRESSION_TEST_USER_PASSWORD - password for the test user used in visual regression tests
+#  MYIAPP_WAF_TOKEN_NONPROD - WAF token for non-production environments to allow access through WAF during tests
+#
+# VARS (from GitHub Environment variables):
+#  environment_name - the target environment to update snapshots for (test or production)
+#
+#########################################################################################################################
+name: Update Playwright Snapshots
+concurrency:
+  group: ${{ github.workflow }}
+run-name: Update Playwright Visual Regression Snapshots in ${{ inputs.environment }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Select the target environment'
+        required: true
+        type: choice
+        options:
+          - test
+          - production
+
+env:
+  AWS_REGION: 'us-east-1'
+
+permissions:
+  contents: write # This is required for actions/checkout
+  pull-requests: write # necessary to create PR with gh CLI for updated snapshots
+
+jobs:
+  update-visual-regression-test-snapshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # environment: ${{ inputs.environment }}
+    env:
+      RUNTIME_ENVIRONMENT: ${{ inputs.environment }}
+      DEBUG_LOGS: ${{ vars.DEBUG_LOGS || 'false' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          package-manager-cache: true
+          cache-dependency-path: 'automated-testing'
+
+      # TODO how to ensure updating browser versions against this cache?
+      - name: Cache playwright browsers
+        id: cache-playwright-browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('automated-testing/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install dependencies
+        run: (cd automated-testing && npm ci)
+
+      - name: Install Playwright browsers (Chromium only)
+        if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
+        run: (cd automated-testing && npx playwright install chromium --with-deps)
+
+      - name: Hydrate Playwright test user data
+        run: |
+          # Define variables for JSON content
+          TEST_USERNAME="${{ secrets.VISUAL_REGRESSION_TEST_USERNAME }}"
+          TEST_USER_PASSWORD="${{ secrets.VISUAL_REGRESSION_TEST_USER_PASSWORD }}"
+
+          # Construct the JSON string
+          JSON_CONTENT=$(cat <<EOF
+          {
+            "users":[{"username": "$TEST_USERNAME",
+            "password": "$TEST_USER_PASSWORD"}]
+          }
+          EOF
+          )
+          echo "$JSON_CONTENT" > automated-testing/tests/regression/user-config.json
+
+      - name: Run visual regression tests and update snapshots for visual regressions
+        env:
+          BC_PREVIEW_CODE: ${{ secrets.BC_PREVIEW_CODE }}
+          WAF_TOKEN: ${{ secrets.MYIAPP_WAF_TOKEN }}
+        run: |
+          cd automated-testing
+          if [ "$DEBUG_LOGS" == "true" ]; then
+            echo "DEBUG: Using test user config: "
+            cat tests/regression/user-config.json
+          fi
+          if [ "$RUNTIME_ENVIRONMENT" == "production" ]; then
+            echo "Running snapshot updates against PRODUCTION environment"
+            export BC_CHECKOUT_URL="https://checkout.iapp.org/auto-loader.js"
+          else
+            echo "Running snapshot updates against TEST environment"
+            export BC_CHECKOUT_URL="https://test-checkout.iapp.org/auto-loader.js"
+          fi
+          npx playwright test --project="$RUNTIME_ENVIRONMENT-regression" --update-snapshots
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: automated-testing/playwright-report/
+          retention-days: 30
+
+      # TODO when no changes are present this will fail, only run this if changes are present
+      - name: Create Pull Request with gh CLI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Or a PAT with appropriate scopes
+        run: |
+          git config --global user.email "devops@iapp.org"
+          git config --global user.name "devops IAPP"
+          NEW_BRANCH_NAME="feature/playwright-snapshots-update-${{github.sha}}"
+          git checkout -b $NEW_BRANCH_NAME
+          echo "NEW BRANCH NAME: $NEW_BRANCH_NAME"
+          git add automated-testing
+          git commit -m "newly updated snapshots"
+          git push -u origin "$NEW_BRANCH_NAME"
+          # opening a PR against master from within a Actions Workflow will NEVER trigger the pre-merge checks, meaning we can't merge it
+          #  - must manually open a PR as a human or invest more backlog effort into a more complex workflow
+          echo "Creating PR against branch ${{ github.ref_name }}"
+          gh pr create --base "${{ github.ref_name }}" --head "$NEW_BRANCH_NAME" --title "Playwright snapshot updates ${{ github.ref_name }}" --body "This PR was created automatically by GitHub Actions."
+          

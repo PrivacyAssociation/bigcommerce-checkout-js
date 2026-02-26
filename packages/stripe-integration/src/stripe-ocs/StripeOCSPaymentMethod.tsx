@@ -3,6 +3,7 @@ import {
     type PaymentInitializeOptions,
 } from '@bigcommerce/checkout-sdk';
 import {
+    createStripeCSPaymentStrategy,
     createStripeLinkV2CustomerStrategy,
     createStripeOCSPaymentStrategy,
 } from '@bigcommerce/checkout-sdk/integrations/stripe';
@@ -98,7 +99,6 @@ const StripeOCSPaymentMethod: FunctionComponent<PaymentMethodProps> = ({
         setValidationSchema,
     } = paymentForm;
     const instruments = checkoutState.data.getInstruments(method) || [];
-
     const {
         data: { getCheckout, isPaymentDataRequired },
         statuses: { isLoadingInstruments },
@@ -114,7 +114,7 @@ const StripeOCSPaymentMethod: FunctionComponent<PaymentMethodProps> = ({
 
             return checkoutService.initializePayment({
                 ...options,
-                integrations: [createStripeOCSPaymentStrategy],
+                integrations: [createStripeOCSPaymentStrategy, createStripeCSPaymentStrategy],
                 stripeocs: {
                     containerId,
                     layout: {
@@ -150,6 +150,20 @@ const StripeOCSPaymentMethod: FunctionComponent<PaymentMethodProps> = ({
         ],
     );
 
+    const initializeStripeCustomer = useCallback(
+        (options: CustomerInitializeOptions) => {
+            return checkoutService.initializeCustomer({
+                ...options,
+                integrations: [createStripeLinkV2CustomerStrategy],
+            });
+        },
+        [checkoutService],
+    );
+
+    if (!isPaymentDataRequired()) {
+        return null;
+    }
+
     const renderCustomOCSSectionStyles = () => (
         <style>
             {`
@@ -161,15 +175,6 @@ const StripeOCSPaymentMethod: FunctionComponent<PaymentMethodProps> = ({
                 }
             `}
         </style>
-    );
-    const initializeStripeCustomer = useCallback(
-        (options: CustomerInitializeOptions) => {
-            return checkoutService.initializeCustomer({
-                ...options,
-                integrations: [createStripeLinkV2CustomerStrategy],
-            });
-        },
-        [checkoutService],
     );
 
     const renderCheckoutElementsForStripeOCSStyling = () => (
@@ -186,16 +191,21 @@ const StripeOCSPaymentMethod: FunctionComponent<PaymentMethodProps> = ({
                 <div className="form-label optimizedCheckout-form-label" />
             </div>
             <div
-                className="form-checklist-header--selected"
+                className="form-checklist-item optimizedCheckout-form-checklist-item form-checklist-item--selected optimizedCheckout-form-checklist-item--selected"
                 id={`${containerId}--accordion-header-selected`}
             >
-                <input
-                    className="form-checklist-checkbox optimizedCheckout-form-checklist-checkbox"
-                    defaultChecked
-                    id={`${containerId}-radio-input-selected`}
-                    type="radio"
-                />
-                <div className="form-label optimizedCheckout-form-label" />
+                <div
+                    className="form-checklist-header--selected"
+                    id={`${containerId}--accordion-header-selected`}
+                >
+                    <input
+                        className="form-checklist-checkbox optimizedCheckout-form-checklist-checkbox"
+                        defaultChecked
+                        id={`${containerId}-radio-input-selected`}
+                        type="radio"
+                    />
+                    <div className="form-label optimizedCheckout-form-label" />
+                </div>
             </div>
             <div className="optimizedCheckout-form-input" id={`${containerId}--input`}>
                 <div className="form-field--error">
@@ -248,5 +258,8 @@ const StripeOCSPaymentMethod: FunctionComponent<PaymentMethodProps> = ({
 
 export default toResolvableComponent<PaymentMethodProps, PaymentMethodResolveId>(
     StripeOCSPaymentMethod,
-    [{ gateway: 'stripeocs', id: 'optimized_checkout' }],
+    [
+        { gateway: 'stripeocs', id: 'optimized_checkout' },
+        { gateway: 'stripeocs', id: 'checkout_session' },
+    ],
 );
