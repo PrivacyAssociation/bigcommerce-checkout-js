@@ -15,6 +15,7 @@ export interface MultiShippingTableItem {
     quantity: number;
     id: string | number;
     imageUrl?: string;
+    stockPosition?: PhysicalItem['stockPosition'];
 }
 
 export interface MultiShippingTableItemWithType extends MultiShippingTableItem {

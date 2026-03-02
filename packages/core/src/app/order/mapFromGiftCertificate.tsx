@@ -3,9 +3,9 @@ import React from 'react';
 
 import { IconGiftCertificate } from '../ui/icon';
 
-import { type OrderSummaryItemProps } from './OrderSummaryItem';
+import { type OrderItemType } from './OrderSummaryItem';
 
-function mapFromGiftCertificate(item: GiftCertificateItem): OrderSummaryItemProps {
+function mapFromGiftCertificate(item: GiftCertificateItem): OrderItemType {
     return {
         id: item.id,
         quantity: 1,

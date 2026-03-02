@@ -8,7 +8,7 @@ import { getStoreConfig } from '../config/config.mock';
 
 import OrderSummaryItem from './OrderSummaryItem';
 
-describe('OrderSummaryItems', () => {
+describe('OrderSummaryItem', () => {
     const localeContext = createLocaleContext(getStoreConfig());
     const currencyService: CurrencyService = localeContext.currency;
 
@@ -16,18 +16,21 @@ describe('OrderSummaryItems', () => {
         it('renders component', () => {
             render(
                 <OrderSummaryItem
-                    amount={10}
-                    amountAfterDiscount={8}
-                    id="foo"
-                    image={<img />}
-                    name="Product"
-                    productOptions={[
-                        {
-                            testId: 'test-id',
-                            content: <span />,
-                        },
-                    ]}
-                    quantity={2}
+                    orderItem={{
+                        amount: 10,
+                        amountAfterDiscount: 8,
+                        id: 'foo',
+                        image: <img />,
+                        name: 'Product',
+                        productOptions: [
+                            {
+                                testId: 'test-id',
+                                content: <span />,
+                            },
+                        ],
+                        quantity: 2,
+                    }}
+                    shouldExpandBackorderDetails={false}
                 />,
             );
 
@@ -42,7 +45,10 @@ describe('OrderSummaryItems', () => {
     describe('when no discount is present', () => {
         it('does not render discount and does not apply strike to original amount', () => {
             render(
-                <OrderSummaryItem amount={10} id="foo" name="Product" quantity={2} />,
+                <OrderSummaryItem
+                    orderItem={{ amount: 10, id: 'foo', name: 'Product', quantity: 2 }}
+                    shouldExpandBackorderDetails={false}
+                />,
             );
 
             expect(screen.queryByTestId('cart-item-product-price--afterDiscount')).not.toBeInTheDocument();
@@ -54,11 +60,14 @@ describe('OrderSummaryItems', () => {
         it('does not render discount and does not apply strike to original amount', () => {
             render(
                 <OrderSummaryItem
-                    amount={10}
-                    amountAfterDiscount={10}
-                    id="foo"
-                    name="Product"
-                    quantity={2}
+                    orderItem={{
+                        amount: 10,
+                        amountAfterDiscount: 10,
+                        id: 'foo',
+                        name: 'Product',
+                        quantity: 2,
+                    }}
+                    shouldExpandBackorderDetails={false}
                 />
             );
 
@@ -71,13 +80,16 @@ describe('OrderSummaryItems', () => {
         it('does render description', () => {
             render(
                 <OrderSummaryItem
-                    amount={10}
-                    description="Description"
-                    id="foo"
-                    name="Product"
-                    quantity={2}
+                    orderItem={{
+                        amount: 10,
+                        description: 'Description',
+                        id: 'foo',
+                        name: 'Product',
+                        quantity: 2,
+                    }}
+                    shouldExpandBackorderDetails={false}
                 />
-            )
+            );
 
             expect(screen.getByTestId('cart-item-product-description')).toHaveTextContent('Description');
         });

@@ -5,7 +5,7 @@ import React from 'react';
 
 import { CheckoutProvider, LocaleContext, type LocaleContextType } from '@bigcommerce/checkout/contexts';
 import { createLocaleContext } from '@bigcommerce/checkout/locale';
-import { render, screen } from '@bigcommerce/checkout/test-utils';
+import { render, screen, waitFor } from '@bigcommerce/checkout/test-utils';
 
 import {
     getCustomItem,
@@ -38,8 +38,8 @@ describe('OrderSummaryItems', () => {
         jest.spyOn(checkoutService.getState().data, 'getConfig').mockReturnValue({
             ...getStoreConfig(),
             inventorySettings: {
-                showQuantityOnBackorder: false,
-                showBackorderMessage: false,
+                showQuantityOnBackorder: true,
+                showBackorderMessage: true,
                 showQuantityOnHand: false,
                 showBackorderAvailabilityPrompt: false,
                 backorderAvailabilityPrompt: null,
@@ -49,7 +49,7 @@ describe('OrderSummaryItems', () => {
     });
 
     describe('backorder quantity text', () => {
-        it('renders backorder count when items have backorder quantities', () => {
+        it('renders backorder details link when items have backorder quantities', () => {
             renderOrderSummaryItems({
                 displayLineItemsCount: true,
                 items: {
@@ -70,11 +70,11 @@ describe('OrderSummaryItems', () => {
                 },
             });
 
-            expect(screen.getByTestId('cart-backorder-total')).toBeInTheDocument();
-            expect(screen.getByTestId('cart-backorder-total')).toHaveTextContent('5 will be backordered');
+            expect(screen.getByTestId('cart-backorder-link')).toBeInTheDocument();
+            expect(screen.getByTestId('cart-backorder-link')).toHaveTextContent('Show backorder details');
         });
 
-        it('renders backorder count from physical items only when digital items have no backorders', () => {
+        it('renders backorder details link from physical items only when digital items have no backorders', () => {
             renderOrderSummaryItems({
                 displayLineItemsCount: true,
                 items: {
@@ -90,10 +90,10 @@ describe('OrderSummaryItems', () => {
                 },
             });
 
-            expect(screen.getByTestId('cart-backorder-total')).toHaveTextContent('7 will be backordered');
+            expect(screen.getByTestId('cart-backorder-link')).toHaveTextContent('Show backorder details');
         });
 
-        it('does not render backorder count when no items have backorder quantities', () => {
+        it('does not render backorder details link when no items have backorder quantities', () => {
             renderOrderSummaryItems({
                 displayLineItemsCount: true,
                 items: {
@@ -104,10 +104,10 @@ describe('OrderSummaryItems', () => {
                 },
             });
 
-            expect(screen.queryByTestId('cart-backorder-total')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('cart-backorder-link')).not.toBeInTheDocument();
         });
 
-        it('does not render backorder count when stockPosition is undefined', () => {
+        it('does not render backorder details link when stockPosition is undefined', () => {
             renderOrderSummaryItems({
                 displayLineItemsCount: true,
                 items: {
@@ -123,10 +123,10 @@ describe('OrderSummaryItems', () => {
                 },
             });
 
-            expect(screen.queryByTestId('cart-backorder-total')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('cart-backorder-link')).not.toBeInTheDocument();
         });
 
-        it('does not render backorder count when quantityBackordered is zero', () => {
+        it('does not render backorder details link when quantityBackordered is zero', () => {
             renderOrderSummaryItems({
                 displayLineItemsCount: true,
                 items: {
@@ -142,7 +142,7 @@ describe('OrderSummaryItems', () => {
                 },
             });
 
-            expect(screen.queryByTestId('cart-backorder-total')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('cart-backorder-link')).not.toBeInTheDocument();
         });
     });
 
@@ -240,8 +240,10 @@ describe('OrderSummaryItems', () => {
 
                     expect(screen.getByText('See All')).toBeInTheDocument();
                     expect(screen.queryByText('See Less')).not.toBeInTheDocument();
-                    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container
-                    expect(container.querySelectorAll('.productList-item')).toHaveLength(4);
+                    await waitFor(() => {
+                        // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container
+                        expect(container.querySelectorAll('.productList-item')).toHaveLength(4);
+                    });
                 });
             });
         });

@@ -1,9 +1,9 @@
 import { type PhysicalItem } from '@bigcommerce/checkout-sdk';
 
 import getOrderSummaryItemImage from './getOrderSummaryItemImage';
-import { type OrderSummaryItemProps } from './OrderSummaryItem';
+import { type OrderItemType } from './OrderSummaryItem';
 
-function mapFromPhysical(item: PhysicalItem): OrderSummaryItemProps {
+function mapFromPhysical(item: PhysicalItem): OrderItemType {
     return {
         id: item.id,
         quantity: item.quantity,
@@ -16,6 +16,9 @@ function mapFromPhysical(item: PhysicalItem): OrderSummaryItemProps {
             testId: 'cart-item-product-option',
             content: `${option.name} ${option.value}`,
         })),
+        quantityBackordered: item.stockPosition?.quantityBackordered,
+        quantityOnHand: item.stockPosition?.quantityOnHand,
+        backorderMessage: item.stockPosition?.backorderMessage || undefined,
     };
 }
 

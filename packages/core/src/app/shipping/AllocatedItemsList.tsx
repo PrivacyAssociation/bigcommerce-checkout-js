@@ -4,7 +4,7 @@ import { TranslatedString } from '@bigcommerce/checkout/locale';
 
 import { IconClose } from "../ui/icon";
 
-import { renderItemContent } from "./ConsignmentLineItemDetail";
+import { ConsignmentLineItemContent } from "./ConsignmentLineItemDetail";
 import { ItemSplitTooltip } from "./ItemSplitTooltip";
 import { type MultiShippingTableData, type MultiShippingTableItemWithType } from "./MultishippingType";
 
@@ -25,7 +25,7 @@ const AllocatedItemsList = ({ assignedItems, onUnassignItem }: AllocatedItemsLis
             <ul className="allocated-line-items-list">
                 {assignedItems.lineItems.map(item => (
                     <li key={item.id}>
-                        {renderItemContent(item)}
+                        <ConsignmentLineItemContent item={item} />
                         <span data-test={`remove-${item.id.toString()}-button`} onClick={() => onUnassignItem(item)}>
                             <IconClose />
                         </span>

@@ -17,7 +17,7 @@
     }
 
     // optimizedCheckout-contentPrimary
-    .body-regular, .body-cta, .body-medium, .body-bold {
+    .body-regular, .body-cta, .body-thin, .body-medium, .body-bold {
         color: $color-black;
         font-family: $fontFamily-montserrat;
         font-size: $fontSize-base;
@@ -30,6 +30,11 @@
 
     .body-medium {
         font-weight: $fontWeight-medium;
+    }
+
+    .body-thin {
+        font-weight: $fontWeight-thin;
+        color: $color-secondaryDarkest;
     }
 
     .body-bold {

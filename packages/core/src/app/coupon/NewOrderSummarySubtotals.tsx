@@ -1,8 +1,9 @@
 import type { Fee, OrderFee, Tax } from '@bigcommerce/checkout-sdk';
-import React, { type FunctionComponent, useState } from 'react';
+import React, { type FunctionComponent, useRef, useState } from 'react';
 
 import { preventDefault } from '@bigcommerce/checkout/dom-utils';
 import { TranslatedString } from '@bigcommerce/checkout/locale';
+import { CollapseCSSTransition } from '@bigcommerce/checkout/ui';
 
 import { isOrderFee, OrderSummaryDiscount, OrderSummaryPrice }  from '../order';
 
@@ -38,6 +39,7 @@ const NewOrderSummarySubtotals: FunctionComponent<MultiCouponProps> = ({
     } = useMultiCoupon();
 
     const [isCouponFormVisible, setIsCouponFormVisible] = useState(!isCouponFormCollapsed);
+    const couponFormRef = useRef<HTMLDivElement>(null);
 
     const toggleCouponForm = () => {
         setIsCouponFormVisible((prevState) => !prevState);
@@ -58,9 +60,11 @@ const NewOrderSummarySubtotals: FunctionComponent<MultiCouponProps> = ({
                         <TranslatedString id="redeemable.toggle_action" />
                     </a>
 
-                    {isCouponFormVisible && (
-                        <CouponForm />
-                    )}
+                    <CollapseCSSTransition isVisible={isCouponFormVisible} nodeRef={couponFormRef}>
+                        <div className="coupon-form-wrapper" ref={couponFormRef}>
+                            <CouponForm />
+                        </div>
+                    </CollapseCSSTransition>
                 </section>
             )}
             <section className="subtotals-with-multi-coupon cart-section optimizedCheckout-orderSummary-cartSection">
