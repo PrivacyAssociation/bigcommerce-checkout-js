@@ -56,5 +56,4 @@ jobs:
 
       - name: Push changes to fork
         run: |
-          echo "token: $GH_TOKEN"
           git push origin master
