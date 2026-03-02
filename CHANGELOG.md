@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.751.0](https://github.com/bigcommerce/checkout-js/compare/v1.750.0...v1.751.0) (2026-03-02)
+
+
+### Features
+
+* **payment:** PI-5028 checkout-sdk bump ([0f85b20](https://github.com/bigcommerce/checkout-js/commit/0f85b20fce227aaea93aac12249c0853eef2cc24))
+
+## [1.750.0](https://github.com/bigcommerce/checkout-js/compare/v1.749.1...v1.750.0) (2026-03-02)
+
+
+### Features
+
+* **payment:** Update Stripe UPE customer step to match ThemeV2 ([#2851](https://github.com/bigcommerce/checkout-js/issues/2851)) ([1bcddcb](https://github.com/bigcommerce/checkout-js/commit/1bcddcbbb6372f3a96da01a11bdfeea39ec50ae4))
+
+### [1.749.1](https://github.com/bigcommerce/checkout-js/compare/v1.749.0...v1.749.1) (2026-03-02)
+
+## [1.749.0](https://github.com/bigcommerce/checkout-js/compare/v1.748.1...v1.749.0) (2026-03-01)
+
+
+### Features
+
+* **checkout:** Handle cart_stock_positions_changed error from submitting order and render the message modal ([#2830](https://github.com/bigcommerce/checkout-js/issues/2830)) ([9b6e425](https://github.com/bigcommerce/checkout-js/commit/9b6e425c2e729aba4de3a5655db8212f1e65f473))
+
 ### [1.748.1](https://github.com/bigcommerce/checkout-js/compare/v1.748.0...v1.748.1) (2026-02-25)
 
 ## [1.748.0](https://github.com/bigcommerce/checkout-js/compare/v1.747.0...v1.748.0) (2026-02-25)
