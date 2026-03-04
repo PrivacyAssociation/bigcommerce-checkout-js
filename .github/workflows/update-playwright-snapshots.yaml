@@ -13,7 +13,6 @@
 #
 # VARS (from GitHub Environment variables):
 #  environment_name - the target environment to update snapshots for (test or production)
-#
 #########################################################################################################################
 name: Update Playwright Snapshots
 concurrency:
