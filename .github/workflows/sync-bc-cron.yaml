@@ -34,17 +34,26 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        with:
+          ref: master
+          fetch-depth: 0 # Fetch all history for all branches and tags
+          token: ${{ secrets.UPSTREAM_SYNC_GITHUB_PAT }} # Use the PAT with repo permissions
+      
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "devops@iapp.org"
+      
+      - name: Fetch upstream changes
+        run: |
+          git remote add upstream https://github.com/bigcommerce/checkout-js
+          git remote -v
+          git fetch upstream
 
       - name: Sync upstream main to master
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          gh repo sync -b master
+          git merge upstream/master --no-edit
 
-  invoke-test-workflow:
-    needs: sync-bc-main-to-master
-    if: (needs.sync-bc-main-to-master.result == 'success')
-    uses: ./.github/workflows/test.yaml
-    secrets: inherit
-    with:
-      build_run_id: ${{ github.run_id }} 
+      - name: Push changes to fork
+        run: |
+          git push origin master
