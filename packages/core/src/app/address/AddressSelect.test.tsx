@@ -3,7 +3,12 @@ import { type CheckoutService, createCheckoutService } from '@bigcommerce/checko
 import { noop } from 'lodash';
 import React from 'react';
 
-import { CheckoutProvider, LocaleContext, type LocaleContextType } from '@bigcommerce/checkout/contexts';
+import {
+    CheckoutProvider,
+    defaultCapabilities,
+    LocaleContext,
+    type LocaleContextType,
+} from '@bigcommerce/checkout/contexts';
 import { createLocaleContext } from '@bigcommerce/checkout/locale';
 import { fireEvent, render, screen } from '@bigcommerce/checkout/test-utils';
 
@@ -93,24 +98,21 @@ describe('AddressSelect component', () => {
         // TODO: update with userEvent and investigate range.cloneRange() issue
         fireEvent.click(screen.getByTestId('address-select-button'));
         // TODO: update with userEvent and investigate range.cloneRange() issue
-        fireEvent.click(screen.getByTestId('add-new-address'))
+        fireEvent.click(screen.getByTestId('add-new-address'));
 
         expect(onUseNewAddress).toHaveBeenCalled();
 
-        // eslint-disable-next-line testing-library/no-node-access
-        const addressOption = screen.getAllByTestId('address-select-option')[0].firstChild;
+        const firstAddressOption = screen.getAllByTestId('address-select-option-action')[0];
 
-        expect(addressOption).toBeInTheDocument();
+        expect(firstAddressOption).toBeInTheDocument();
 
-        if (addressOption) {
-            // TODO: update with userEvent and investigate range.cloneRange() issue
-            fireEvent.click(addressOption);
-        }
+        // TODO: update with userEvent and investigate range.cloneRange() issue
+        fireEvent.click(firstAddressOption);
 
         expect(onSelectAddress).toHaveBeenCalledWith(getCustomer().addresses[0]);
     });
 
-    it('doest not trigger onSelectAddress callback if same address is selected', () => {
+    it('does not trigger onSelectAddress callback if same address is selected', () => {
         const onSelectAddress = jest.fn();
         const selectedAddress = getCustomer().addresses[0];
 
@@ -121,17 +123,41 @@ describe('AddressSelect component', () => {
         // TODO: update with userEvent and investigate range.cloneRange() issue
         fireEvent.click(addressSelectButton);
 
-        // eslint-disable-next-line testing-library/no-node-access
-        const addressOption = screen.getAllByTestId('address-select-option')[0].firstChild;
+        const firstAddressOption = screen.getAllByTestId('address-select-option-action')[0];
 
-        expect(addressOption).toBeInTheDocument();
+        expect(firstAddressOption).toBeInTheDocument();
 
-        if (addressOption) {
-            // TODO: update with userEvent and investigate range.cloneRange() issue
-            fireEvent.click(addressOption);
-        }
+        // TODO: update with userEvent and investigate range.cloneRange() issue
+        fireEvent.click(firstAddressOption);
 
         expect(onSelectAddress).not.toHaveBeenCalled();
+    });
+
+    it('renders searchable address dropdown when company address book is enabled', () => {
+        const storeConfig = getStoreConfig();
+        const configWithCompanyAddressBook = {
+            ...storeConfig,
+            checkoutSettings: {
+                ...storeConfig.checkoutSettings,
+                capabilities: {
+                    ...defaultCapabilities,
+                    shipping: {
+                        ...defaultCapabilities.shipping,
+                        companyAddressBook: true,
+                    },
+                },
+            },
+        };
+
+        jest.spyOn(checkoutService.getState().data, 'getConfig').mockReturnValue(configWithCompanyAddressBook);
+
+        renderAddressSelect();
+
+        fireEvent.click(screen.getByTestId('address-select-button'));
+
+        expect(
+            screen.getByRole('textbox', { name: 'Search addresses' }),
+        ).toBeInTheDocument();
     });
 
     it('shows Powered By PP Fastlane label', () => {

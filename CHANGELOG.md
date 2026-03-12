@@ -2,6 +2,73 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.761.1](https://github.com/bigcommerce/checkout-js/compare/v1.761.0...v1.761.1) (2026-03-12)
+
+## [1.761.0](https://github.com/bigcommerce/checkout-js/compare/v1.760.0...v1.761.0) (2026-03-11)
+
+
+### Features
+
+* **checkout:** CHECKOUT-9822 Hide billing same as shipping check based on capability ([#2883](https://github.com/bigcommerce/checkout-js/issues/2883)) ([b292a05](https://github.com/bigcommerce/checkout-js/commit/b292a058dbc239742da50212957096dc0b944763))
+* **checkout:** CHECKOUT-9835 Build searchable address selector ([#2875](https://github.com/bigcommerce/checkout-js/issues/2875)) ([0a151a3](https://github.com/bigcommerce/checkout-js/commit/0a151a3626da9e50da5e12d316aea4758ff60f64))
+* **checkout:** CHECKOUT-9835 Update Capabilities Context in Tests ([#2885](https://github.com/bigcommerce/checkout-js/issues/2885)) ([a73083f](https://github.com/bigcommerce/checkout-js/commit/a73083f1722edf3b7de837002f3a893793cecea7))
+
+## [1.760.0](https://github.com/bigcommerce/checkout-js/compare/v1.759.1...v1.760.0) (2026-03-10)
+
+
+### Features
+
+* **payment:** PI-5030 checkout-sdk bump version to 1.883.0 ([f317c5b](https://github.com/bigcommerce/checkout-js/commit/f317c5b3dccc3f6d5da2f990f868382c3a8bd4b0))
+
+### [1.759.1](https://github.com/bigcommerce/checkout-js/compare/v1.759.0...v1.759.1) (2026-03-09)
+
+## [1.759.0](https://github.com/bigcommerce/checkout-js/compare/v1.758.0...v1.759.0) (2026-03-09)
+
+
+### Features
+
+* **checkout:** CHECKOUT-9792 Hide edit cart link based on capability ([#2880](https://github.com/bigcommerce/checkout-js/issues/2880)) ([6aa0f8c](https://github.com/bigcommerce/checkout-js/commit/6aa0f8c9cfacaf2c86533018c9af13bb20dbe25b))
+
+## [1.758.0](https://github.com/bigcommerce/checkout-js/compare/v1.757.0...v1.758.0) (2026-03-09)
+
+
+### Features
+
+* **checkout:** CHECKOUT-9792 Refactor capabilities into its own context ([#2879](https://github.com/bigcommerce/checkout-js/issues/2879)) ([c9ea64d](https://github.com/bigcommerce/checkout-js/commit/c9ea64dc8b030f381c72c70b60740531a1975ff4))
+
+## [1.757.0](https://github.com/bigcommerce/checkout-js/compare/v1.756.2...v1.757.0) (2026-03-09)
+
+
+### Features
+
+* **checkout:** AI-19 Add rate limited permalink view ([e9906a5](https://github.com/bigcommerce/checkout-js/commit/e9906a59a982b42f0939896df28597ef423b9ab6))
+* **checkout:** AI-19 Allow retry on failure ([3e940bf](https://github.com/bigcommerce/checkout-js/commit/3e940bff58228fc15949affef94b956ab2a60bc8))
+* **checkout:** AI-19 Guest access ([dbe3d9b](https://github.com/bigcommerce/checkout-js/commit/dbe3d9b69a6c26a89515f726446ab317e0cf92b9))
+* **checkout:** AI-19 Make strings translatable ([5601aa6](https://github.com/bigcommerce/checkout-js/commit/5601aa69f9c95528e96fc6b0768b4dce53fd17fa))
+* **checkout:** CHECKOUT-9547 Remove Data Collection ([#2815](https://github.com/bigcommerce/checkout-js/issues/2815)) ([cd061f2](https://github.com/bigcommerce/checkout-js/commit/cd061f2546981b9e65d61286461462f5fae05172))
+
+
+### Code Refactoring
+
+* **checkout:** AI-19 Improve naming ([f4bb114](https://github.com/bigcommerce/checkout-js/commit/f4bb11404d400489f000f767845fb2d999406204))
+* **checkout:** AI-19 Reduce RequestSender instantiations ([59decb4](https://github.com/bigcommerce/checkout-js/commit/59decb4c78ef7cbc22d36885c5cd6ac657d02daf))
+* **checkout:** AI-19 Remove dead code ([7ec8299](https://github.com/bigcommerce/checkout-js/commit/7ec829983f7aa7b40974bbc81d30f9488618e65f))
+* **checkout:** AI-19 Remove unused translations ([d6396f9](https://github.com/bigcommerce/checkout-js/commit/d6396f9cc5844a9e0bf4612b0fef1069c9f1c169))
+* **checkout:** AI-19 Resolve lint errors ([8249677](https://github.com/bigcommerce/checkout-js/commit/8249677041611106fa635c5e77a0bc7bc8cee335))
+* **checkout:** AI-19 Unify types ([00562b2](https://github.com/bigcommerce/checkout-js/commit/00562b2c05f35ea654ac791c8e29912c5f3c2b1e))
+* **checkout:** AI-19 Use enum, button; clear resendSuccess; fix indentation ([b14a5a7](https://github.com/bigcommerce/checkout-js/commit/b14a5a7b6a7fc9c15f3ec87d8e03c5d16cf89d9d))
+* **checkout:** AI-19 Use JSON body ([cd39d13](https://github.com/bigcommerce/checkout-js/commit/cd39d13d57afb6c6ab27c462a1abd731bcbcaba8))
+* **checkout:** AI-19 Use RequestSender ([f01c25b](https://github.com/bigcommerce/checkout-js/commit/f01c25b0840340bc4920afa33a9a55a50eef5956))
+
+### [1.756.2](https://github.com/bigcommerce/checkout-js/compare/v1.756.1...v1.756.2) (2026-03-09)
+
+
+### Bug Fixes
+
+* **payment:** CHECKOUT-9796 Pass rollOutLazyPaymentStrategies flag to checkout service ([#2877](https://github.com/bigcommerce/checkout-js/issues/2877)) ([48a2089](https://github.com/bigcommerce/checkout-js/commit/48a2089ab301aa7d6e2120c0f83fa7acf10b5a90))
+
+### [1.756.1](https://github.com/bigcommerce/checkout-js/compare/v1.756.0...v1.756.1) (2026-03-06)
+
 ## [1.756.0](https://github.com/bigcommerce/checkout-js/compare/v1.755.0...v1.756.0) (2026-03-05)
 
 
