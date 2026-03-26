@@ -5,6 +5,7 @@ import { shouldUseStripeLinkByMinimumAmount } from '@bigcommerce/checkout/instru
 import { PaymentMethodId } from '@bigcommerce/checkout/payment-integration-api';
 
 import { EMPTY_ARRAY, isExperimentEnabled } from '../../common/utility';
+import getBackorderCount from '../../order/getBackorderCount';
 import getProviderWithCustomCheckout from '../../payment/getProviderWithCustomCheckout';
 import getShippableItemsCount from '../getShippableItemsCount';
 import getShippingMethodId from '../getShippingMethodId';
@@ -94,6 +95,9 @@ export const useShipping = () => {
         config.checkoutSettings.providerWithCustomCheckout,
     );
 
+    const showDefaultShippingExpectationPrompt = getBackorderCount(cart.lineItems) > 0 && config.inventorySettings?.showDefaultShippingExpectationPrompt;
+    const defaultShippingExpectationPrompt = config.inventorySettings?.defaultShippingExpectationPrompt ?? undefined;
+
     return {
         assignItem: checkoutService.assignItemsToAddress,
         billingAddress: getBillingAddress(),
@@ -104,16 +108,19 @@ export const useShipping = () => {
         customer,
         customerMessage: checkout.customerMessage,
         createCustomerAddress: checkoutService.createCustomerAddress,
+        defaultShippingExpectationMessage: showDefaultShippingExpectationPrompt ? defaultShippingExpectationPrompt : undefined,
         deinitializeShippingMethod: checkoutService.deinitializeShipping,
         deleteConsignments: deleteConsignmentsSelector({
             checkoutService,
             checkoutState,
         }),
         getFields: getShippingAddressFields,
+        hasMultiShippingEnabled,
         initializeShippingMethod: checkoutService.initializeShipping,
         isGuest: customer.isGuest,
         isInitializing: isLoadingShippingCountries() || isLoadingShippingOptions(),
         isLoading,
+        isNoCountriesErrorOnCheckoutEnabled: isExperimentEnabled(config.checkoutSettings, 'CHECKOUT-9630.no_countries_error_on_checkout', true),
         isShippingStepPending: isShippingStepPending(),
         loadShippingAddressFields: checkoutService.loadShippingAddressFields,
         loadBillingAddressFields: checkoutService.loadBillingAddressFields,
