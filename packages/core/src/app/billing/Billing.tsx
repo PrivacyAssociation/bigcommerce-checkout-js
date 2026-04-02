@@ -1,7 +1,7 @@
-import type { CheckoutSelectors } from '@bigcommerce/checkout-sdk';
+import type { CheckoutSelectors, FormField } from '@bigcommerce/checkout-sdk';
 import React, { type ReactElement, useEffect } from 'react';
 
-import { useCheckout } from '@bigcommerce/checkout/contexts';
+import { useCapabilities, useCheckout } from '@bigcommerce/checkout/contexts';
 import { TranslatedString } from '@bigcommerce/checkout/locale';
 import { AddressFormSkeleton } from '@bigcommerce/checkout/ui';
 
@@ -17,8 +17,21 @@ export interface BillingProps {
     onUnhandledError(error: Error): void;
 }
 
+const getFieldsWithExtraFields = (getBillingAddressFields: (countryCode: string) => FormField[], hasExtraAddressFields: boolean, getAddressExtraFormFields: () => FormField[], countryCode?: string) => {
+    const addressFields = getBillingAddressFields(countryCode || '');
+
+    if (!hasExtraAddressFields) {
+        return addressFields;
+    }
+
+    const extraAddressFields = getAddressExtraFormFields();
+
+    return [...addressFields, ...extraAddressFields];
+};
+
 const Billing = ({ navigateNextStep, onReady, onUnhandledError }:BillingProps): ReactElement => {
     const { checkoutService, checkoutState } = useCheckout();
+    const { userJourney: { hasExtraAddressFields } } = useCapabilities();
 
     const {
         data: {
@@ -28,6 +41,7 @@ const Billing = ({ navigateNextStep, onReady, onUnhandledError }:BillingProps): 
             getCustomer,
             getBillingAddress,
             getBillingAddressFields,
+            getAddressExtraFormFields,
         },
         statuses: { isLoadingBillingCountries },
     } = checkoutState;
@@ -46,7 +60,6 @@ const Billing = ({ navigateNextStep, onReady, onUnhandledError }:BillingProps): 
     const customerMessage  = checkout.customerMessage;
     const methodId  = getBillingMethodId(checkout);
     const billingAddress  = getBillingAddress();
-    const getFields  = getBillingAddressFields;
     const handleSubmit = async ({
                                     orderComment,
                                     ...addressValues
@@ -115,7 +128,7 @@ const Billing = ({ navigateNextStep, onReady, onUnhandledError }:BillingProps): 
                 <BillingForm
                     billingAddress={billingAddress}
                     customerMessage={customerMessage}
-                    getFields={getFields}
+                    getFields={(countryCode?: string) => getFieldsWithExtraFields(getBillingAddressFields, hasExtraAddressFields, getAddressExtraFormFields, countryCode)}
                     methodId={methodId}
                     navigateNextStep={navigateNextStep}
                     onSubmit={handleSubmit}

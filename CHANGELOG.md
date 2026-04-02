@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.768.3](https://github.com/bigcommerce/checkout-js/compare/v1.768.2...v1.768.3) (2026-04-02)
+
+
+### Bug Fixes
+
+* **payment:** PAYPAL-6328 card name error schema ([0a9aeb1](https://github.com/bigcommerce/checkout-js/commit/0a9aeb1e33ef12ff2956f6fc2ccd69c4605a42f7))
+
+### [1.768.2](https://github.com/bigcommerce/checkout-js/compare/v1.768.1...v1.768.2) (2026-04-02)
+
+### [1.768.1](https://github.com/bigcommerce/checkout-js/compare/v1.768.0...v1.768.1) (2026-04-01)
+
+## [1.768.0](https://github.com/bigcommerce/checkout-js/compare/v1.767.0...v1.768.0) (2026-04-01)
+
+
+### Features
+
+* **checkout:** CHECKOUT-9875 add validation for billing form extra fields ([#2912](https://github.com/bigcommerce/checkout-js/issues/2912)) ([b4f7852](https://github.com/bigcommerce/checkout-js/commit/b4f78528514019c3ffae0346ee3e6d52c4b2e1ff))
+
+## [1.767.0](https://github.com/bigcommerce/checkout-js/compare/v1.766.1...v1.767.0) (2026-03-31)
+
+
+### Features
+
+* **checkout:** CHECKOUT-9825 Enable Extra Fields in Single Shipping ([#2907](https://github.com/bigcommerce/checkout-js/issues/2907)) ([c910a68](https://github.com/bigcommerce/checkout-js/commit/c910a680e022ba11af69bc9a43626b6c76e38184))
+
+### [1.766.1](https://github.com/bigcommerce/checkout-js/compare/v1.766.0...v1.766.1) (2026-03-31)
+
+## [1.766.0](https://github.com/bigcommerce/checkout-js/compare/v1.765.2...v1.766.0) (2026-03-29)
+
+
+### Features
+
+* **checkout:** CHECKOUT-9824 Display extra form fields in billing step ([#2904](https://github.com/bigcommerce/checkout-js/issues/2904)) ([f26d848](https://github.com/bigcommerce/checkout-js/commit/f26d84845325ac55367c56a8e8558c66d49d868d))
+
 ### [1.765.2](https://github.com/bigcommerce/checkout-js/compare/v1.765.1...v1.765.2) (2026-03-25)
 
 ### [1.765.1](https://github.com/bigcommerce/checkout-js/compare/v1.765.0...v1.765.1) (2026-03-23)

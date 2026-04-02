@@ -1,9 +1,15 @@
-import { type Address, type AddressKey, type FormField } from '@bigcommerce/checkout-sdk';
+import {
+    type Address,
+    type AddressKey,
+    type FormField,
+    isExtraFormField,
+} from '@bigcommerce/checkout-sdk/essential';
 
 import { DynamicFormFieldType } from '@bigcommerce/checkout/ui';
 
-export type AddressFormValues = Pick<Address, Exclude<AddressKey, 'customFields'>> & {
+export type AddressFormValues = Pick<Address, Exclude<AddressKey, 'customFields' | 'extraFields'>> & {
     customFields: { [id: string]: any };
+    extraFields?: { [id: string]: any };
 };
 
 export default function mapAddressToFormValues(
@@ -12,7 +18,20 @@ export default function mapAddressToFormValues(
 ): AddressFormValues {
     const values = {
         ...fields.reduce(
-            (addressFormValues, { name, custom, fieldType, default: defaultValue }) => {
+            (addressFormValues, field) => {
+                const { name, custom, fieldType, default: defaultValue } = field;
+
+                if (isExtraFormField(field)) {
+                    if (!addressFormValues.extraFields) {
+                        addressFormValues.extraFields = {};
+                    }
+
+                    // Populate from field.default; sessionStorage-based values can be layered on top externally
+                    addressFormValues.extraFields[name] = defaultValue || '';
+
+                    return addressFormValues;
+                }
+
                 if (custom) {
                     if (!addressFormValues.customFields) {
                         addressFormValues.customFields = {};
