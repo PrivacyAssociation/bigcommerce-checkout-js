@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.770.1](https://github.com/bigcommerce/checkout-js/compare/v1.770.0...v1.770.1) (2026-04-09)
+
+
+### Bug Fixes
+
+* **checkout:** CHECKOUT-9940 Update checkout-sdk ([#2929](https://github.com/bigcommerce/checkout-js/issues/2929)) ([9fb10c9](https://github.com/bigcommerce/checkout-js/commit/9fb10c98c1a4e2e35c8f4058dd08ef6196694239))
+
+## [1.770.0](https://github.com/bigcommerce/checkout-js/compare/v1.769.3...v1.770.0) (2026-04-08)
+
+
+### Features
+
+* **payment:** PI-5164 BlueSnapDirect added methodDisplayName ([6ff3b7b](https://github.com/bigcommerce/checkout-js/commit/6ff3b7bede6d315ef88c540d57755c0186fb8dcd))
+
+### [1.769.3](https://github.com/bigcommerce/checkout-js/compare/v1.769.2...v1.769.3) (2026-04-08)
+
+### [1.769.2](https://github.com/bigcommerce/checkout-js/compare/v1.769.1...v1.769.2) (2026-04-07)
+
+### [1.769.1](https://github.com/bigcommerce/checkout-js/compare/v1.769.0...v1.769.1) (2026-04-07)
+
+
+### Bug Fixes
+
+* **checkout:** ISSUE-2917 fix postal code not populating issue ([#2918](https://github.com/bigcommerce/checkout-js/issues/2918)) ([0ac36d0](https://github.com/bigcommerce/checkout-js/commit/0ac36d0293354c0ac185a3663bcc4e776176a8d4))
+
+## [1.769.0](https://github.com/bigcommerce/checkout-js/compare/v1.768.3...v1.769.0) (2026-04-06)
+
+
+### Features
+
+* **other:** LOCAL-1444 delivery translation ([#2924](https://github.com/bigcommerce/checkout-js/issues/2924)) ([2897310](https://github.com/bigcommerce/checkout-js/commit/2897310d8aa86c90335d1c772fd50ebc37f314ff))
+
 ### [1.768.3](https://github.com/bigcommerce/checkout-js/compare/v1.768.2...v1.768.3) (2026-04-02)
 
 

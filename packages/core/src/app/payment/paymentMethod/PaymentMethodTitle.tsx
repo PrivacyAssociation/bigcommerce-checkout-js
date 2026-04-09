@@ -256,11 +256,11 @@ export function getPaymentMethodTitle(
 
         if (method.gateway === PaymentMethodId.BlueSnapDirect) {
             if (method.id === 'credit_card') {
-                return { logoUrl: '', titleText: language.translate('payment.credit_card_text') };
+                return { logoUrl: '', titleText: methodDisplayName }
             }
 
             if (method.id === 'ecp') {
-                return { logoUrl: '', titleText: language.translate('payment.bluesnap_direct_electronic_check_label') };
+                return { logoUrl: '', titleText: methodDisplayName };
             }
 
             if (method.id === 'banktransfer') {
