@@ -2,6 +2,54 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.774.1](https://github.com/bigcommerce/checkout-js/compare/v1.774.0...v1.774.1) (2026-04-16)
+
+
+### Bug Fixes
+
+* **checkout:** CHECKOUT-9941 Fix BlueSnap Loading Issue ([#2945](https://github.com/bigcommerce/checkout-js/issues/2945)) ([9d0fe2a](https://github.com/bigcommerce/checkout-js/commit/9d0fe2ae963a55c0b6a22c903bd1694b6982d910))
+
+## [1.774.0](https://github.com/bigcommerce/checkout-js/compare/v1.773.1...v1.774.0) (2026-04-16)
+
+
+### Features
+
+* **shipping:** BACK-540 Improve UI of Backorder position changed modal ([3bfd67b](https://github.com/bigcommerce/checkout-js/commit/3bfd67bf4bcd32840fab07e66ac064ce82ad0664))
+* **shipping:** BACK-540 Improve UI of Backorder position changed modal - add separators ([62584ae](https://github.com/bigcommerce/checkout-js/commit/62584ae682f8d3bd22acb2b514ba1363548523ae))
+* **shipping:** BACK-540 Improve UI of Backorder position changed modal - adjust column widths ([cb5151d](https://github.com/bigcommerce/checkout-js/commit/cb5151d8c418d5525df3368d903379c0bce2496c))
+* **shipping:** BACK-540 Improve UI of Backorder position changed modal - adjust spasing and fonts based on final figam ([da4859d](https://github.com/bigcommerce/checkout-js/commit/da4859d86caf486037f2f0a7b2d2f8913d2c8f1c))
+* **shipping:** BACK-540 Improve UI of Backorder position changed modal - remove extra semi-colons ([f9f6a18](https://github.com/bigcommerce/checkout-js/commit/f9f6a18ed200781c27b904d014403db556134af4))
+* **shipping:** BACK-540 Improve UI of Backorder position changed modal - update paddings ([03580cd](https://github.com/bigcommerce/checkout-js/commit/03580cdd2dfcc148d589e0e79cad303268f83baa))
+
+### [1.773.1](https://github.com/bigcommerce/checkout-js/compare/v1.773.0...v1.773.1) (2026-04-15)
+
+## [1.773.0](https://github.com/bigcommerce/checkout-js/compare/v1.772.0...v1.773.0) (2026-04-14)
+
+
+### Features
+
+* **payment:** PI-5112 bump checkout-sdk to 1.899.0 ([880c765](https://github.com/bigcommerce/checkout-js/commit/880c76565036c362dc59203a4c4ba88651d9542b))
+
+## [1.772.0](https://github.com/bigcommerce/checkout-js/compare/v1.771.2...v1.772.0) (2026-04-14)
+
+
+### Features
+
+* **checkout:** CHECKOUT-9889 Enable Extra Fields in Multi-shipping ([#2937](https://github.com/bigcommerce/checkout-js/issues/2937)) ([140303f](https://github.com/bigcommerce/checkout-js/commit/140303fdcdf1c44729abfc3d1b0949d25161656d))
+
+### [1.771.2](https://github.com/bigcommerce/checkout-js/compare/v1.771.1...v1.771.2) (2026-04-13)
+
+### [1.771.1](https://github.com/bigcommerce/checkout-js/compare/v1.771.0...v1.771.1) (2026-04-13)
+
+## [1.771.0](https://github.com/bigcommerce/checkout-js/compare/v1.770.2...v1.771.0) (2026-04-13)
+
+
+### Features
+
+* **checkout:** CHECKOUT-9890 add and update b2b extra fields in session storage ([#2920](https://github.com/bigcommerce/checkout-js/issues/2920)) ([13b5cb2](https://github.com/bigcommerce/checkout-js/commit/13b5cb2aa49555d018247aecf437fe9b27749d11))
+
+### [1.770.2](https://github.com/bigcommerce/checkout-js/compare/v1.770.1...v1.770.2) (2026-04-10)
+
 ### [1.770.1](https://github.com/bigcommerce/checkout-js/compare/v1.770.0...v1.770.1) (2026-04-09)
 
 

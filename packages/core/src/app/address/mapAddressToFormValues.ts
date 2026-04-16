@@ -7,6 +7,8 @@ import {
 
 import { DynamicFormFieldType } from '@bigcommerce/checkout/ui';
 
+import { B2BExtraAddressFieldsSessionStorage } from './B2BExtraAddressFieldsSessionStorage';
+
 export type AddressFormValues = Pick<Address, Exclude<AddressKey, 'customFields' | 'extraFields'>> & {
     customFields: { [id: string]: any };
     extraFields?: { [id: string]: any };
@@ -15,6 +17,7 @@ export type AddressFormValues = Pick<Address, Exclude<AddressKey, 'customFields'
 export default function mapAddressToFormValues(
     fields: FormField[],
     address?: Address,
+    storageKey?: string,
 ): AddressFormValues {
     const values = {
         ...fields.reduce(
@@ -26,8 +29,12 @@ export default function mapAddressToFormValues(
                         addressFormValues.extraFields = {};
                     }
 
-                    // Populate from field.default; sessionStorage-based values can be layered on top externally
-                    addressFormValues.extraFields[name] = defaultValue || '';
+                    // sessionStorage-based values will override API side extra field values later
+                    const extraFieldValue = address?.extraFields?.find(
+                        ({ fieldId }) => fieldId === name,
+                    )?.fieldValue;
+
+                    addressFormValues.extraFields[name] = extraFieldValue ?? defaultValue ?? '';
 
                     return addressFormValues;
                 }
@@ -79,6 +86,20 @@ export default function mapAddressToFormValues(
 
     if (values.stateOrProvinceCode === undefined) {
         values.stateOrProvinceCode = '';
+    }
+
+    const extraFields = values.extraFields;
+
+    if (storageKey && extraFields) {
+        const storedExtraFields = B2BExtraAddressFieldsSessionStorage.getFields(storageKey);
+
+        if (storedExtraFields) {
+            Object.keys(extraFields).forEach(key => {
+                if (storedExtraFields[key] !== undefined) {
+                    extraFields[key] = storedExtraFields[key];
+                }
+            });
+        }
     }
 
     return values;

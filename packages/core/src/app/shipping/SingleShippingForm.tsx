@@ -18,6 +18,7 @@ import { withLanguage, type WithLanguageProps } from '@bigcommerce/checkout/loca
 
 import {
     type AddressFormValues,
+    B2BExtraAddressFieldsSessionStorage,
     getAddressFormFieldsValidationSchema,
     getTranslateAddressError,
     isEqualAddress,
@@ -191,6 +192,7 @@ const SingleShippingForm: React.FC<
                 shippingAddress: mapAddressToFormValues(
                     getFields(shippingAddress?.countryCode),
                     shippingAddress,
+                    B2BExtraAddressFieldsSessionStorage.SHIPPING_KEY,
                 ),
             });
         }
@@ -355,15 +357,25 @@ export default withLanguage(
             shippingAddress: mapAddressToFormValues(
                 getFields(shippingAddress?.countryCode),
                 shippingAddress,
+                B2BExtraAddressFieldsSessionStorage.SHIPPING_KEY,
             ),
         }),
-        isInitialValid: ({ shippingAddress, getFields, language, validateMaxLength }) =>
-            !!shippingAddress &&
-            getAddressFormFieldsValidationSchema({
+        isInitialValid: ({ shippingAddress, getFields, language, validateMaxLength }) => {
+            if (!shippingAddress) return false;
+
+            const fields = getFields(shippingAddress.countryCode);
+            const formValues = mapAddressToFormValues(
+                fields,
+                shippingAddress,
+                B2BExtraAddressFieldsSessionStorage.SHIPPING_KEY,
+            );
+
+            return getAddressFormFieldsValidationSchema({
                 language,
-                formFields: getFields(shippingAddress.countryCode),
+                formFields: fields,
                 validateMaxLength,
-            }).isValidSync(shippingAddress),
+            }).isValidSync(formValues);
+        },
         validationSchema: ({
             language,
             getFields,

@@ -17,6 +17,7 @@ import {
   type AddressFormValues,
   AddressSelect,
   AddressType,
+  B2BExtraAddressFieldsSessionStorage,
   getAddressFormFieldsValidationSchema,
   getTranslateAddressError,
   isValidCustomerAddress,
@@ -171,15 +172,28 @@ export default withLanguage(
             onSubmit(values);
         },
         mapPropsToValues: ({ getFields, customerMessage, billingAddress }) => ({
-            ...mapAddressToFormValues(getFields(billingAddress && billingAddress.countryCode), billingAddress),
+            ...mapAddressToFormValues(
+                getFields(billingAddress && billingAddress.countryCode),
+                billingAddress,
+                B2BExtraAddressFieldsSessionStorage.BILLING_KEY,
+            ),
             orderComment: customerMessage,
         }),
-        isInitialValid: ({ billingAddress, getFields, language }) =>
-            !!billingAddress &&
-            getAddressFormFieldsValidationSchema({
+        isInitialValid: ({ billingAddress, getFields, language }) => {
+            if (!billingAddress) return false;
+
+            const fields = getFields(billingAddress.countryCode);
+            const formValues = mapAddressToFormValues(
+                fields,
+                billingAddress,
+                B2BExtraAddressFieldsSessionStorage.BILLING_KEY,
+            );
+
+            return getAddressFormFieldsValidationSchema({
                 language,
-                formFields: getFields(billingAddress.countryCode),
-            }).isValidSync(billingAddress),
+                formFields: fields,
+            }).isValidSync(formValues);
+        },
         validationSchema: ({
             language,
             getFields,

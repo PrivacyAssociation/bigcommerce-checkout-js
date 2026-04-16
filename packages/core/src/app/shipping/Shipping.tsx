@@ -5,7 +5,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { TranslatedString } from '@bigcommerce/checkout/locale';
 import { AddressFormSkeleton, ConfirmationModal } from '@bigcommerce/checkout/ui';
 
-import { isEqualAddress, mapAddressFromFormValues } from '../address';
+import { B2BExtraAddressFieldsSessionStorage, isEqualAddress, mapAddressFromFormValues } from '../address';
 import type CheckoutStepStatus from '../checkout/CheckoutStepStatus';
 
 import { useShipping } from './hooks/useShipping';
@@ -113,7 +113,7 @@ function Shipping({
     }, []);
 
     const handleSingleShippingSubmit = async (values: SingleShippingFormValues) => {
-        const updatedShippingAddress = values.shippingAddress && mapAddressFromFormValues(values.shippingAddress);
+        const updatedShippingAddress = values.shippingAddress && mapAddressFromFormValues(values.shippingAddress, B2BExtraAddressFieldsSessionStorage.SHIPPING_KEY);
         const promises: Array<Promise<CheckoutSelectors>> = [];
         const hasRemoteBilling = hasRemoteBillingFn(methodId);
 
@@ -121,13 +121,16 @@ function Shipping({
             promises.push(updateShippingAddress(updatedShippingAddress || {}));
         }
 
-        if (
-            values.billingSameAsShipping &&
-            updatedShippingAddress &&
-            !isEqualAddress(updatedShippingAddress, billingAddress) &&
-            !hasRemoteBilling
-        ) {
-            promises.push(updateBillingAddress(updatedShippingAddress));
+        if (values.billingSameAsShipping && updatedShippingAddress && !hasRemoteBilling) {
+            const shippingExtraFields = B2BExtraAddressFieldsSessionStorage.getFields(B2BExtraAddressFieldsSessionStorage.SHIPPING_KEY);
+
+            if (shippingExtraFields) {
+                B2BExtraAddressFieldsSessionStorage.setFields(B2BExtraAddressFieldsSessionStorage.BILLING_KEY, shippingExtraFields);
+            }
+
+            if (!isEqualAddress(updatedShippingAddress, billingAddress)) {
+                promises.push(updateBillingAddress(updatedShippingAddress));
+            }
         }
 
         if (customerMessage !== values.orderComment) {
