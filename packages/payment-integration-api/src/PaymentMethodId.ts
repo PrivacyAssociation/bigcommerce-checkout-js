@@ -36,7 +36,6 @@ enum PaymentMethodId {
     Humm = 'humm',
     Ideal = 'ideal',
     Klarna = 'klarna',
-    Laybuy = 'laybuy',
     Mollie = 'mollie',
     Moneris = 'moneris',
     OrbitalGooglePay = 'googlepayorbital',
@@ -69,6 +68,7 @@ enum PaymentMethodId {
     StripeUPE = 'stripeupe',
     WorldpayAccess = 'worldpayaccess',
     WorldpayAccessGooglePay = 'googlepayworldpayaccess',
+    WorldpayAccessOpenBanking = 'open_banking',
     Zip = 'zip',
     TdOnlineMartGooglePay = 'googlepaytdonlinemart',
 }

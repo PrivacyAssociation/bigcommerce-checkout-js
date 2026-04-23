@@ -164,10 +164,6 @@ export function getPaymentMethodTitle(
                         : cdnPath('/img/payment-providers/klarna-header.png'),
                 titleText: methodDisplayName,
             },
-            [PaymentMethodId.Laybuy]: {
-                logoUrl: cdnPath('/img/payment-providers/laybuy-checkout-header.png'),
-                titleText: '',
-            },
             [PaymentMethodType.Paypal]: {
                 // TODO: method.id === PaymentMethodId.BraintreeVenmo should be removed after the PAYPAL-1380.checkout_button_strategies_update experiment removal
                 logoUrl:
@@ -248,11 +244,21 @@ export function getPaymentMethodTitle(
                         ? language.translate('payment.stripe_sepa_display_name_text')
                         : methodName,
             },
-            [PaymentMethodId.WorldpayAccess]: {
-                logoUrl: '',
-                titleText: language.translate('payment.credit_debit_card_text'),
-            },
         };
+
+        if (method.gateway === PaymentMethodId.WorldpayAccess) {
+            if (method.id === PaymentMethodId.WorldpayAccessOpenBanking) {
+                return { logoUrl: '', titleText: methodDisplayName };
+            }
+
+            if (method.id === 'credit_card' || method.id === PaymentMethodId.WorldpayAccess) {
+                return { logoUrl: '', titleText: language.translate('payment.credit_debit_card_text') };
+            }
+        }
+
+        if (method.id === PaymentMethodId.WorldpayAccess) {
+            return { logoUrl: '', titleText: language.translate('payment.credit_debit_card_text') };
+        }
 
         if (method.gateway === PaymentMethodId.BlueSnapDirect) {
             if (method.id === 'credit_card') {

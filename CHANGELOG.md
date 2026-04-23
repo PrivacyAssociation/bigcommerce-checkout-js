@@ -2,6 +2,81 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.777.4](https://github.com/bigcommerce/checkout-js/compare/v1.777.3...v1.777.4) (2026-04-23)
+
+### [1.777.3](https://github.com/bigcommerce/checkout-js/compare/v1.777.2...v1.777.3) (2026-04-23)
+
+### [1.777.2](https://github.com/bigcommerce/checkout-js/compare/v1.777.1...v1.777.2) (2026-04-22)
+
+
+### Code Refactoring
+
+* **checkout:** CHECKOUT-9938 Restore B2B extra fields on address select ([#2961](https://github.com/bigcommerce/checkout-js/issues/2961)) ([1f96981](https://github.com/bigcommerce/checkout-js/commit/1f9698129b6f6f6575b9f2846f5a173b899adf99))
+
+### [1.777.1](https://github.com/bigcommerce/checkout-js/compare/v1.777.0...v1.777.1) (2026-04-22)
+
+
+### Bug Fixes
+
+* **checkout:** wrap showDefaultShippingExpectationPrompt with feature/experiment flag ([#2960](https://github.com/bigcommerce/checkout-js/issues/2960)) ([1fda2ab](https://github.com/bigcommerce/checkout-js/commit/1fda2abc7bd1423adc9e650c80d593ec66164a07))
+
+## [1.777.0](https://github.com/bigcommerce/checkout-js/compare/v1.776.3...v1.777.0) (2026-04-21)
+
+
+### Features
+
+* **payment:** PI-4976 [Access Worldpay] Open Banking ([#2915](https://github.com/bigcommerce/checkout-js/issues/2915)) ([61918df](https://github.com/bigcommerce/checkout-js/commit/61918dff12d97d840bee54174981245a7934f28f))
+
+### [1.776.3](https://github.com/bigcommerce/checkout-js/compare/v1.776.2...v1.776.3) (2026-04-21)
+
+### [1.776.2](https://github.com/bigcommerce/checkout-js/compare/v1.776.1...v1.776.2) (2026-04-21)
+
+### [1.776.1](https://github.com/bigcommerce/checkout-js/compare/v1.776.0...v1.776.1) (2026-04-21)
+
+
+### Bug Fixes
+
+* **checkout:** CHECKOUT-9707 Gate SingleShippingForm functional component behind an experiment ([#2954](https://github.com/bigcommerce/checkout-js/issues/2954)) ([1f4ad5e](https://github.com/bigcommerce/checkout-js/commit/1f4ad5ef1df4017eead3f5c1d70933fbfbcbf421))
+
+## [1.776.0](https://github.com/bigcommerce/checkout-js/compare/v1.775.1...v1.776.0) (2026-04-20)
+
+
+### Features
+
+* **payment:** PI-5141 [Oney] Support methodIdOverride in order submission mapToOrderRequestBody.ts ([#2943](https://github.com/bigcommerce/checkout-js/issues/2943)) ([2c6a491](https://github.com/bigcommerce/checkout-js/commit/2c6a4911184fc8fabe229430ffe05a282c6b1d39))
+
+### [1.775.1](https://github.com/bigcommerce/checkout-js/compare/v1.775.0...v1.775.1) (2026-04-20)
+
+## [1.775.0](https://github.com/bigcommerce/checkout-js/compare/v1.774.5...v1.775.0) (2026-04-20)
+
+
+### Features
+
+* **checkout:** CHECKOUT-9949 Make coupon code entry easier to find on mobile checkout ([664b253](https://github.com/bigcommerce/checkout-js/commit/664b2537c8a8ffbb0a07e3292a796eb65fd2ecc6))
+
+### [1.774.5](https://github.com/bigcommerce/checkout-js/compare/v1.774.4...v1.774.5) (2026-04-17)
+
+### [1.774.4](https://github.com/bigcommerce/checkout-js/compare/v1.774.3...v1.774.4) (2026-04-17)
+
+
+### Bug Fixes
+
+* **checkout:** CHECKOUT-9933 fix issue with custom fields not triggering shipping rate request ([#2952](https://github.com/bigcommerce/checkout-js/issues/2952)) ([7eeab7a](https://github.com/bigcommerce/checkout-js/commit/7eeab7ad9130a9e2b0861e257b0bed01b07a6fa7))
+
+### [1.774.3](https://github.com/bigcommerce/checkout-js/compare/v1.774.2...v1.774.3) (2026-04-17)
+
+
+### Code Refactoring
+
+* **checkout:** CHECKOUT-9938 Refactor extra fields ([#2951](https://github.com/bigcommerce/checkout-js/issues/2951)) ([2cbac1a](https://github.com/bigcommerce/checkout-js/commit/2cbac1a04a5cb5b60f6ebd4e238a11fc1a4fe6d2))
+
+### [1.774.2](https://github.com/bigcommerce/checkout-js/compare/v1.774.1...v1.774.2) (2026-04-17)
+
+
+### Code Refactoring
+
+* **checkout:** CHECKOUT-9938 Update mocks ([#2950](https://github.com/bigcommerce/checkout-js/issues/2950)) ([e8af325](https://github.com/bigcommerce/checkout-js/commit/e8af325e558e3ee8cfaf0c1258db2ef79c659bef))
+
 ### [1.774.1](https://github.com/bigcommerce/checkout-js/compare/v1.774.0...v1.774.1) (2026-04-16)
 
 

@@ -28,7 +28,7 @@ const deleteConsignmentsSelector = createSelector(
 
 export const useShipping = () => {
     const { checkoutState, checkoutService } = useCheckout();
-    const { userJourney: { hasExtraAddressFields } } = useCapabilities();
+    const { userJourney: { hasAddressExtraFields } } = useCapabilities();
 
     const {
         data: {
@@ -41,7 +41,7 @@ export const useShipping = () => {
             getBillingAddress,
             getShippingAddressFields,
             getShippingCountries,
-            getAddressExtraFormFields,
+            getAddressExtraFields,
         },
         statuses: {
             isShippingStepPending,
@@ -98,20 +98,23 @@ export const useShipping = () => {
         config.checkoutSettings.providerWithCustomCheckout,
     );
 
-    const showDefaultShippingExpectationPrompt = getBackorderCount(cart.lineItems) > 0 && config.inventorySettings?.showDefaultShippingExpectationPrompt;
+    const showDefaultShippingExpectationPrompt =
+      config.inventorySettings?.shouldDisplayBackorderMessagesOnStorefront &&
+      config.inventorySettings?.showDefaultShippingExpectationPrompt &&
+      getBackorderCount(cart.lineItems) > 0;
     const defaultShippingExpectationPrompt = config.inventorySettings?.defaultShippingExpectationPrompt ?? undefined;
 
     const getFieldsWithExtraFields = useCallback((countryCode?: string) => {
         const addressFields = getShippingAddressFields(countryCode || '');
 
-        if (!hasExtraAddressFields) {
+        if (!hasAddressExtraFields) {
             return addressFields;
         }
 
-        const extraAddressFields = getAddressExtraFormFields();
+        const addressExtraFields = getAddressExtraFields();
 
-        return [...addressFields, ...extraAddressFields];
-    }, [getShippingAddressFields, getAddressExtraFormFields, hasExtraAddressFields]);
+        return [...addressFields, ...addressExtraFields];
+    }, [getShippingAddressFields, getAddressExtraFields, hasAddressExtraFields]);
 
     return {
         assignItem: checkoutService.assignItemsToAddress,
@@ -152,5 +155,6 @@ export const useShipping = () => {
         updateShippingAddress: checkoutService.updateShippingAddress,
         shouldRenderStripeForm: providerWithCustomCheckout === PaymentMethodId.StripeUPE && shouldUseStripeLinkByMinimumAmount(cart),
         validateMaxLength: isExperimentEnabled(config.checkoutSettings, 'CHECKOUT-9768.form_fields_max_length_validation', false),
+        useSingleShippingFormFunctionComponent: isExperimentEnabled(config.checkoutSettings, 'CHECKOUT-9707.use_single_shipping_form_function_component', false),
     };
 }
