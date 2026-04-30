@@ -2,6 +2,68 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.782.1](https://github.com/bigcommerce/checkout-js/compare/v1.782.0...v1.782.1) (2026-04-30)
+
+## [1.782.0](https://github.com/bigcommerce/checkout-js/compare/v1.781.6...v1.782.0) (2026-04-30)
+
+
+### Features
+
+* **checkout:** CHECKOUT-9826 shipping and billing step warning message when no addresses ([#2978](https://github.com/bigcommerce/checkout-js/issues/2978)) ([ef3c809](https://github.com/bigcommerce/checkout-js/commit/ef3c80947d508ea648f7302b3f2d323c2c00602b))
+
+### [1.781.6](https://github.com/bigcommerce/checkout-js/compare/v1.781.5...v1.781.6) (2026-04-30)
+
+### [1.781.5](https://github.com/bigcommerce/checkout-js/compare/v1.781.4...v1.781.5) (2026-04-29)
+
+
+### Code Refactoring
+
+* **checkout:** CHECKOUT-9970 Remove experiment ([#2976](https://github.com/bigcommerce/checkout-js/issues/2976)) ([b0cf127](https://github.com/bigcommerce/checkout-js/commit/b0cf127dfff4ec0007de52804b1b7f3eed3be4cf))
+
+### [1.781.4](https://github.com/bigcommerce/checkout-js/compare/v1.781.3...v1.781.4) (2026-04-29)
+
+### [1.781.3](https://github.com/bigcommerce/checkout-js/compare/v1.781.2...v1.781.3) (2026-04-29)
+
+### [1.781.2](https://github.com/bigcommerce/checkout-js/compare/v1.781.1...v1.781.2) (2026-04-29)
+
+
+### Code Refactoring
+
+* **checkout:** CHECKOUT-9783 Consolidate Animation Configs ([#2975](https://github.com/bigcommerce/checkout-js/issues/2975)) ([ac93cc8](https://github.com/bigcommerce/checkout-js/commit/ac93cc8a6502fb066dd2f4f3a2f9c37847b04641))
+
+### [1.781.1](https://github.com/bigcommerce/checkout-js/compare/v1.781.0...v1.781.1) (2026-04-29)
+
+## [1.781.0](https://github.com/bigcommerce/checkout-js/compare/v1.780.0...v1.781.0) (2026-04-28)
+
+
+### Features
+
+* **checkout:** CHECKOUT-9813 invoice-to-checkout flow redirection ([#2973](https://github.com/bigcommerce/checkout-js/issues/2973)) ([c0c7c8c](https://github.com/bigcommerce/checkout-js/commit/c0c7c8c964cd05d3989b3a3553d19ca626e6b99c))
+
+## [1.780.0](https://github.com/bigcommerce/checkout-js/compare/v1.779.0...v1.780.0) (2026-04-28)
+
+
+### Features
+
+* **other:** LOCAL-1444 delivery translation ([#2969](https://github.com/bigcommerce/checkout-js/issues/2969)) ([daf4493](https://github.com/bigcommerce/checkout-js/commit/daf44934fd19cd0e11ab95df973922f821fd782b))
+
+## [1.779.0](https://github.com/bigcommerce/checkout-js/compare/v1.778.1...v1.779.0) (2026-04-28)
+
+
+### Features
+
+* **checkout:** CHECKOUT-9956 Fetch B2B token on customer authentication ([#2964](https://github.com/bigcommerce/checkout-js/issues/2964)) ([7e50c76](https://github.com/bigcommerce/checkout-js/commit/7e50c761e205355c54007f092a9eb0a7deed990a))
+
+### [1.778.1](https://github.com/bigcommerce/checkout-js/compare/v1.778.0...v1.778.1) (2026-04-28)
+
+## [1.778.0](https://github.com/bigcommerce/checkout-js/compare/v1.777.4...v1.778.0) (2026-04-28)
+
+
+### Features
+
+* **order:** BACK-392 Update order confirmation page to support backorders ([1393f4a](https://github.com/bigcommerce/checkout-js/commit/1393f4a44f67ed6c74abe7fe2f6efa3d26d82a96))
+* **order:** BACK-392 Update order confirmation page to support backorders - refactor maps ([ac0e2ed](https://github.com/bigcommerce/checkout-js/commit/ac0e2ed6b80726dcd9593c3e58694da7f53aabde))
+
 ### [1.777.4](https://github.com/bigcommerce/checkout-js/compare/v1.777.3...v1.777.4) (2026-04-23)
 
 ### [1.777.3](https://github.com/bigcommerce/checkout-js/compare/v1.777.2...v1.777.3) (2026-04-23)

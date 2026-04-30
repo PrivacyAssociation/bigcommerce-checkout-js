@@ -2,10 +2,9 @@ import classNames from 'classnames';
 import React, { type FunctionComponent, memo } from 'react';
 
 import { TranslatedString } from '@bigcommerce/checkout/locale';
+import { Button, ButtonSize, ButtonVariant, IconBolt } from '@bigcommerce/checkout/ui';
 
 import { withCheckout } from '../checkout';
-import { Button, ButtonSize, ButtonVariant } from '../ui/button';
-import { IconBolt } from '../ui/icon';
 
 import { PaymentMethodId, PaymentMethodType } from './paymentMethod';
 import { useThemeContext } from '@bigcommerce/checkout/contexts';
