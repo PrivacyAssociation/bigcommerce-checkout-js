@@ -1,15 +1,13 @@
 import {
+    type Capabilities,
     type Cart,
     type CartStockPositionsChangedError,
-    type Checkout,
     type CheckoutSelectors,
     type CheckoutService,
-    type CheckoutSettings,
     type Consignment,
     type OrderFinalizeOptions,
     type OrderRequestBody,
     type PaymentMethod,
-    type PaymentProviderCustomer,
 } from '@bigcommerce/checkout-sdk';
 import { createAfterpayPaymentStrategy } from '@bigcommerce/checkout-sdk/integrations/afterpay';
 import { createBlueSnapV2PaymentStrategy } from '@bigcommerce/checkout-sdk/integrations/bluesnap-direct';
@@ -20,7 +18,7 @@ import { createOffsitePaymentStrategy } from '@bigcommerce/checkout-sdk/integrat
 import { createPaypalExpressPaymentStrategy } from '@bigcommerce/checkout-sdk/integrations/paypal-express';
 import { createSagePayPaymentStrategy } from '@bigcommerce/checkout-sdk/integrations/sagepay';
 import { memoizeOne } from '@bigcommerce/memoize';
-import { compact, find, isEmpty, noop } from 'lodash';
+import { isEmpty, noop } from 'lodash';
 import React, {
   type ReactElement,
   type ReactNode,
@@ -56,78 +54,12 @@ import PaymentContext from './PaymentContext';
 import PaymentForm from './PaymentForm';
 import {
     getUniquePaymentMethodId,
-    PaymentMethodId,
     PaymentMethodProviderType,
 } from './paymentMethod';
-
-interface PaymentMethodSelectionParams {
-    checkout: Checkout;
-    methods: PaymentMethod[];
-    consignments?: Consignment[];
-    getPaymentMethod: (methodId: string, gatewayId?: string) => PaymentMethod | undefined;
-    paymentProviderCustomer?: PaymentProviderCustomer;
-}
-
-const getDefaultPaymentMethod = ({
-    checkout,
-    consignments,
-    getPaymentMethod,
-    methods,
-    paymentProviderCustomer,
-}: PaymentMethodSelectionParams): { filteredMethods: PaymentMethod[]; defaultMethod?: PaymentMethod } => {
-    let filteredMethods = methods;
-
-    // TODO: In accordance with the checkout team, this functionality is temporary and will be implemented in the backend instead.
-    if (paymentProviderCustomer?.stripeLinkAuthenticationState) {
-        const stripeUpePaymentMethod = filteredMethods.filter(
-            (method) => method.id === 'card' && method.gateway === PaymentMethodId.StripeUPE,
-        );
-
-        filteredMethods = stripeUpePaymentMethod.length ? stripeUpePaymentMethod : filteredMethods;
-    }
-
-    filteredMethods = filteredMethods.filter((method: PaymentMethod) => {
-        if (method.id === PaymentMethodId.Bolt && method.initializationData) {
-            return Boolean(method.initializationData.showInCheckout);
-        }
-
-        return method.id !== PaymentMethodId.BraintreeLocalPaymentMethod;
-    });
-
-    if (consignments && consignments.length > 1) {
-        const multiShippingIncompatibleMethodIds: string[] = [
-            PaymentMethodId.AmazonPay,
-        ];
-
-        filteredMethods = filteredMethods.filter(
-            (method: PaymentMethod) => !multiShippingIncompatibleMethodIds.includes(method.id),
-        );
-    }
-
-    const selectedPayment = checkout.payments
-        ? find(checkout.payments, { providerType: PaymentMethodProviderType.Hosted })
-        : undefined;
-    let selectedPaymentMethod;
-
-    if (selectedPayment) {
-        selectedPaymentMethod = getPaymentMethod(
-            selectedPayment.providerId,
-            selectedPayment.gatewayId,
-        );
-        filteredMethods = selectedPaymentMethod ? compact([selectedPaymentMethod]) : filteredMethods;
-    } else {
-        selectedPaymentMethod = find(filteredMethods, {
-            config: { hasDefaultStoredInstrument: true },
-        });
-    }
-
-    return {
-        defaultMethod: selectedPaymentMethod || filteredMethods[0],
-        filteredMethods,
-    };
-};
+import { getFilteredPaymentMethodsWithDefault } from './paymentMethodFilters';
 
 export interface PaymentProps {
+    capabilities: Capabilities;
     errorLogger: ErrorLogger;
     isEmbedded?: boolean;
     isUsingMultiShipping?: boolean;
@@ -545,15 +477,16 @@ const Payment= (props: PaymentProps & WithCheckoutPaymentProps & WithLanguagePro
         try {
             const updatedState = await loadPaymentMethods();
             const checkout = updatedState.data.getCheckout();
+            const config = updatedState.data.getConfig();
             const methods = updatedState.data.getPaymentMethods() || EMPTY_ARRAY;
-
-            const defaultMethod = checkout
-                ? getDefaultPaymentMethod({
+            const defaultMethod = (checkout && config)
+                ? getFilteredPaymentMethodsWithDefault({
                       checkout,
-                      consignments: updatedState.data.getConsignments(),
+                      checkoutSettings: config.checkoutSettings,
                       getPaymentMethod: updatedState.data.getPaymentMethod,
                       methods,
                       paymentProviderCustomer: updatedState.data.getPaymentProviderCustomer(),
+                      capabilities: props.capabilities,
                   }).defaultMethod
                 : undefined;
             const selectedMethod = state.selectedMethod || defaultMethod;
@@ -712,10 +645,10 @@ const Payment= (props: PaymentProps & WithCheckoutPaymentProps & WithLanguagePro
     );
 }
 
-export function mapToPaymentProps({
-        checkoutService,
-        checkoutState,
-}: CheckoutContextProps): WithCheckoutPaymentProps | null {
+export function mapToPaymentProps(
+    { checkoutService, checkoutState }: CheckoutContextProps,
+    { capabilities } : PaymentProps,
+): WithCheckoutPaymentProps | null {
     const {
         data: {
             getCart,
@@ -746,22 +679,24 @@ export function mapToPaymentProps({
         return null;
     }
 
+    const checkoutSettings = config.checkoutSettings;
     const {
         enableTermsAndConditions: isTermsConditionsEnabled,
         features,
         orderTermsAndConditionsType: termsConditionsType,
         orderTermsAndConditions: termsCondtitionsText,
         orderTermsAndConditionsLink: termsCondtitionsUrl,
-    } = config.checkoutSettings as CheckoutSettings & { orderTermsAndConditionsLocation: string };
+    } = checkoutSettings;
 
     const isTermsConditionsRequired = isTermsConditionsEnabled;
     const { isStoreCreditApplied } = checkout;
-    const { defaultMethod, filteredMethods } = getDefaultPaymentMethod({
+    const { defaultMethod, filteredMethods } = getFilteredPaymentMethodsWithDefault({
         checkout,
-        consignments,
+        checkoutSettings: config.checkoutSettings,
         getPaymentMethod,
         methods,
         paymentProviderCustomer,
+        capabilities,
     });
 
     return {
@@ -785,7 +720,7 @@ export function mapToPaymentProps({
         shouldExecuteSpamCheck: checkout.shouldExecuteSpamCheck,
         shouldLocaliseErrorMessages:
             features['PAYMENTS-6799.localise_checkout_payment_error_messages'],
-        shouldShowSubmitPaymentButton: isExperimentEnabled(config.checkoutSettings, 'CHECKOUT-9729.show_submit_button_when_payment_not_required', false),
+        shouldShowSubmitPaymentButton: isExperimentEnabled(checkoutSettings, 'CHECKOUT-9729.show_submit_button_when_payment_not_required', false),
         submitOrder: checkoutService.submitOrder,
         submitOrderError: getSubmitOrderError(),
         checkoutServiceSubscribe: checkoutService.subscribe,
