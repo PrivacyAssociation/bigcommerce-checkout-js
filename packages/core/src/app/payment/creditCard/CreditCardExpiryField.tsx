@@ -3,8 +3,7 @@ import { type FieldProps } from 'formik';
 import React, { type ChangeEvent, type FunctionComponent, memo, useCallback, useMemo } from 'react';
 
 import { TranslatedString, withLanguage, type WithLanguageProps } from '@bigcommerce/checkout/locale';
-
-import { FormField, TextInput } from '../../ui/form';
+import { FormField, TextInput } from '@bigcommerce/checkout/ui';
 
 import formatCreditCardExpiryDate from './formatCreditCardExpiryDate';
 

@@ -6,10 +6,7 @@ import { lazy } from 'yup';
 
 import { useThemeContext } from '@bigcommerce/checkout/contexts';
 import { TranslatedString, withLanguage, type WithLanguageProps } from '@bigcommerce/checkout/locale';
-import { Button, ButtonVariant, LoadingOverlay } from '@bigcommerce/checkout/ui';
-
-import { Form } from '../ui/form';
-import { Modal, ModalHeader } from '../ui/modal';
+import { Button, ButtonVariant, Form, LoadingOverlay, Modal, ModalHeader } from '@bigcommerce/checkout/ui';
 
 import AddressForm from './AddressForm';
 import AddressType from './AddressType';

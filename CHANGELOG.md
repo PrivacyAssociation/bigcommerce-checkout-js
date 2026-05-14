@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.790.1](https://github.com/bigcommerce/checkout-js/compare/v1.790.0...v1.790.1) (2026-05-13)
+
+## [1.790.0](https://github.com/bigcommerce/checkout-js/compare/v1.789.3...v1.790.0) (2026-05-13)
+
+
+### Features
+
+* **payment:** Stripe adaptive pricing styling ([9bd33cf](https://github.com/bigcommerce/checkout-js/commit/9bd33cf90c5832f11069c428fd7050b3eb1640f4))
+
+### [1.789.3](https://github.com/bigcommerce/checkout-js/compare/v1.789.2...v1.789.3) (2026-05-13)
+
+### [1.789.2](https://github.com/bigcommerce/checkout-js/compare/v1.789.1...v1.789.2) (2026-05-13)
+
+### [1.789.1](https://github.com/bigcommerce/checkout-js/compare/v1.789.0...v1.789.1) (2026-05-12)
+
+## [1.789.0](https://github.com/bigcommerce/checkout-js/compare/v1.788.8...v1.789.0) (2026-05-12)
+
+
+### Features
+
+* **payment:** PI-4748 Migrate CBA MPGS to Resolver Configuration ([#3005](https://github.com/bigcommerce/checkout-js/issues/3005)) ([d569f17](https://github.com/bigcommerce/checkout-js/commit/d569f171578dec5340a28a66244b3aee508417ab))
+
+### [1.788.8](https://github.com/bigcommerce/checkout-js/compare/v1.788.7...v1.788.8) (2026-05-12)
+
+### [1.788.7](https://github.com/bigcommerce/checkout-js/compare/v1.788.6...v1.788.7) (2026-05-12)
+
+### [1.788.6](https://github.com/bigcommerce/checkout-js/compare/v1.788.5...v1.788.6) (2026-05-11)
+
+### [1.788.5](https://github.com/bigcommerce/checkout-js/compare/v1.788.4...v1.788.5) (2026-05-11)
+
+### [1.788.4](https://github.com/bigcommerce/checkout-js/compare/v1.788.3...v1.788.4) (2026-05-11)
+
+
+### Bug Fixes
+
+* **checkout:** CHECKOUT-9959 Fix Google Pay Sign-out Issue ([#3004](https://github.com/bigcommerce/checkout-js/issues/3004)) ([d653422](https://github.com/bigcommerce/checkout-js/commit/d653422093d030b70cce9aa665ab76ae713aa4fb))
+
+### [1.788.3](https://github.com/bigcommerce/checkout-js/compare/v1.788.2...v1.788.3) (2026-05-11)
+
+### [1.788.2](https://github.com/bigcommerce/checkout-js/compare/v1.788.1...v1.788.2) (2026-05-11)
+
+### [1.788.1](https://github.com/bigcommerce/checkout-js/compare/v1.788.0...v1.788.1) (2026-05-08)
+
 ## [1.788.0](https://github.com/bigcommerce/checkout-js/compare/v1.787.0...v1.788.0) (2026-05-07)
 
 

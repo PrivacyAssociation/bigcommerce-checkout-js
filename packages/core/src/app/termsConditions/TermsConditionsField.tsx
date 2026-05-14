@@ -3,10 +3,7 @@ import React, { type FunctionComponent, memo, useCallback, useMemo } from 'react
 
 import { parseAnchor } from '@bigcommerce/checkout/dom-utils';
 import { TranslatedHtml, TranslatedString, withLanguage, type WithLanguageProps } from '@bigcommerce/checkout/locale';
-
-import { CheckboxFormField, Fieldset, FormField, Legend, TextArea } from '../ui/form';
-import { ModalHeader, ModalLink } from '../ui/modal';
-import { MultiLineText } from '../ui/text';
+import { CheckboxFormField, Fieldset, FormField, Legend, ModalHeader, ModalLink, MultiLineText, TextArea } from '@bigcommerce/checkout/ui';
 
 export enum TermsConditionsType {
     Link = 'link',
