@@ -3,7 +3,14 @@ import React, { type FunctionComponent } from 'react';
 
 import { Extension } from '@bigcommerce/checkout/checkout-extension';
 import { TranslatedString } from '@bigcommerce/checkout/locale';
-import { Alert, AlertType, Button, ButtonVariant, Fieldset, Legend } from '@bigcommerce/checkout/ui';
+import {
+    Alert,
+    AlertType,
+    Button,
+    ButtonVariant,
+    Fieldset,
+    Legend,
+} from '@bigcommerce/checkout/ui';
 
 import { OrderComments } from '../orderComments';
 
@@ -42,6 +49,11 @@ const ShippingFormFooter: FunctionComponent<ShippingFormFooterProps> = ({
                         <Legend>
                             <TranslatedString id="shipping.shipping_method_label" />
                         </Legend>
+                        {defaultShippingExpectationMessage && (
+                            <p className="shipping-ExpectationMessage">
+                                {defaultShippingExpectationMessage}
+                            </p>
+                        )}
 
                         {cartHasChanged && (
                             <Alert type={AlertType.Error}>
@@ -61,8 +73,6 @@ const ShippingFormFooter: FunctionComponent<ShippingFormFooterProps> = ({
                     shouldShowShippingOptions={shouldShowShippingOptions}
                 />
             </Fieldset>
-
-            {defaultShippingExpectationMessage && <p>{defaultShippingExpectationMessage}</p>}
 
             {shouldShowOrderComments && <OrderComments />}
 

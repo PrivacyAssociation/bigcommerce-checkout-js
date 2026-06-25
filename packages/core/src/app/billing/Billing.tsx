@@ -1,11 +1,18 @@
 import type { CheckoutSelectors, FormField } from '@bigcommerce/checkout-sdk';
-import React, { type ReactElement, useEffect } from 'react';
+import React, { type ReactElement, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useCapabilities, useCheckout } from '@bigcommerce/checkout/contexts';
 import { TranslatedString } from '@bigcommerce/checkout/locale';
 import { AddressFormSkeleton, Legend } from '@bigcommerce/checkout/ui';
+import { B2BSessionStorage } from '@bigcommerce/checkout/utility';
 
-import { B2BExtraFieldsSessionStorage, isEqualAddress, mapAddressFromFormValues } from '../address';
+import {
+    AddressType,
+    getAddressWithCustomerExtraFields,
+    isEqualAddress,
+    mapAddressFromFormValues,
+    setDefaultAddress,
+} from '../address';
 
 import BillingForm, { type BillingFormValues } from './BillingForm';
 import getBillingMethodId from './getBillingMethodId';
@@ -16,7 +23,12 @@ export interface BillingProps {
     onUnhandledError(error: Error): void;
 }
 
-const getFieldsWithExtraFields = (getBillingAddressFields: (countryCode: string) => FormField[], hasAddressExtraFields: boolean, getAddressExtraFields: () => FormField[], countryCode?: string) => {
+const getFieldsWithExtraFields = (
+    getBillingAddressFields: (countryCode: string) => FormField[],
+    hasAddressExtraFields: boolean,
+    getAddressExtraFields: () => FormField[],
+    countryCode?: string,
+) => {
     const addressFields = getBillingAddressFields(countryCode || '');
 
     if (!hasAddressExtraFields) {
@@ -28,53 +40,86 @@ const getFieldsWithExtraFields = (getBillingAddressFields: (countryCode: string)
     return [...addressFields, ...addressExtraFields];
 };
 
-const Billing = ({ navigateNextStep, onReady, onUnhandledError }:BillingProps): ReactElement => {
-    const { checkoutService, checkoutState } = useCheckout();
-    const { userJourney: { hasAddressExtraFields }, billing: { restrictManualAddressEntry } } = useCapabilities();
-
+const Billing = ({ navigateNextStep, onReady, onUnhandledError }: BillingProps): ReactElement => {
     const {
-        data: {
-            getCheckout,
-            getConfig,
-            getCart,
-            getCustomer,
-            getBillingAddress,
+        selectedState: {
+            checkout,
+            config,
+            cart,
+            customer,
+            isLoadingBillingCountries,
             getBillingAddressFields,
             getAddressExtraFields,
         },
-        statuses: { isLoadingBillingCountries },
-    } = checkoutState;
-    const config = getConfig();
-    const customer = getCustomer();
-    const checkout = getCheckout();
-    const cart = getCart();
+        // using getBillingAddress function to guarantee latest state inside of async function in useEffect
+        checkoutState: {
+            data: { getBillingAddress },
+        },
+        checkoutService,
+    } = useCheckout(({ data, statuses }) => ({
+        checkout: data.getCheckout(),
+        config: data.getConfig(),
+        cart: data.getCart(),
+        customer: data.getCustomer(),
+        billingAddress: data.getBillingAddress(),
+        isLoadingBillingCountries: statuses.isLoadingBillingCountries(),
+        getBillingAddressFields: data.getBillingAddressFields,
+        getAddressExtraFields: data.getAddressExtraFields,
+    }));
+    const {
+        userJourney: { hasAddressExtraFields, hasCompanyAddressBook },
+        billing: { restrictManualAddressEntry },
+    } = useCapabilities();
 
     if (!config || !customer || !checkout || !cart) {
-        throw new Error('Unable to access checkout data')
+        throw new Error('Unable to access checkout data');
     }
 
-    const isInitializing  = isLoadingBillingCountries();
+    const [isApplyingDefaultAddress, setIsApplyingDefaultAddress] = useState(true);
+    const isInitializing = isLoadingBillingCountries || isApplyingDefaultAddress;
 
     // Below constants are for <BillingForm />'s HOC props
-    const customerMessage  = checkout.customerMessage;
-    const methodId  = getBillingMethodId(checkout);
-    const billingAddress  = getBillingAddress();
+    const customerMessage = checkout.customerMessage;
+    const methodId = getBillingMethodId(checkout);
+    const rawBillingAddress = getBillingAddress();
+    const billingAddress = useMemo(
+        () =>
+            getAddressWithCustomerExtraFields(
+                rawBillingAddress,
+                customer.addresses,
+                hasAddressExtraFields,
+            ),
+        [hasAddressExtraFields, rawBillingAddress, customer.addresses],
+    );
+
+    const getFields = useCallback(
+        (countryCode?: string) =>
+            getFieldsWithExtraFields(
+                getBillingAddressFields,
+                hasAddressExtraFields,
+                getAddressExtraFields,
+                countryCode,
+            ),
+        [getBillingAddressFields, hasAddressExtraFields, getAddressExtraFields],
+    );
+
     const handleSubmit = async ({
-                                    orderComment,
-                                    ...addressValues
-                                }: BillingFormValues):Promise<void> => {
-        const updateAddress  = checkoutService.updateBillingAddress;
-        const updateCheckout  = checkoutService.updateCheckout;
-        const billingAddress  = getBillingAddress();
+        orderComment,
+        ...addressValues
+    }: BillingFormValues): Promise<void> => {
+        const billingAddress = getBillingAddress();
         const promises: Array<Promise<CheckoutSelectors>> = [];
-        const address = mapAddressFromFormValues(addressValues, B2BExtraFieldsSessionStorage.BILLING_KEY);
+        const address = mapAddressFromFormValues(
+            addressValues,
+            B2BSessionStorage.billingExtraFieldsKey,
+        );
 
         if (address && !isEqualAddress(address, billingAddress)) {
-            promises.push(updateAddress(address));
+            promises.push(checkoutService.updateBillingAddress(address));
         }
 
         if (customerMessage !== orderComment) {
-            promises.push(updateCheckout({ customerMessage: orderComment }));
+            promises.push(checkoutService.updateCheckout({ customerMessage: orderComment }));
         }
 
         try {
@@ -92,13 +137,25 @@ const Billing = ({ navigateNextStep, onReady, onUnhandledError }:BillingProps): 
         const init = async () => {
             try {
                 await checkoutService.loadBillingAddressFields();
+
+                if (hasCompanyAddressBook) {
+                    await setDefaultAddress({
+                        type: AddressType.Billing,
+                        currentAddress: getBillingAddress(),
+                        addresses: customer.addresses,
+                        updateAddress: checkoutService.updateBillingAddress,
+                    });
+                }
+
                 onReady();
             } catch (error) {
                 if (error instanceof Error) {
                     onUnhandledError(error);
                 }
+            } finally {
+                setIsApplyingDefaultAddress(false);
             }
-        }
+        };
 
         void init();
     }, []);
@@ -126,7 +183,7 @@ const Billing = ({ navigateNextStep, onReady, onUnhandledError }:BillingProps): 
                 <BillingForm
                     billingAddress={billingAddress}
                     customerMessage={customerMessage}
-                    getFields={(countryCode?: string) => getFieldsWithExtraFields(getBillingAddressFields, hasAddressExtraFields, getAddressExtraFields, countryCode)}
+                    getFields={getFields}
                     methodId={methodId}
                     navigateNextStep={navigateNextStep}
                     onSubmit={handleSubmit}
@@ -135,6 +192,6 @@ const Billing = ({ navigateNextStep, onReady, onUnhandledError }:BillingProps): 
             </div>
         </AddressFormSkeleton>
     );
-}
+};
 
 export default Billing;

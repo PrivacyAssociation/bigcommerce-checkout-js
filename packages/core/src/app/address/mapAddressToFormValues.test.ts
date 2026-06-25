@@ -1,5 +1,7 @@
 import { type Address, type FormField } from '@bigcommerce/checkout-sdk';
 
+import { B2BSessionStorage } from '@bigcommerce/checkout/utility';
+
 import { getFormFields } from './formField.mock';
 import mapAddressToFormValues from './mapAddressToFormValues';
 
@@ -62,9 +64,7 @@ describe('mapAddressToFormValues', () => {
 
         const address = {
             firstName: 'John',
-            extraFields: [
-                { fieldId: 'b2bExtraField_100', fieldValue: 'Actual Corp' },
-            ],
+            extraFields: [{ fieldId: '100', fieldValue: 'Actual Corp' }],
         } as Address;
 
         const result = mapAddressToFormValues(fields, address);
@@ -111,5 +111,56 @@ describe('mapAddressToFormValues', () => {
         const result = mapAddressToFormValues(fields);
 
         expect(result.extraFields?.b2bExtraField_100).toBe('');
+    });
+
+    describe('session storage precedence', () => {
+        const storageKey = 'test_storage_key';
+
+        const extraField: FormField = {
+            custom: false,
+            default: 'Default Corp',
+            id: 'b2bExtraField_100',
+            label: 'Company Name',
+            name: 'b2bExtraField_100',
+            required: false,
+        };
+
+        afterEach(() => {
+            B2BSessionStorage.remove(storageKey);
+        });
+
+        it('prefers extra field value from address over session storage', () => {
+            const fields: FormField[] = [...getFormFields(), extraField];
+
+            B2BSessionStorage.set(storageKey, {
+                b2bExtraField_100: 'Stored Corp',
+            });
+
+            const address = {
+                firstName: 'John',
+                extraFields: [{ fieldId: '100', fieldValue: 'Address Corp' }],
+            } as Address;
+
+            const result = mapAddressToFormValues(fields, address, storageKey);
+
+            expect(result.extraFields?.b2bExtraField_100).toBe('Address Corp');
+        });
+
+        it('falls back to session storage when address has no value for the extra field', () => {
+            const fields: FormField[] = [...getFormFields(), extraField];
+
+            B2BSessionStorage.set(storageKey, {
+                b2bExtraField_100: 'Stored Corp',
+            });
+
+            const address = {
+                firstName: 'John',
+                extraFields: [],
+            } as unknown as Address;
+
+            const result = mapAddressToFormValues(fields, address, storageKey);
+
+            expect(result.extraFields?.b2bExtraField_100).toBe('Stored Corp');
+        });
     });
 });

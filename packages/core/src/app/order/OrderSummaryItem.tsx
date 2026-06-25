@@ -20,6 +20,14 @@ export interface OrderItemType {
     quantityBackordered?: number;
     quantityOnHand?: number;
     backorderMessage?: string;
+    bundledItems?: Array<{
+        id: string;
+        name: string;
+        bundleLabel?: string;
+        quantityBackordered?: number;
+        quantityOnHand?: number;
+        backorderMessage?: string;
+    }>;
 }
 
 interface OrderSummaryItemProps {
@@ -32,29 +40,46 @@ export interface OrderSummaryItemOption {
     content: ReactNode;
 }
 
-const OrderSummaryItemBackorderDetails = ({ isExpanded, quantityBackordered, quantityOnHand, backorderMessage }: { isExpanded: boolean, quantityBackordered?: number, quantityOnHand?: number, backorderMessage?: string }) => {
+const OrderSummaryItemBackorderDetails = ({
+    isExpanded,
+    quantityBackordered,
+    quantityOnHand,
+    backorderMessage,
+}: {
+    isExpanded: boolean;
+    quantityBackordered?: number;
+    quantityOnHand?: number;
+    backorderMessage?: string;
+}) => {
     const backorderDetailsRef = useRef<HTMLDivElement>(null);
-    const { checkoutState } = useCheckout();
-    const config = checkoutState.data.getConfig();
+    const { selectedState: config } = useCheckout(({ data }) => data.getConfig());
 
     const inventorySettings = config?.inventorySettings;
     const showQuantityOnBackorder = !!inventorySettings?.showQuantityOnBackorder;
     const showBackorderMessage = !!inventorySettings?.showBackorderMessage;
-    const shouldDisplayBackorderMessagesOnStorefront = !!inventorySettings?.shouldDisplayBackorderMessagesOnStorefront;
+    const shouldDisplayBackorderMessagesOnStorefront =
+        !!inventorySettings?.shouldDisplayBackorderMessagesOnStorefront;
 
-    if (!shouldDisplayBackorderMessagesOnStorefront || (!showQuantityOnBackorder && !showBackorderMessage)) {
+    if (
+        !shouldDisplayBackorderMessagesOnStorefront ||
+        (!showQuantityOnBackorder && !showBackorderMessage)
+    ) {
         return null;
     }
 
     const shouldDisplayQuantityOnHand = showQuantityOnBackorder && !!quantityOnHand;
     const shouldDisplayQuantityOnBackorder = showQuantityOnBackorder && !!quantityBackordered;
-    const shouldDisplayBackorderMessage = showBackorderMessage && !!backorderMessage && !!quantityBackordered;
+    const shouldDisplayBackorderMessage =
+        showBackorderMessage && !!backorderMessage && !!quantityBackordered;
 
     return (
         <CollapseCSSTransition isVisible={isExpanded} nodeRef={backorderDetailsRef}>
-            <div className="product-backorder-details-container" ref={backorderDetailsRef}>
+            <div
+                className="product-backorder-details-container optimizedCheckout-contentSecondary sub-text-medium"
+                ref={backorderDetailsRef}
+            >
                 {shouldDisplayQuantityOnHand && (
-                    <div className="sub-text" data-test="cart-item-onhand-qty">
+                    <div data-test="cart-item-onhand-qty">
                         <TranslatedString
                             data={{ count: quantityOnHand }}
                             id="cart.ready_to_ship_count_text"
@@ -62,7 +87,7 @@ const OrderSummaryItemBackorderDetails = ({ isExpanded, quantityBackordered, qua
                     </div>
                 )}
                 {shouldDisplayQuantityOnBackorder && (
-                    <div className="sub-text" data-test="cart-item-backorder-qty">
+                    <div data-test="cart-item-backorder-qty">
                         <TranslatedString
                             data={{ count: quantityBackordered }}
                             id="cart.backorder_count_text"
@@ -70,9 +95,7 @@ const OrderSummaryItemBackorderDetails = ({ isExpanded, quantityBackordered, qua
                     </div>
                 )}
                 {shouldDisplayBackorderMessage && (
-                    <div className="sub-text" data-test="cart-item-backorder-message">
-                        {backorderMessage}
-                    </div>
+                    <div data-test="cart-item-backorder-message">{backorderMessage}</div>
                 )}
             </div>
         </CollapseCSSTransition>
@@ -94,6 +117,7 @@ const OrderSummaryItem: FunctionComponent<OrderSummaryItemProps> = ({
         quantityBackordered,
         quantityOnHand,
         backorderMessage,
+        bundledItems,
     } = orderItem;
 
     return (
@@ -105,9 +129,7 @@ const OrderSummaryItem: FunctionComponent<OrderSummaryItemProps> = ({
                     className="product-title optimizedCheckout-contentPrimary body-medium"
                     data-test="cart-item-product-title"
                 >
-                    <span className="body-bold">
-                        {`${quantity} x `}
-                    </span>
+                    <span className="body-bold">{`${quantity} x `}</span>
                     {name}
                 </h4>
                 {productOptions && productOptions.length > 0 && (
@@ -130,12 +152,51 @@ const OrderSummaryItem: FunctionComponent<OrderSummaryItemProps> = ({
                         {description}
                     </div>
                 )}
-                <OrderSummaryItemBackorderDetails backorderMessage={backorderMessage} isExpanded={shouldExpandBackorderDetails} quantityBackordered={quantityBackordered} quantityOnHand={quantityOnHand} />
+                <OrderSummaryItemBackorderDetails
+                    backorderMessage={backorderMessage}
+                    isExpanded={shouldExpandBackorderDetails}
+                    quantityBackordered={quantityBackordered}
+                    quantityOnHand={quantityOnHand}
+                />
+
+                {bundledItems && bundledItems.length > 0 && (
+                    <ul className="bundled-items-container">
+                        {bundledItems.map((item) => (
+                            <li
+                                className="bundled-item optimizedCheckout-contentSecondary sub-text-medium"
+                                key={item.id}
+                            >
+                                <div
+                                    className="bundled-item-name"
+                                    data-test="cart-item-bundled-item-name"
+                                >
+                                    <span className="body-bold">
+                                        {item.bundleLabel ? (
+                                            `${item.bundleLabel}:`
+                                        ) : (
+                                            <TranslatedString id="cart.bundled_item_label" />
+                                        )}
+                                    </span>{' '}
+                                    {item.name}
+                                </div>
+                                <OrderSummaryItemBackorderDetails
+                                    backorderMessage={item.backorderMessage}
+                                    isExpanded={shouldExpandBackorderDetails}
+                                    quantityBackordered={item.quantityBackordered}
+                                    quantityOnHand={item.quantityOnHand}
+                                />
+                            </li>
+                        ))}
+                    </ul>
+                )}
             </div>
 
             <div className="product-column product-actions">
                 {isNumber(amountAfterDiscount) && amountAfterDiscount !== amount && (
-                    <div className="product-price body-medium" data-test="cart-item-product-price--afterDiscount">
+                    <div
+                        className="product-price body-medium"
+                        data-test="cart-item-product-price--afterDiscount"
+                    >
                         <ShopperCurrency amount={amountAfterDiscount} />
                     </div>
                 )}
@@ -144,8 +205,10 @@ const OrderSummaryItem: FunctionComponent<OrderSummaryItemProps> = ({
                     className={classNames('product-price', 'optimizedCheckout-contentPrimary', {
                         'product-price--beforeDiscount':
                             isNumber(amountAfterDiscount) && amountAfterDiscount !== amount,
-                        'body-medium': isNumber(amountAfterDiscount) && amountAfterDiscount === amount,
-                        'body-regular': isNumber(amountAfterDiscount) && amountAfterDiscount !== amount,
+                        'body-medium':
+                            isNumber(amountAfterDiscount) && amountAfterDiscount === amount,
+                        'body-regular':
+                            isNumber(amountAfterDiscount) && amountAfterDiscount !== amount,
                     })}
                     data-test="cart-item-product-price"
                 >
@@ -154,6 +217,6 @@ const OrderSummaryItem: FunctionComponent<OrderSummaryItemProps> = ({
             </div>
         </div>
     );
-}
+};
 
 export default memo(OrderSummaryItem);

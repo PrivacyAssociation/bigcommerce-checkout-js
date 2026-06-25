@@ -1,8 +1,4 @@
-import {
-    type Address,
-    type Consignment,
-    type FormField,
-} from '@bigcommerce/checkout-sdk';
+import { type Address, type Consignment, type FormField } from '@bigcommerce/checkout-sdk';
 import React, { type ReactElement } from 'react';
 
 import { useCapabilities, useCheckout, useThemeContext } from '@bigcommerce/checkout/contexts';
@@ -12,9 +8,8 @@ import {
     AddressForm,
     AddressSelect,
     AddressType,
-    B2BExtraFieldsSessionStorage,
     isValidCustomerAddress,
-    reorderAddressFormFields
+    reorderAddressFormFields,
 } from '../address';
 import { connectFormik, type ConnectFormikProps } from '../common/form';
 
@@ -33,34 +28,27 @@ export interface ShippingAddressFormProps {
 
 const addressFieldName = 'shippingAddress';
 
-const ShippingAddressForm = (
-    {
-        address: shippingAddress,
-        onAddressSelect,
-        onUseNewAddress,
-        formFields,
-        isLoading,
-        validateMaxLength,
-        formik: {
-            values: { shippingAddress: formAddress },
-            setFieldValue: formikSetFieldValue,
-        },
-        onFieldChange,
-    }: ShippingAddressFormProps & ConnectFormikProps<SingleShippingFormValues>,
-): ReactElement => {
-    const {
-        checkoutState:{
-            data:{
-                getCustomer,
-            },
-        },
-    } = useCheckout();
+const ShippingAddressForm = ({
+    address: shippingAddress,
+    onAddressSelect,
+    onUseNewAddress,
+    formFields,
+    isLoading,
+    validateMaxLength,
+    formik: {
+        values: { shippingAddress: formAddress },
+        setFieldValue: formikSetFieldValue,
+    },
+    onFieldChange,
+}: ShippingAddressFormProps & ConnectFormikProps<SingleShippingFormValues>): ReactElement => {
+    const { selectedState: customer } = useCheckout(({ data }) => data.getCustomer());
     const { themeV2 } = useThemeContext();
-    const { shipping: { hideSaveToAddressBookCheck, restrictManualAddressEntry } } = useCapabilities();
+    const {
+        shipping: { hideSaveToAddressBookCheck, restrictManualAddressEntry },
+    } = useCapabilities();
 
-    const customer = getCustomer();
     const addresses = customer?.addresses || [];
-    const shouldShowSaveAddress = !hideSaveToAddressBookCheck && !(customer?.isGuest);
+    const shouldShowSaveAddress = !hideSaveToAddressBookCheck && !customer?.isGuest;
 
     const setFieldValue = (fieldName: string, fieldValue: string) => {
         const customFormFieldNames = formFields
@@ -109,10 +97,7 @@ const ShippingAddressForm = (
                             addresses={addresses}
                             onSelectAddress={onAddressSelect}
                             onUseNewAddress={onUseNewAddress}
-                            selectedAddress={
-                                hasValidCustomerAddress ? shippingAddress : undefined
-                            }
-                            storageKey={B2BExtraFieldsSessionStorage.SHIPPING_KEY}
+                            selectedAddress={hasValidCustomerAddress ? shippingAddress : undefined}
                             type={AddressType.Shipping}
                         />
                     </LoadingOverlay>

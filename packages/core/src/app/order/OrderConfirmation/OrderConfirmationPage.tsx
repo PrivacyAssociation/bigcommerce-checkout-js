@@ -25,6 +25,7 @@ import { ContinueButton } from './ContinueButton';
 import { OrderSummaryContainer } from './OrderSummaryContainer';
 
 interface OrderConfirmationPageProps {
+    cannotCreatePersonalAccount: boolean;
     order: Order;
     supportEmail: string;
     supportPhoneNumber: string | undefined;
@@ -44,6 +45,7 @@ interface OrderConfirmationPageProps {
 }
 
 export const OrderConfirmationPage = ({
+    cannotCreatePersonalAccount,
     currency,
     customerCanBeCreated,
     error,
@@ -85,7 +87,7 @@ export const OrderConfirmationPage = ({
                     </OrderConfirmationSection>
                 )}
 
-                {shouldShowPasswordForm && !hasSignedUp && (
+                {!cannotCreatePersonalAccount && shouldShowPasswordForm && !hasSignedUp && (
                     <GuestSignUpForm
                         customerCanBeCreated={customerCanBeCreated}
                         isSigningUp={isSigningUp}
@@ -95,11 +97,7 @@ export const OrderConfirmationPage = ({
                 )}
 
                 {hasSignedUp &&
-                    (order?.customerId ? (
-                        <PasswordSavedSuccessAlert />
-                    ) : (
-                        <SignedUpSuccessAlert />
-                    ))}
+                    (order?.customerId ? <PasswordSavedSuccessAlert /> : <SignedUpSuccessAlert />)}
 
                 <ContinueButton siteLink={siteLink} />
             </div>
@@ -115,4 +113,3 @@ export const OrderConfirmationPage = ({
         <ErrorModal error={error} onClose={onErrorModalClose} shouldShowErrorCode={false} />
     </div>
 );
-

@@ -6,6 +6,7 @@ import { TranslatedString } from '@bigcommerce/checkout/locale';
 import { Alert, AlertType } from '@bigcommerce/checkout/ui';
 
 import { isErrorWithType } from '../../common/error';
+
 import MultiShippingOptionsListV2 from './MultiShippingOptionsList';
 import { isLoadingSelector } from './ShippingOptions';
 
@@ -24,7 +25,7 @@ export const MultiShippingOptions = ({
     shippingQuoteFailedMessage,
     onUnhandledError,
 }: MultiShippingOptionsV2Props) => {
-    const { checkoutService, checkoutState } = useCheckout();
+    const { checkoutService, checkoutState } = useCheckout((state) => state);
 
     const selectShippingOption = async (consignmentId: string, shippingOptionId: string) => {
         try {
@@ -45,8 +46,8 @@ export const MultiShippingOptions = ({
             </h3>
             {(!consignment.availableShippingOptions ||
                 !consignment.availableShippingOptions.length) && (
-                    <Alert type={AlertType.Error}>{shippingQuoteFailedMessage}</Alert>
-                )}
+                <Alert type={AlertType.Error}>{shippingQuoteFailedMessage}</Alert>
+            )}
             {Boolean(consignment.availableShippingOptions) &&
                 consignment.availableShippingOptions && (
                     <MultiShippingOptionsListV2

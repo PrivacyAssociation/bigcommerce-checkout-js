@@ -14,7 +14,15 @@ import {
   withLanguage,
   type WithLanguageProps,
 } from '@bigcommerce/checkout/locale';
-import { Alert, AlertType, Button, ButtonVariant, Fieldset, Form, Legend } from '@bigcommerce/checkout/ui';
+import {
+    Alert,
+    AlertType,
+    Button,
+    ButtonVariant,
+    Fieldset,
+    Form,
+    Legend,
+} from '@bigcommerce/checkout/ui';
 
 import CustomerViewType from './CustomerViewType';
 // import EmailField from './EmailField';
@@ -106,14 +114,13 @@ const LoginForm: FunctionComponent<
 
   const handleRedirect = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
-    // prod vs test myiapp redirects
-    if (window.location.origin === 'https://store.iapp.org') {
-      window.location.href = 'https://myiapp.org/store?redirectPage=checkout';
-    } else {
-      window.location.href = 'https://test.myiapp.org/store?redirectPage=checkout';
-    }
+    // prod vs test myiapp redirects  
   };
 
+  const loginHref =  window.location.origin === 'https://store.iapp.org' 
+    ? 'https://myiapp.org/store?redirectPage=checkout' 
+    : 'https://test.myiapp.org/store?redirectPage=checkout';
+    
   return (
     <Form
       className="checkout-form"
@@ -166,7 +173,7 @@ const LoginForm: FunctionComponent<
             {/* { isSignInEmailEnabled && !isEmbedded && !isBuyNowCart &&
                             <TranslatedLink
                                 id="login_email.link"
-                                onClick={ onSendLoginEmail }
+                                onClick={onSendLoginEmail}
                                 testId="customer-signin-link"
                             /> 
                         */}
@@ -199,15 +206,14 @@ const LoginForm: FunctionComponent<
               isLoading={Boolean(isSigningIn() || isExecutingPaymentMethodCheckout())}
             />
           ) : (
-            <Button
-              className={themeV2 ? 'body-bold' : ''}
+            <a
+              className={`button button--primary optimizedCheckout-buttonPrimary ${themeV2 ? 'body-bold' : ''}`}
               id="checkout-customer-continue"
-              onClick={handleRedirect}
               testId="customer-continue-button"
-              variant={ButtonVariant.Primary}
+              href={loginHref}
             >
               <TranslatedString id="customer.sign_in_action" />
-            </Button>
+            </a>
           )}
 
           {viewType === CustomerViewType.SuggestedLogin && (
