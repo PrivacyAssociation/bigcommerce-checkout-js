@@ -1,7 +1,7 @@
 import classNames from 'classnames';
 import { type FormikProps, withFormik } from 'formik';
 import { noop } from 'lodash';
-import React, { type FunctionComponent, memo, MouseEvent } from 'react';
+import React, { type FunctionComponent, memo } from 'react';
 // import React, { type FunctionComponent, memo, useCallback, MouseEvent } from 'react';
 import { object, string } from 'yup';
 
@@ -17,8 +17,6 @@ import {
 import {
     Alert,
     AlertType,
-    Button,
-    ButtonVariant,
     Fieldset,
     Form,
     Legend,
@@ -112,11 +110,6 @@ const LoginForm: FunctionComponent<
   //     );
   // }, [email, onCancel]);
 
-  const handleRedirect = (event: MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    // prod vs test myiapp redirects  
-  };
-
   const loginHref =  window.location.origin === 'https://store.iapp.org' 
     ? 'https://myiapp.org/store?redirectPage=checkout' 
     : 'https://test.myiapp.org/store?redirectPage=checkout';
@@ -207,9 +200,9 @@ const LoginForm: FunctionComponent<
             />
           ) : (
             <a
-              className={`button button--primary optimizedCheckout-buttonPrimary ${themeV2 ? 'body-bold' : ''}`}
+              className={`button button--primary optimizedCheckout-buttonPrimary${themeV2 ? ' body-bold' : ''}`}
               id="checkout-customer-continue"
-              testId="customer-continue-button"
+              test-id="customer-continue-button"
               href={loginHref}
             >
               <TranslatedString id="customer.sign_in_action" />
