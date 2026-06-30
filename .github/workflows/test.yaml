@@ -167,7 +167,9 @@ jobs:
         env:
           BC_PREVIEW_CODE: ${{ secrets.BC_PREVIEW_CODE }}
           WAF_TOKEN: ${{ secrets.MYIAPP_WAF_TOKEN }}
+          COGNITO_WAF_TOKEN: ${{ secrets.MYIAPP_COGNITO_WAF_TOKEN }}
           BC_CHECKOUT_URL: "https://test-checkout.iapp.org/auto-loader.js"
+          STORE_URL: "https://sandbox-iapp.mybigcommerce.com"
           RUNTIME_ENVIRONMENT: "test"
         run: |
           (cd automated-testing && npx playwright test --project=test-regression)
