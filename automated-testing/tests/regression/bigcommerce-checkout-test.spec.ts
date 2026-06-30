@@ -181,7 +181,7 @@ async function addAigpExamToCart(page: Page) {
   // wait for "added to cart" confirmation popup screen before navigating to checkout
   await page
     .locator('a[href="/checkout"]')
-    .waitFor({ state: 'visible', timeout: 15000 });
+    .waitFor({ state: 'visible', timeout: 10000 });
 }
 
 async function acceptOneTrustIfPresent(page: Page) {
