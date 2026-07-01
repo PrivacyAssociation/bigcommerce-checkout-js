@@ -106,7 +106,7 @@ async function addWafHeaders(page: Page) {
 }
 
 async function myIappLogin(page: Page, username: string, password: string) {
-  await page.waitForURL('https://test.myiapp.org/auth', { timeout: 5000 });
+  await page.waitForURL(/\/auth/, { timeout: 5000 });
   // await page.waitForTimeout(5000); // wait a bit for the sign in page to load before trying to interact with it
   await page.evaluate(() => {
     // skip the "have you done this before?" prompts go to sign in directly
