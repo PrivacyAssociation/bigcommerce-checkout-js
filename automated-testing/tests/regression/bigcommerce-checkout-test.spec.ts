@@ -57,7 +57,7 @@ test.describe('BigCommerce Store checkout should trigger MyIapp Login and return
     await myIappLogin(page, username, password);
     await page.waitForTimeout(2000); // wait to visually confirm logged in state
     // the same deal as MyIapp UI - need a manual GitHub Action Workflow to update snapshots on a linux os
-    await page.waitForURL(`${process.env.STORE_URL ?? ''}/checkout`); // expect to redirect back to store checkout page after login
+    await page.waitForURL(/\/checkout(\?.*)?$/); // expect to redirect back to store checkout page after login
    // await page.goto('/checkout'); // navigate back to checkout after login
     // shipping should be loaded after login
     await page

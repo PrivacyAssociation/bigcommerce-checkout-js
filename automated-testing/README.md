@@ -32,9 +32,6 @@ This project runs Playwright automation to invoke the following UI flow in a chr
   - look this up in the AWS SSM: `/iapp-inventory-myiapp/myiapp-api/test/cognito/waf-token`
 - `WAF_TOKEN` : for nonprod only, to get through to our IAPP internal network
   - look this up in the AWS WAF Console
-- `STORE_URL` : the domain of the store
-  - `https://sandbox-iapp.mybigcommerce.com`
-  - `https://store.iapp.org`
 - `RUNTIME_ENVIRONMENT` : test or production
 
 # Test Execution
