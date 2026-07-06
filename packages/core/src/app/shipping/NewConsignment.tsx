@@ -1,20 +1,23 @@
-import { type Consignment, type ConsignmentCreateRequestBody, type ConsignmentLineItem } from "@bigcommerce/checkout-sdk";
-import { find } from "lodash";
-import React, { useMemo, useState } from "react";
+import {
+    type Consignment,
+    type ConsignmentCreateRequestBody,
+    type ConsignmentLineItem,
+} from '@bigcommerce/checkout-sdk';
+import { find } from 'lodash';
+import React, { useMemo, useState } from 'react';
 
-import { useCheckout } from '@bigcommerce/checkout/contexts';
-import { preventDefault } from "@bigcommerce/checkout/dom-utils";
-import { TranslatedString } from "@bigcommerce/checkout/locale";
+import { preventDefault } from '@bigcommerce/checkout/dom-utils';
+import { TranslatedString } from '@bigcommerce/checkout/locale';
+import { B2BSessionStorage } from '@bigcommerce/checkout/utility';
 
-import { B2BExtraFieldsSessionStorage } from '../address';
-import { EMPTY_ARRAY } from "../common/utility";
+import { isErrorWithType } from '../common/error';
 
-import AllocateItemsModal from "./AllocateItemsModal";
+import AllocateItemsModal from './AllocateItemsModal';
 import ConsignmentAddressSelector from './ConsignmentAddressSelector';
-import { AssignItemFailedError } from "./errors";
-import { useMultiShippingConsignmentItems } from "./hooks/useMultishippingConsignmentItems";
+import { AssignItemFailedError } from './errors';
+import { useMultiShippingConsignmentItems } from './hooks/useMultishippingConsignmentItems';
+import { useShipping } from './hooks/useShipping';
 import { setRecommendedOrMissingShippingOption } from './utils';
-import { isErrorWithType } from "../common/error";
 
 interface NewConsignmentProps {
     consignmentNumber: number;
@@ -33,33 +36,35 @@ const NewConsignment = ({
     resetErrorConsignmentNumber,
     setIsAddShippingDestination,
 }: NewConsignmentProps) => {
-    const [consignmentRequest, setConsignmentRequest] = useState<ConsignmentCreateRequestBody | undefined>();
+    const [consignmentRequest, setConsignmentRequest] = useState<
+        ConsignmentCreateRequestBody | undefined
+    >();
     const [isOpenAllocateItemsModal, setIsOpenAllocateItemsModal] = useState(false);
+
     const { unassignedItems } = useMultiShippingConsignmentItems();
     const {
-        checkoutState: {
-            data: { getShippingCountries, getConsignments: getPreviousConsignments },
-        },
-        checkoutService: { assignItemsToAddress: assignItem, selectConsignmentShippingOption },
-    } = useCheckout();
+        countries,
+        assignItem,
+        selectConsignmentShippingOption,
+        getConsignments: getPreviousConsignments,
+    } = useShipping();
 
     const selectedAddress = useMemo(() => {
         if (!consignmentRequest?.address) {
             return undefined;
         }
 
-        const countries = getShippingCountries() || EMPTY_ARRAY;
         const country = find(countries, { code: consignmentRequest.address.countryCode });
 
         return {
             ...consignmentRequest.address,
             country: country ? country.name : consignmentRequest.address.countryCode,
         };
-    }, [consignmentRequest]);
+    }, [consignmentRequest, countries]);
 
     const toggleAllocateItemsModal = () => {
         setIsOpenAllocateItemsModal(!isOpenAllocateItemsModal);
-    }
+    };
 
     const handleAllocateItems = async (consignmentLineItems: ConsignmentLineItem[]) => {
         let currentConsignments: Consignment[] | undefined;
@@ -68,9 +73,9 @@ const NewConsignment = ({
             return;
         }
 
-        const previousConsignmentIds = new Set(
-            (getPreviousConsignments() ?? []).map((c) => c.id),
-        );
+        const previousConsignments = getPreviousConsignments() ?? [];
+
+        const previousConsignmentIds = new Set(previousConsignments.map((c) => c.id));
 
         try {
             const {
@@ -87,7 +92,7 @@ const NewConsignment = ({
             );
 
             if (newConsignment) {
-                B2BExtraFieldsSessionStorage.reassignConsignmentKey(newConsignment.id);
+                B2BSessionStorage.reassignConsignmentKey(newConsignment.id);
             }
         } catch (error) {
             if (error instanceof AssignItemFailedError) {
@@ -104,7 +109,7 @@ const NewConsignment = ({
 
             if (currentConsignments && currentConsignments.length > 0) {
                 await setRecommendedOrMissingShippingOption(
-                    getPreviousConsignments() ?? [],
+                    previousConsignments,
                     currentConsignments,
                     selectConsignmentShippingOption,
                 );
@@ -113,10 +118,13 @@ const NewConsignment = ({
     };
 
     return (
-        <div className='consignment-container'>
+        <div className="consignment-container">
             <div className="consignment-header sub-header">
                 <h3>
-                    <TranslatedString data={{ consignmentNumber }} id="shipping.multishipping_consignment_index_heading" />
+                    <TranslatedString
+                        data={{ consignmentNumber }}
+                        id="shipping.multishipping_consignment_index_heading"
+                    />
                 </h3>
             </div>
             <ConsignmentAddressSelector
@@ -126,33 +134,34 @@ const NewConsignment = ({
                 selectedAddress={selectedAddress}
                 setConsignmentRequest={setConsignmentRequest}
             />
-            {selectedAddress && (<>
-                <AllocateItemsModal
-                    address={selectedAddress}
-                    consignmentNumber={consignmentNumber}
-                    isLoading={isLoading}
-                    isOpen={isOpenAllocateItemsModal}
-                    onAllocateItems={handleAllocateItems}
-                    onRequestClose={toggleAllocateItemsModal}
-                    unassignedItems={unassignedItems}
-                />
-                <div className="new-consignment-line-item-header">
-                    <h3 className="body-bold">
-                        <TranslatedString id="shipping.multishipping_no_item_allocated_message" />
-                    </h3>
-                    <a
-                        className="body-cta"
-                        data-test="allocate-items-button"
-                        href="#"
-                        onClick={preventDefault(toggleAllocateItemsModal)}
-                    >
-                        <TranslatedString id="shipping.multishipping_allocate_items" />
-                    </a>
-                </div>
-            </>
+            {selectedAddress && (
+                <>
+                    <AllocateItemsModal
+                        address={selectedAddress}
+                        consignmentNumber={consignmentNumber}
+                        isLoading={isLoading}
+                        isOpen={isOpenAllocateItemsModal}
+                        onAllocateItems={handleAllocateItems}
+                        onRequestClose={toggleAllocateItemsModal}
+                        unassignedItems={unassignedItems}
+                    />
+                    <div className="new-consignment-line-item-header">
+                        <h3 className="body-bold">
+                            <TranslatedString id="shipping.multishipping_no_item_allocated_message" />
+                        </h3>
+                        <a
+                            className="body-cta"
+                            data-test="allocate-items-button"
+                            href="#"
+                            onClick={preventDefault(toggleAllocateItemsModal)}
+                        >
+                            <TranslatedString id="shipping.multishipping_allocate_items" />
+                        </a>
+                    </div>
+                </>
             )}
         </div>
-    )
-}
+    );
+};
 
 export default NewConsignment;

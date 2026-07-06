@@ -13,6 +13,7 @@ import getPaymentMethodName from './getPaymentMethodName';
 import getUniquePaymentMethodId, { parseUniquePaymentMethodId } from './getUniquePaymentMethodId';
 import PaymentMethodTitle, { getPaymentMethodTitle } from './PaymentMethodTitle';
 import PaymentMethodV2 from './PaymentMethodV2';
+import { type PoDisabledReason, usePoMethodDisabledReason } from './usePoMethodDisabledReason';
 
 export interface PaymentMethodListProps {
     isEmbedded?: boolean;
@@ -46,28 +47,33 @@ const PaymentMethodList: FunctionComponent<
     onUnhandledError,
 }) => {
     const { language } = useLocale();
-    const {
-        checkoutState: {
-            data: { getConfig }
-        }
-    } = useCheckout();
+    const { selectedState: config } = useCheckout(({ data }) => data.getConfig());
 
-    const config = getConfig();
+    const chequeMethod = find(methods, { id: 'cheque' });
+    const chequeDisabledReason = usePoMethodDisabledReason(chequeMethod);
 
     const titleText = useMemo(() => {
         if (config && values.paymentProviderRadio) {
             const checkoutSettings = config.checkoutSettings;
             const cdnBasePath = config.cdnPath;
             const storeCountryCode = config.storeProfile.storeCountryCode;
-            const paymentMethod = getPaymentMethodFromListValue(methods, values.paymentProviderRadio);
+            const paymentMethod = getPaymentMethodFromListValue(
+                methods,
+                values.paymentProviderRadio,
+            );
             const methodName = getPaymentMethodName(language)(paymentMethod);
-            const { titleText } = getPaymentMethodTitle(language, cdnBasePath, checkoutSettings, storeCountryCode)(paymentMethod);
+            const { titleText } = getPaymentMethodTitle(
+                language,
+                cdnBasePath,
+                checkoutSettings,
+                storeCountryCode,
+            )(paymentMethod);
 
             return titleText || methodName;
         }
 
         return '';
-    }, [config, values.paymentProviderRadio])
+    }, [config, values.paymentProviderRadio]);
 
     const handleSelect = useCallback(
         (value: string) => {
@@ -78,7 +84,9 @@ const PaymentMethodList: FunctionComponent<
 
     return (
         <>
-            <div aria-live="assertive" className='is-srOnly' role="status">{titleText}</div>
+            <div aria-live="assertive" className="is-srOnly" role="status">
+                {titleText}
+            </div>
             <Checklist
                 defaultSelectedItemId={values.paymentProviderRadio}
                 isDisabled={isInitializingPayment}
@@ -99,6 +107,9 @@ const PaymentMethodList: FunctionComponent<
 
                     return (
                         <PaymentMethodListItem
+                            disabledReason={
+                                method === chequeMethod ? chequeDisabledReason : undefined
+                            }
                             isDisabled={isInitializingPayment}
                             isEmbedded={isEmbedded}
                             isUsingMultiShipping={isUsingMultiShipping}
@@ -115,6 +126,7 @@ const PaymentMethodList: FunctionComponent<
 };
 
 interface PaymentMethodListItemProps {
+    disabledReason?: PoDisabledReason;
     isDisabled?: boolean;
     isEmbedded?: boolean;
     isUsingMultiShipping?: boolean;
@@ -124,6 +136,7 @@ interface PaymentMethodListItemProps {
 }
 
 const PaymentMethodListItem: FunctionComponent<PaymentMethodListItemProps> = ({
+    disabledReason,
     isDisabled,
     isEmbedded,
     isUsingMultiShipping,
@@ -143,24 +156,26 @@ const PaymentMethodListItem: FunctionComponent<PaymentMethodListItemProps> = ({
     }, [isEmbedded, isUsingMultiShipping, method, onUnhandledError]);
 
     const renderPaymentMethodTitle = useCallback(
-        (isSelected: boolean) => <PaymentMethodTitle isSelected={isSelected} method={method} onUnhandledError={onUnhandledError} />,
-        [method],
+        (isSelected: boolean) => (
+            <PaymentMethodTitle
+                disabledReason={disabledReason}
+                isSelected={isSelected}
+                method={method}
+                onUnhandledError={onUnhandledError}
+            />
+        ),
+        [disabledReason, method],
     );
 
     if (method.initializationData?.isCustomChecklistItem) {
-        return (
-            <CustomChecklistItem
-                content={renderPaymentMethod}
-                htmlId={`radio-${value}`}
-            />
-        );
+        return <CustomChecklistItem content={renderPaymentMethod} htmlId={`radio-${value}`} />;
     }
 
     return (
         <ChecklistItem
             content={renderPaymentMethod}
             htmlId={`radio-${value}`}
-            isDisabled={isDisabled}
+            isDisabled={isDisabled || Boolean(disabledReason)}
             label={renderPaymentMethodTitle}
             value={value}
         />

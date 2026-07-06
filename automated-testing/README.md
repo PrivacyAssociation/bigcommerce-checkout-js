@@ -28,7 +28,9 @@ This project runs Playwright automation to invoke the following UI flow in a chr
   - `https://test-checkout.iapp.org/auto-loader.js`
   - `https://checkout.iapp.org/auto-loader.js`
 - `BC_PREVIEW_CODE` : nonprod only, the sandbox BC Store is behind a code to keep it blocked from public view
-- `WAF_TOKEN` : for nonprod only, to get thru to our IAPP internal network
+- `COGNITO_WAF_TOKEN` : for nonprod only, to get to the Cognito Managed Login through our IAPP internal network
+  - look this up in the AWS SSM: `/iapp-inventory-myiapp/myiapp-api/test/cognito/waf-token`
+- `WAF_TOKEN` : for nonprod only, to get through to our IAPP internal network
   - look this up in the AWS WAF Console
 - `RUNTIME_ENVIRONMENT` : test or production
 

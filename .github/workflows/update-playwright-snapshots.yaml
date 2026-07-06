@@ -10,6 +10,7 @@
 #  VISUAL_REGRESSION_TEST_USERNAME - username for the test user used in visual regression tests
 #  VISUAL_REGRESSION_TEST_USER_PASSWORD - password for the test user used in visual regression tests
 #  MYIAPP_WAF_TOKEN_NONPROD - WAF token for non-production environments to allow access through WAF during tests
+#  MYIAPP_COGNITO_WAF_TOKEN = WAF token for non-production environments to allow access through the Cognito WAF during tests
 #
 # VARS (from GitHub Environment variables):
 #  environment_name - the target environment to update snapshots for (test or production)
@@ -94,6 +95,7 @@ jobs:
         env:
           BC_PREVIEW_CODE: ${{ secrets.BC_PREVIEW_CODE }}
           WAF_TOKEN: ${{ secrets.MYIAPP_WAF_TOKEN }}
+          COGNITO_WAF_TOKEN: ${{ secrets.MYIAPP_COGNITO_WAF_TOKEN }}
         run: |
           cd automated-testing
           if [ "$DEBUG_LOGS" == "true" ]; then

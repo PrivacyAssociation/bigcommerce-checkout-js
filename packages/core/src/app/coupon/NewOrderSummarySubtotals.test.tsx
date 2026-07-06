@@ -1,10 +1,22 @@
-import { createCheckoutService, type CurrencyService, type Fee , type OrderFee , type Tax } from '@bigcommerce/checkout-sdk';
+import {
+    createCheckoutService,
+    type CurrencyService,
+    type Fee,
+    type OrderFee,
+    type Tax,
+} from '@bigcommerce/checkout-sdk';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
 import { ExtensionService } from '@bigcommerce/checkout/checkout-extension';
-import { CheckoutProvider, ExtensionProvider, LocaleProvider } from '@bigcommerce/checkout/contexts';
-import { createLocaleContext , getLanguageService } from '@bigcommerce/checkout/locale';
+import {
+    CheckoutProvider,
+    defaultCapabilities,
+    ExtensionProvider,
+    LocaleProvider,
+    useCapabilities,
+} from '@bigcommerce/checkout/contexts';
+import { createLocaleContext, getLanguageService } from '@bigcommerce/checkout/locale';
 import { render, screen, waitFor } from '@bigcommerce/checkout/test-utils';
 
 import { createErrorLogger } from '../common/error';
@@ -14,6 +26,10 @@ import NewOrderSummarySubtotals from './NewOrderSummarySubtotals';
 import { useMultiCoupon } from './useMultiCoupon';
 
 jest.mock('./useMultiCoupon');
+jest.mock('@bigcommerce/checkout/contexts', () => ({
+    ...jest.requireActual('@bigcommerce/checkout/contexts'),
+    useCapabilities: jest.fn(),
+}));
 
 describe('NewOrderSummarySubtotals', () => {
     const checkoutService = createCheckoutService();
@@ -52,7 +68,10 @@ describe('NewOrderSummarySubtotals', () => {
         return render(
             <CheckoutProvider checkoutService={checkoutService}>
                 <ExtensionProvider extensionService={extensionService}>
-                    <LocaleProvider checkoutService={checkoutService} languageService={languageService}>
+                    <LocaleProvider
+                        checkoutService={checkoutService}
+                        languageService={languageService}
+                    >
                         <NewOrderSummarySubtotals {...props} />
                     </LocaleProvider>
                 </ExtensionProvider>
@@ -60,10 +79,20 @@ describe('NewOrderSummarySubtotals', () => {
         );
     };
 
+    const mockUseCapabilities = useCapabilities as jest.MockedFunction<typeof useCapabilities>;
+
     beforeEach(() => {
         jest.clearAllMocks();
         jest.spyOn(checkoutState.data, 'getConfig').mockReturnValue(getStoreConfig());
         mockUseMultiCoupon.mockReturnValue(defaultMockReturn);
+        mockUseCapabilities.mockReturnValue({
+            ...defaultCapabilities,
+            userJourney: {
+                ...defaultCapabilities.userJourney,
+                disableCoupon: false,
+                disableGiftCertificate: false,
+            },
+        });
     });
 
     describe('Unit Tests', () => {
@@ -212,7 +241,9 @@ describe('NewOrderSummarySubtotals', () => {
                 expect(shippingSection).toHaveTextContent(formattedAmount);
 
                 const textContent = shippingSection.textContent || '';
-                const matches = textContent.match(new RegExp(formattedAmount.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'));
+                const matches = textContent.match(
+                    new RegExp(formattedAmount.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+                );
 
                 expect(matches?.length).toBeLessThanOrEqual(1);
             });
@@ -235,7 +266,9 @@ describe('NewOrderSummarySubtotals', () => {
                 expect(shippingSection).toHaveTextContent(formattedAmount);
 
                 const textContent = shippingSection.textContent || '';
-                const matches = textContent.match(new RegExp(formattedAmount.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'));
+                const matches = textContent.match(
+                    new RegExp(formattedAmount.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+                );
 
                 expect(matches?.length).toBeLessThanOrEqual(1);
             });
@@ -300,7 +333,14 @@ describe('NewOrderSummarySubtotals', () => {
         describe('Fees', () => {
             it('renders fees when fees array is provided', () => {
                 const fees: Fee[] = [
-                    { id: '1', cost: 2.5, type: 'custom_fee', source: 'test', name: 'Test Fee', displayName: 'Test Fee' },
+                    {
+                        id: '1',
+                        cost: 2.5,
+                        type: 'custom_fee',
+                        source: 'test',
+                        name: 'Test Fee',
+                        displayName: 'Test Fee',
+                    },
                 ];
 
                 renderComponent({ fees });
@@ -310,8 +350,22 @@ describe('NewOrderSummarySubtotals', () => {
 
             it('renders multiple fees', () => {
                 const fees: Fee[] = [
-                    { id: '1', cost: 2.5, type: 'custom_fee', source: 'test', name: 'Test Fee 1', displayName: 'Test Fee 1' },
-                    { id: '2', cost: 3.5, type: 'custom_fee', source: 'test', name: 'Test Fee 2', displayName: 'Test Fee 2' },
+                    {
+                        id: '1',
+                        cost: 2.5,
+                        type: 'custom_fee',
+                        source: 'test',
+                        name: 'Test Fee 1',
+                        displayName: 'Test Fee 1',
+                    },
+                    {
+                        id: '2',
+                        cost: 3.5,
+                        type: 'custom_fee',
+                        source: 'test',
+                        name: 'Test Fee 2',
+                        displayName: 'Test Fee 2',
+                    },
                 ];
 
                 renderComponent({ fees });
@@ -333,7 +387,14 @@ describe('NewOrderSummarySubtotals', () => {
 
             it('displays fee with displayName for Fee type', () => {
                 const fees: Fee[] = [
-                    { id: '1', cost: 2.5, type: 'custom_fee', source: 'test', name: 'Test Fee', displayName: 'Test Fee' },
+                    {
+                        id: '1',
+                        cost: 2.5,
+                        type: 'custom_fee',
+                        source: 'test',
+                        name: 'Test Fee',
+                        displayName: 'Test Fee',
+                    },
                 ];
 
                 renderComponent({ fees });
@@ -366,9 +427,7 @@ describe('NewOrderSummarySubtotals', () => {
 
         describe('Taxes', () => {
             it('renders taxes when isTaxIncluded is false and taxes are provided', () => {
-                const taxes: Tax[] = [
-                    { name: 'Sales Tax', amount: 5 },
-                ];
+                const taxes: Tax[] = [{ name: 'Sales Tax', amount: 5 }];
 
                 renderComponent({ taxes, isTaxIncluded: false });
 
@@ -387,9 +446,7 @@ describe('NewOrderSummarySubtotals', () => {
             });
 
             it('does not render taxes when isTaxIncluded is true', () => {
-                const taxes: Tax[] = [
-                    { name: 'Sales Tax', amount: 5 },
-                ];
+                const taxes: Tax[] = [{ name: 'Sales Tax', amount: 5 }];
 
                 renderComponent({ taxes, isTaxIncluded: true });
 
@@ -409,9 +466,7 @@ describe('NewOrderSummarySubtotals', () => {
             });
 
             it('displays correct tax name and amount', () => {
-                const taxes: Tax[] = [
-                    { name: 'Sales Tax', amount: 5 },
-                ];
+                const taxes: Tax[] = [{ name: 'Sales Tax', amount: 5 }];
 
                 renderComponent({ taxes, isTaxIncluded: false });
 
@@ -436,9 +491,7 @@ describe('NewOrderSummarySubtotals', () => {
             it('passes correct gift certificates to AppliedGiftCertificates component', () => {
                 mockUseMultiCoupon.mockReturnValue({
                     ...defaultMockReturn,
-                    appliedGiftCertificates: [
-                        { code: 'GIFT123', amount: 50 },
-                    ],
+                    appliedGiftCertificates: [{ code: 'GIFT123', amount: 50 }],
                 });
 
                 renderComponent();
@@ -493,11 +546,16 @@ describe('NewOrderSummarySubtotals', () => {
     describe('Integration Tests', () => {
         it('renders all components together with all props', () => {
             const fees: Fee[] = [
-                { id: '1', cost: 2.5, type: 'custom_fee', source: 'test', name: 'Test Fee', displayName: 'Test Fee' },
+                {
+                    id: '1',
+                    cost: 2.5,
+                    type: 'custom_fee',
+                    source: 'test',
+                    name: 'Test Fee',
+                    displayName: 'Test Fee',
+                },
             ];
-            const taxes: Tax[] = [
-                { name: 'Sales Tax', amount: 5 },
-            ];
+            const taxes: Tax[] = [{ name: 'Sales Tax', amount: 5 }];
 
             renderComponent({
                 fees,
@@ -568,9 +626,7 @@ describe('NewOrderSummarySubtotals', () => {
         });
 
         it('integrates with useMultiCoupon hook correctly', () => {
-            const customGiftCertificates = [
-                { code: 'CUSTOM1', amount: 100 },
-            ];
+            const customGiftCertificates = [{ code: 'CUSTOM1', amount: 100 }];
 
             mockUseMultiCoupon.mockReturnValue({
                 ...defaultMockReturn,
@@ -590,13 +646,24 @@ describe('NewOrderSummarySubtotals', () => {
 
             expect(giftCertificate).toHaveTextContent('CUSTOM1');
             expect(giftCertificate).toHaveTextContent(currencyService.toCustomerCurrency(100));
-            expect(screen.getByTestId('cart-shipping')).toHaveTextContent(currencyService.toCustomerCurrency(25));
-            expect(screen.getByTestId('cart-shipping')).toHaveTextContent(currencyService.toCustomerCurrency(30));
+            expect(screen.getByTestId('cart-shipping')).toHaveTextContent(
+                currencyService.toCustomerCurrency(25),
+            );
+            expect(screen.getByTestId('cart-shipping')).toHaveTextContent(
+                currencyService.toCustomerCurrency(30),
+            );
         });
 
         it('handles mixed fee types correctly', () => {
             const fees: Array<Fee | OrderFee> = [
-                { id: '1', cost: 2.5, type: 'custom_fee', source: 'test', name: 'Regular Fee', displayName: 'Regular Fee' },
+                {
+                    id: '1',
+                    cost: 2.5,
+                    type: 'custom_fee',
+                    source: 'test',
+                    name: 'Regular Fee',
+                    displayName: 'Regular Fee',
+                },
                 {
                     id: 2,
                     cost: 3.5,
@@ -628,6 +695,80 @@ describe('NewOrderSummarySubtotals', () => {
             expect(screen.getByTestId('cart-handling')).toBeInTheDocument();
             expect(screen.getAllByTestId('cart-gift-certificate')).toHaveLength(2);
             expect(screen.getByTestId('cart-store-credit')).toBeInTheDocument();
+        });
+    });
+
+    describe('disableGiftCertificate and disableCoupon capabilities', () => {
+        it('shows "Coupon" label when disableGiftCertificate is true', () => {
+            mockUseCapabilities.mockReturnValue({
+                ...defaultCapabilities,
+                userJourney: {
+                    ...defaultCapabilities.userJourney,
+                    disableCoupon: false,
+                    disableGiftCertificate: true,
+                },
+            });
+
+            renderComponent();
+
+            const toggleLabel = screen.getByTestId('redeemable-label');
+
+            expect(toggleLabel).toHaveTextContent(
+                localeContext.language.translate('redeemable.coupon_text'),
+            );
+        });
+
+        it('shows "Gift certificate" label when disableCoupon is true', () => {
+            mockUseCapabilities.mockReturnValue({
+                ...defaultCapabilities,
+                userJourney: {
+                    ...defaultCapabilities.userJourney,
+                    disableCoupon: true,
+                    disableGiftCertificate: false,
+                },
+            });
+
+            renderComponent();
+
+            const toggleLabel = screen.getByTestId('redeemable-label');
+
+            expect(toggleLabel).toHaveTextContent(
+                localeContext.language.translate('redeemable.gift_certificate_text'),
+            );
+        });
+
+        it('shows default toggle label when both flags are false', () => {
+            mockUseCapabilities.mockReturnValue({
+                ...defaultCapabilities,
+                userJourney: {
+                    ...defaultCapabilities.userJourney,
+                    disableCoupon: false,
+                    disableGiftCertificate: false,
+                },
+            });
+
+            renderComponent();
+
+            const toggleLabel = screen.getByTestId('redeemable-label');
+
+            expect(toggleLabel).toHaveTextContent(
+                localeContext.language.translate('redeemable.toggle_action'),
+            );
+        });
+
+        it('hides entire coupon section when both disableCoupon and disableGiftCertificate are true', () => {
+            mockUseCapabilities.mockReturnValue({
+                ...defaultCapabilities,
+                userJourney: {
+                    ...defaultCapabilities.userJourney,
+                    disableCoupon: true,
+                    disableGiftCertificate: true,
+                },
+            });
+
+            renderComponent();
+
+            expect(screen.queryByTestId('redeemable-label')).not.toBeInTheDocument();
         });
     });
 });

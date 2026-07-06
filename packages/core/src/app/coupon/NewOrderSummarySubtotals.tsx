@@ -1,14 +1,16 @@
 import type { Fee, OrderFee, Tax } from '@bigcommerce/checkout-sdk';
 import React, { type FunctionComponent, useRef, useState } from 'react';
 
+import { useCapabilities } from '@bigcommerce/checkout/contexts';
 import { preventDefault } from '@bigcommerce/checkout/dom-utils';
 import { TranslatedString } from '@bigcommerce/checkout/locale';
 import { CollapseCSSTransition } from '@bigcommerce/checkout/ui';
 
-import { isOrderFee, OrderSummaryDiscount, OrderSummaryPrice }  from '../order';
+import { isOrderFee, OrderSummaryDiscount, OrderSummaryPrice } from '../order';
 
 import { AppliedGiftCertificates, CouponForm, Discounts } from './components';
 import { useMultiCoupon } from './useMultiCoupon';
+import { getRedeemableLabelId } from './utils';
 
 interface MultiCouponProps {
     fees?: Fee[] | OrderFee[];
@@ -32,11 +34,12 @@ const NewOrderSummarySubtotals: FunctionComponent<MultiCouponProps> = ({
     const {
         appliedGiftCertificates,
         isCouponFormCollapsed,
-        uiDetails:{
-            shipping,
-            shippingBeforeDiscount,
-        }
+        uiDetails: { shipping, shippingBeforeDiscount },
     } = useMultiCoupon();
+
+    const {
+        userJourney: { disableCoupon, disableGiftCertificate },
+    } = useCapabilities();
 
     const [isCouponFormVisible, setIsCouponFormVisible] = useState(!isCouponFormCollapsed);
     const couponFormRef = useRef<HTMLDivElement>(null);
@@ -47,7 +50,7 @@ const NewOrderSummarySubtotals: FunctionComponent<MultiCouponProps> = ({
 
     return (
         <>
-            {!isOrderConfirmation && (
+            {!isOrderConfirmation && !(disableCoupon && disableGiftCertificate) && (
                 <section className="cart-section optimizedCheckout-orderSummary-cartSection">
                     <a
                         aria-controls="coupon-form-collapsable"
@@ -57,7 +60,9 @@ const NewOrderSummarySubtotals: FunctionComponent<MultiCouponProps> = ({
                         href="#"
                         onClick={preventDefault(toggleCouponForm)}
                     >
-                        <TranslatedString id="redeemable.toggle_action" />
+                        <TranslatedString
+                            id={getRedeemableLabelId(disableGiftCertificate, disableCoupon)}
+                        />
                     </a>
 
                     <CollapseCSSTransition isVisible={isCouponFormVisible} nodeRef={couponFormRef}>
@@ -103,16 +108,17 @@ const NewOrderSummarySubtotals: FunctionComponent<MultiCouponProps> = ({
                     />
                 ))}
 
-                {!isTaxIncluded && (taxes || []).map((tax, index) => (
-                    <OrderSummaryPrice
-                        amount={tax.amount}
-                        key={index}
-                        label={tax.name}
-                        testId="cart-taxes"
-                    />
-                ))}
+                {!isTaxIncluded &&
+                    (taxes || []).map((tax, index) => (
+                        <OrderSummaryPrice
+                            amount={tax.amount}
+                            key={index}
+                            label={tax.name}
+                            testId="cart-taxes"
+                        />
+                    ))}
 
-                <AppliedGiftCertificates giftCertificates={appliedGiftCertificates}/>
+                <AppliedGiftCertificates giftCertificates={appliedGiftCertificates} />
 
                 {!!storeCreditAmount && (
                     <OrderSummaryDiscount

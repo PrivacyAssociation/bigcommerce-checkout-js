@@ -63,9 +63,15 @@ describe('useShipping', () => {
     };
 
     beforeEach(() => {
-        jest.spyOn(contexts, 'useCheckout').mockReturnValue({ checkoutState, checkoutService } as any);
+        jest.spyOn(contexts, 'useCheckout').mockReturnValue({
+            checkoutState,
+            checkoutService,
+        } as any);
         jest.spyOn(contexts, 'useCapabilities').mockReturnValue(defaultCapabilities);
-        jest.spyOn(checkoutState.data, 'getCheckout').mockReturnValue({ id: 'checkout', customerMessage: 'msg' } as any);
+        jest.spyOn(checkoutState.data, 'getCheckout').mockReturnValue({
+            id: 'checkout',
+            customerMessage: 'msg',
+        } as any);
     });
 
     afterEach(() => {
@@ -84,20 +90,18 @@ describe('useShipping', () => {
 
     describe('shouldShowMultiShipping', () => {
         beforeEach(() => {
-            jest.spyOn(checkoutState.data, 'getCart').mockReturnValue(
-                {
-                    ...getCart(),
-                    lineItems: {
-                        ...getCart().lineItems,
-                        physicalItems: [
-                            {
-                                ...getCart().lineItems.physicalItems[0],
-                                quantity: 2,
-                            },
-                        ],
-                    },
-                }
-            );
+            jest.spyOn(checkoutState.data, 'getCart').mockReturnValue({
+                ...getCart(),
+                lineItems: {
+                    ...getCart().lineItems,
+                    physicalItems: [
+                        {
+                            ...getCart().lineItems.physicalItems[0],
+                            quantity: 2,
+                        },
+                    ],
+                },
+            });
             jest.spyOn(checkoutState.data, 'getConfig').mockReturnValue({
                 ...getStoreConfig(),
                 checkoutSettings: {
@@ -250,15 +254,82 @@ describe('useShipping', () => {
         });
     });
 
-    it('shouldRenderStripeForm is true if providerWithCustomCheckout is StripeUPE and shouldUseStripeLinkByMinimumAmount returns true', () => {
+    describe('shippingAddress augmentation', () => {
+        const customerExtraFields = [{ fieldId: '100', fieldValue: 'Acme Corp' }];
 
-        jest.mock(
-            '@bigcommerce/checkout/instrument-utils',
-            () => ({
-                ...jest.requireActual('@bigcommerce/checkout/instrument-utils'),
-                shouldUseStripeLinkByMinimumAmount: jest.fn().mockResolvedValue(true),
-            }),
-        );
+        it('returns the raw shippingAddress when hasAddressExtraFields is false (B2C)', () => {
+            jest.spyOn(contexts, 'useCapabilities').mockReturnValue({
+                ...defaultCapabilities,
+                userJourney: { ...defaultCapabilities.userJourney, hasAddressExtraFields: false },
+            });
+            jest.spyOn(checkoutState.data, 'getCustomer').mockReturnValue({
+                ...getCustomer(),
+                addresses: [
+                    {
+                        ...getShippingAddress(),
+                        id: 5,
+                        type: 'residential',
+                        extraFields: customerExtraFields,
+                    },
+                ],
+            });
+
+            const { result } = renderHook(() => useShipping());
+
+            expect(result.current.shippingAddress?.extraFields).toBeUndefined();
+        });
+
+        it('grafts customer-address extraFields onto shippingAddress when hasAddressExtraFields is true', () => {
+            jest.spyOn(contexts, 'useCapabilities').mockReturnValue({
+                ...defaultCapabilities,
+                userJourney: { ...defaultCapabilities.userJourney, hasAddressExtraFields: true },
+            });
+            jest.spyOn(checkoutState.data, 'getCustomer').mockReturnValue({
+                ...getCustomer(),
+                addresses: [
+                    {
+                        ...getShippingAddress(),
+                        id: 5,
+                        type: 'residential',
+                        extraFields: customerExtraFields,
+                    },
+                ],
+            });
+
+            const { result } = renderHook(() => useShipping());
+
+            expect(result.current.shippingAddress?.extraFields).toEqual(customerExtraFields);
+        });
+
+        it('leaves shippingAddress untouched when no customer address matches', () => {
+            jest.spyOn(contexts, 'useCapabilities').mockReturnValue({
+                ...defaultCapabilities,
+                userJourney: { ...defaultCapabilities.userJourney, hasAddressExtraFields: true },
+            });
+            jest.spyOn(checkoutState.data, 'getCustomer').mockReturnValue({
+                ...getCustomer(),
+                addresses: [
+                    {
+                        ...getShippingAddress(),
+                        id: 5,
+                        type: 'residential',
+                        address1: 'A different street that will not match',
+                        extraFields: customerExtraFields,
+                    },
+                ],
+            });
+
+            const { result } = renderHook(() => useShipping());
+
+            expect(result.current.shippingAddress?.extraFields).toBeUndefined();
+        });
+    });
+
+    it('shouldRenderStripeForm is true if providerWithCustomCheckout is StripeUPE and shouldUseStripeLinkByMinimumAmount returns true', () => {
+        jest.mock('@bigcommerce/checkout/instrument-utils', () => ({
+            ...jest.requireActual('@bigcommerce/checkout/instrument-utils'),
+            shouldUseStripeLinkByMinimumAmount: jest.fn().mockResolvedValue(true),
+        }));
         jest.spyOn(checkoutState.data, 'getConfig').mockReturnValue({
             ...getStoreConfig(),
             checkoutSettings: {

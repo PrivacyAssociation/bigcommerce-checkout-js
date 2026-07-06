@@ -28,8 +28,10 @@ interface GuestFormContainerProps {
 }
 
 function shouldRenderStripeForm(cart: Cart, providerWithCustomCheckout?: string) {
-    return providerWithCustomCheckout === PaymentMethodId.StripeUPE
-        && shouldUseStripeLinkByMinimumAmount(cart)
+    return (
+        providerWithCustomCheckout === PaymentMethodId.StripeUPE &&
+        shouldUseStripeLinkByMinimumAmount(cart)
+    );
 }
 
 export const GuestFormContainer: React.FC<GuestFormContainerProps> = ({
@@ -45,24 +47,29 @@ export const GuestFormContainer: React.FC<GuestFormContainerProps> = ({
     onWalletButtonClick,
     onUnhandledError,
 }) => {
-    const { checkoutState, checkoutService } = useCheckout();
+    const { checkoutState, checkoutService } = useCheckout(
+        ({
+            data: { isPaymentDataRequired, getConfig, getCart },
+            statuses: {
+                isInitializingCustomer,
+                isContinuingAsGuest,
+                isExecutingPaymentMethodCheckout,
+            },
+        }) => ({
+            isPaymentDataRequired: isPaymentDataRequired(),
+            config: getConfig(),
+            cart: getCart(),
+            isInitializingCustomer: isInitializingCustomer(),
+            isContinuingAsGuest: isContinuingAsGuest(),
+            isExecutingPaymentMethodCheckout: isExecutingPaymentMethodCheckout(),
+        }),
+    );
     const {
-        data: {
-            isPaymentDataRequired,
-            getConfig,
-            getCart,
-        },
-        statuses: {
-            isInitializingCustomer,
-            isContinuingAsGuest,
-            isExecutingPaymentMethodCheckout
-        },
+        data: { isPaymentDataRequired, getConfig, getCart },
+        statuses: { isInitializingCustomer, isContinuingAsGuest, isExecutingPaymentMethodCheckout },
     } = checkoutState;
 
-    const {
-        deinitializeCustomer,
-        initializeCustomer,
-    }  = checkoutService;
+    const { deinitializeCustomer, initializeCustomer } = checkoutService;
 
     const config = getConfig();
     const cart = getCart();
@@ -80,59 +87,66 @@ export const GuestFormContainer: React.FC<GuestFormContainerProps> = ({
             providerWithCustomCheckout,
             isExpressPrivacyPolicy,
         },
-        shopperConfig: {
-            showNewsletterSignup: canSubscribe,
-        },
+        shopperConfig: { showNewsletterSignup: canSubscribe },
     } = config;
 
     const customCheckoutProvider = getProviderWithCustomCheckout(providerWithCustomCheckout);
 
-    const checkoutButtons = isWalletButtonsOnTop || !isPaymentDataRequired()
-        ? null
-        : <CheckoutButtonList
-            checkEmbeddedSupport={checkEmbeddedSupport}
-            deinitialize={deinitializeCustomer}
-            initialize={initializeCustomer}
-            isInitializing={isInitializingCustomer()}
-            methodIds={checkoutButtonIds}
-            onClick={onWalletButtonClick}
-            onError={onUnhandledError}
-        />;
+    const checkoutButtons =
+        isWalletButtonsOnTop || !isPaymentDataRequired() ? null : (
+            <CheckoutButtonList
+                checkEmbeddedSupport={checkEmbeddedSupport}
+                deinitialize={deinitializeCustomer}
+                initialize={initializeCustomer}
+                isInitializing={isInitializingCustomer()}
+                methodIds={checkoutButtonIds}
+                onClick={onWalletButtonClick}
+                onError={onUnhandledError}
+            />
+        );
 
     if (shouldRenderStripeForm(cart, customCheckoutProvider)) {
-        return <StripeGuestForm
+        return (
+            <StripeGuestForm
+                canSubscribe={canSubscribe}
+                checkoutButtons={checkoutButtons}
+                continueAsGuestButtonLabelId="customer.continue"
+                defaultShouldSubscribe={isSubscribed}
+                deinitialize={deinitializeCustomer}
+                email={email}
+                initialize={initializeCustomer}
+                isExpressPrivacyPolicy={isExpressPrivacyPolicy}
+                isLoading={
+                    isContinuingAsGuest() ||
+                    isInitializingCustomer() ||
+                    isExecutingPaymentMethodCheckout()
+                }
+                onChangeEmail={handleChangeEmail}
+                onContinueAsGuest={handleContinueAsGuest}
+                onShowLogin={handleShowLogin}
+                privacyPolicyUrl={privacyPolicyUrl}
+                requiresMarketingConsent={requiresMarketingConsent}
+                step={step}
+            />
+        );
+    }
+
+    return (
+        <GuestForm
             canSubscribe={canSubscribe}
             checkoutButtons={checkoutButtons}
             continueAsGuestButtonLabelId="customer.continue"
             defaultShouldSubscribe={isSubscribed}
-            deinitialize={deinitializeCustomer}
             email={email}
-            initialize={initializeCustomer}
             isExpressPrivacyPolicy={isExpressPrivacyPolicy}
-            isLoading={isContinuingAsGuest() || isInitializingCustomer() || isExecutingPaymentMethodCheckout()}
+            isFloatingLabelEnabled={isFloatingLabelEnabled}
+            isLoading={isLoadingGuestForm}
             onChangeEmail={handleChangeEmail}
             onContinueAsGuest={handleContinueAsGuest}
             onShowLogin={handleShowLogin}
             privacyPolicyUrl={privacyPolicyUrl}
             requiresMarketingConsent={requiresMarketingConsent}
-            step={step}
-        />;
-    }
-
-    return <GuestForm
-        canSubscribe={canSubscribe}
-        checkoutButtons={checkoutButtons}
-        continueAsGuestButtonLabelId="customer.continue"
-        defaultShouldSubscribe={isSubscribed}
-        email={email}
-        isExpressPrivacyPolicy={isExpressPrivacyPolicy}
-        isFloatingLabelEnabled={isFloatingLabelEnabled}
-        isLoading={isLoadingGuestForm}
-        onChangeEmail={handleChangeEmail}
-        onContinueAsGuest={handleContinueAsGuest}
-        onShowLogin={handleShowLogin}
-        privacyPolicyUrl={privacyPolicyUrl}
-        requiresMarketingConsent={requiresMarketingConsent}
-        shouldShowEmailWatermark={isPayPalFastlaneMethod(customCheckoutProvider)}
-    />
+            shouldShowEmailWatermark={isPayPalFastlaneMethod(customCheckoutProvider)}
+        />
+    );
 };

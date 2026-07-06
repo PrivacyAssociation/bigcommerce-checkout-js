@@ -41,7 +41,7 @@ test.describe('BigCommerce Store checkout should trigger MyIapp Login and return
     loginId = username;
     const password = userProfile.password;
 
-    await addWafHeader(page);
+    await addWafHeaders(page);
     await navigateToStoreWaitForLoad(page);
     await acceptOneTrustIfPresent(page);
     await addAigpExamToCart(page);
@@ -53,12 +53,12 @@ test.describe('BigCommerce Store checkout should trigger MyIapp Login and return
 
     await waitForApiCalls(page, [s3CheckoutUrl]);
     // wait for the sign in button to appear and click it
-    await page.getByRole('button', { name: 'Sign In' }).click();
+    await page.getByRole('link', { name: 'Sign In' }).click();
     await myIappLogin(page, username, password);
     await page.waitForTimeout(2000); // wait to visually confirm logged in state
     // the same deal as MyIapp UI - need a manual GitHub Action Workflow to update snapshots on a linux os
-    await page.waitForURL('/'); // expect to redirect back to store home page after login
-    await page.goto('/checkout'); // navigate back to checkout after login
+    await page.waitForURL(/\/checkout(\?.*)?$/); // expect to redirect back to store checkout page after login
+   // await page.goto('/checkout'); // navigate back to checkout after login
     // shipping should be loaded after login
     await page
       .locator('#firstNameInput')
@@ -93,17 +93,21 @@ async function waitForApiCalls(page: Page, expectedApiCalls: string[]) {
 }
 
 // test is behind internal WAF, punch a hole for this test when invoked from GitHub Actions
-async function addWafHeader(page: Page) {
+async function addWafHeaders(page: Page) {
   const wafHeaderValue = process.env.WAF_TOKEN ?? '';
+  const cognitoWafHeaderValue = process.env.COGNITO_WAF_TOKEN ?? '';
+
   await page.route('**/*', (route, request) => {
     const originalHeaders = request.headers();
+    originalHeaders['x-myiapp-cognito-waf'] = cognitoWafHeaderValue;
     originalHeaders['x-myiapp-waf'] = wafHeaderValue;
     route.continue({ headers: originalHeaders });
   });
 }
 
 async function myIappLogin(page: Page, username: string, password: string) {
-  await page.waitForTimeout(5000); // wait a bit for the sign in page to load before trying to interact with it
+  await page.waitForURL(/\/auth/, { timeout: 5000 });
+  // await page.waitForTimeout(5000); // wait a bit for the sign in page to load before trying to interact with it
   await page.evaluate(() => {
     // skip the "have you done this before?" prompts go to sign in directly
     window.localStorage.setItem('hasVisitedPrev', 'true');
@@ -111,9 +115,10 @@ async function myIappLogin(page: Page, username: string, password: string) {
   await page.reload();
   // click the "Sign In" button
   await page
-    .locator('button[type="button"]')
+    .getByRole('button', { name: 'Sign in' })
     .waitFor({ state: 'visible', timeout: 10000 });
-  await page.locator('button[type="button"]').click();
+
+  await page.getByRole('button', { name: 'Sign in' }).click();
 
   // this will try until the test timeout is exceeded
   await page
@@ -180,7 +185,7 @@ async function addAigpExamToCart(page: Page) {
   await page.locator('input[type="submit"][value="Add to Cart"]').click();
   // wait for "added to cart" confirmation popup screen before navigating to checkout
   await page
-    .locator('a[href="/checkout"]')
+    .locator('a[href*="/checkout"]')
     .waitFor({ state: 'visible', timeout: 10000 });
 }
 
