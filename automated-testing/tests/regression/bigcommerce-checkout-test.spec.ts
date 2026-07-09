@@ -26,7 +26,7 @@ test.afterEach(async ({ page }, testInfo) => {
 test.describe('BigCommerce Store checkout should trigger MyIapp Login and return on success', () => {
   test('should navigate successfully to the BC Store and login via MyIapp at checkout', async ({
     browser,
-  }) => {
+  }, testInfo) => {
     const authenticatedContext = await browser.newContext({
       storageState: 'storageState.json',
     });
@@ -68,9 +68,16 @@ test.describe('BigCommerce Store checkout should trigger MyIapp Login and return
     await page
       .locator('#checkout-shipping-continue')
       .waitFor({ state: 'visible', timeout: 10000 }); // wait for some element on the checkout page that only appears when logged in, this is pretty brittle and could be improved with a more robust selector strategy
-    await expect(page).toHaveScreenshot(
-      `bigcommerce-${loginId}-checkout-logged-in.png`
+    
+    // TODO consider screenshot comparisons again if we get a better way to handle dynamic pricing models
+    const screenshotPath = testInfo.outputPath(
+      `bigcommerce-${loginId}-checkout-logging-in.png`
     );
+    await page.screenshot({ path: screenshotPath, timeout: 5000 });
+  
+    // await expect(page).toHaveScreenshot(
+    //   `bigcommerce-${loginId}-checkout-logged-in.png`
+    // );
     await authenticatedContext.close();
   });
 });
