@@ -38,6 +38,14 @@ interface OrderSummaryItemProps {
 export interface OrderSummaryItemOption {
     testId: string;
     content: ReactNode;
+    name?: string;
+    value?: string;
+    isMainBundledItem?: boolean;
+    stockPosition?: {
+        quantityBackordered?: number;
+        quantityOnHand?: number;
+        backorderMessage?: string;
+    };
 }
 
 const OrderSummaryItemBackorderDetails = ({
@@ -79,7 +87,10 @@ const OrderSummaryItemBackorderDetails = ({
                 ref={backorderDetailsRef}
             >
                 {shouldDisplayQuantityOnHand && (
-                    <div data-test="cart-item-onhand-qty">
+                    <div
+                        className="product-backorder-status product-backorder-status--onhand"
+                        data-test="cart-item-onhand-qty"
+                    >
                         <TranslatedString
                             data={{ count: quantityOnHand }}
                             id="cart.ready_to_ship_count_text"
@@ -87,7 +98,10 @@ const OrderSummaryItemBackorderDetails = ({
                     </div>
                 )}
                 {shouldDisplayQuantityOnBackorder && (
-                    <div data-test="cart-item-backorder-qty">
+                    <div
+                        className="product-backorder-status product-backorder-status--backorder"
+                        data-test="cart-item-backorder-qty"
+                    >
                         <TranslatedString
                             data={{ count: quantityBackordered }}
                             id="cart.backorder_count_text"
@@ -95,7 +109,12 @@ const OrderSummaryItemBackorderDetails = ({
                     </div>
                 )}
                 {shouldDisplayBackorderMessage && (
-                    <div data-test="cart-item-backorder-message">{backorderMessage}</div>
+                    <div
+                        className="product-backorder-message"
+                        data-test="cart-item-backorder-message"
+                    >
+                        {backorderMessage}
+                    </div>
                 )}
             </div>
         </CollapseCSSTransition>
@@ -117,7 +136,6 @@ const OrderSummaryItem: FunctionComponent<OrderSummaryItemProps> = ({
         quantityBackordered,
         quantityOnHand,
         backorderMessage,
-        bundledItems,
     } = orderItem;
 
     return (
@@ -132,6 +150,12 @@ const OrderSummaryItem: FunctionComponent<OrderSummaryItemProps> = ({
                     <span className="body-bold">{`${quantity} x `}</span>
                     {name}
                 </h4>
+                <OrderSummaryItemBackorderDetails
+                    backorderMessage={backorderMessage}
+                    isExpanded={shouldExpandBackorderDetails}
+                    quantityBackordered={quantityBackordered}
+                    quantityOnHand={quantityOnHand}
+                />
                 {productOptions && productOptions.length > 0 && (
                     <ul
                         className="product-options optimizedCheckout-contentSecondary sub-text-medium"
@@ -139,7 +163,28 @@ const OrderSummaryItem: FunctionComponent<OrderSummaryItemProps> = ({
                     >
                         {productOptions.map((option, index) => (
                             <li className="product-option" data-test={option.testId} key={index}>
-                                {option.content}
+                                {option.name ? (
+                                    <>
+                                        <span
+                                            className={option.isMainBundledItem ? 'body-bold' : ''}
+                                        >
+                                            {option.name}
+                                        </span>{' '}
+                                        <span>{option.value}</span>
+                                    </>
+                                ) : (
+                                    option.content
+                                )}
+                                {option.stockPosition && (
+                                    <OrderSummaryItemBackorderDetails
+                                        backorderMessage={option.stockPosition.backorderMessage}
+                                        isExpanded={shouldExpandBackorderDetails}
+                                        quantityBackordered={
+                                            option.stockPosition.quantityBackordered
+                                        }
+                                        quantityOnHand={option.stockPosition.quantityOnHand}
+                                    />
+                                )}
                             </li>
                         ))}
                     </ul>
@@ -151,43 +196,6 @@ const OrderSummaryItem: FunctionComponent<OrderSummaryItemProps> = ({
                     >
                         {description}
                     </div>
-                )}
-                <OrderSummaryItemBackorderDetails
-                    backorderMessage={backorderMessage}
-                    isExpanded={shouldExpandBackorderDetails}
-                    quantityBackordered={quantityBackordered}
-                    quantityOnHand={quantityOnHand}
-                />
-
-                {bundledItems && bundledItems.length > 0 && (
-                    <ul className="bundled-items-container">
-                        {bundledItems.map((item) => (
-                            <li
-                                className="bundled-item optimizedCheckout-contentSecondary sub-text-medium"
-                                key={item.id}
-                            >
-                                <div
-                                    className="bundled-item-name"
-                                    data-test="cart-item-bundled-item-name"
-                                >
-                                    <span className="body-bold">
-                                        {item.bundleLabel ? (
-                                            `${item.bundleLabel}:`
-                                        ) : (
-                                            <TranslatedString id="cart.bundled_item_label" />
-                                        )}
-                                    </span>{' '}
-                                    {item.name}
-                                </div>
-                                <OrderSummaryItemBackorderDetails
-                                    backorderMessage={item.backorderMessage}
-                                    isExpanded={shouldExpandBackorderDetails}
-                                    quantityBackordered={item.quantityBackordered}
-                                    quantityOnHand={item.quantityOnHand}
-                                />
-                            </li>
-                        ))}
-                    </ul>
                 )}
             </div>
 

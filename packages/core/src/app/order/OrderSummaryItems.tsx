@@ -29,7 +29,11 @@ import mapFromDigital from './mapFromDigital';
 import mapFromGiftCertificate from './mapFromGiftCertificate';
 import mapFromPhysical from './mapFromPhysical';
 import OrderSummaryItem from './OrderSummaryItem';
-import { removeAndBundleItemsTogether, removeBundledItems } from './removeBundledItems';
+import {
+    buildBundleItemsMapFromOrder,
+    removeAndBundleItemsTogether,
+    removeBundledItems,
+} from './removeBundledItems';
 
 // Module-scoped to survive the responsive remount. Safe as MobileView mounts only one instance at a time.
 let backorderDetailsExpanded = false;
@@ -81,13 +85,13 @@ const SummaryHeading = ({
     displayLineItemsCount,
     nonBundledItems,
     showBackorderDetails,
-    showBackorderToggle,
+    showBackorderSwitch,
     toggleBackorderDetails,
 }: {
     displayLineItemsCount: boolean;
     nonBundledItems: LineItemMap;
     showBackorderDetails: boolean;
-    showBackorderToggle: boolean;
+    showBackorderSwitch: boolean;
     toggleBackorderDetails(): void;
 }): ReactElement => (
     <div
@@ -106,7 +110,7 @@ const SummaryHeading = ({
                 />
             </h3>
         )}
-        {showBackorderToggle && (
+        {showBackorderSwitch && (
             <Switch
                 checked={showBackorderDetails}
                 label={<TranslatedString id="cart.backorder_details" />}
@@ -161,15 +165,15 @@ const ProductList = ({
 
 const CartActions = ({
     isExpanded,
-    onToggle,
+    onSwitch,
 }: {
     isExpanded: boolean;
-    onToggle(): void;
+    onSwitch(): void;
 }): ReactElement => (
     <div className="cart-actions">
         <button
             className="button button--tertiary button--tiny optimizedCheckout-buttonSecondary sub-text-medium"
-            onClick={onToggle}
+            onClick={onSwitch}
             type="button"
         >
             {isExpanded ? (
@@ -194,7 +198,12 @@ const OrderSummaryItems = ({
 }: OrderSummaryItemsProps): ReactElement => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [showBackorderDetails, setShowBackorderDetails] = useState(getBackorderDetailsExpanded);
-    const { selectedState: config } = useCheckout(({ data }) => data.getConfig());
+    const {
+        selectedState: { config, order },
+    } = useCheckout(({ data }) => ({
+        config: data.getConfig(),
+        order: data.getOrder(),
+    }));
 
     const toggleBackorderDetails = useCallback(() => {
         setShowBackorderDetails((prev) => {
@@ -218,7 +227,7 @@ const OrderSummaryItems = ({
     // On the mobile cart modal, bundle children are not rendered while the bundle experiment is
     // off, so gate the backorder toggle behind the experiment there to stop it appearing when
     // only hidden bundle children are backordered.
-    const showBackorderToggle =
+    const showBackorderSwitch =
         shouldDisplayBackorderDetails &&
         backorderCount > 0 &&
         (!isMobileCartModal || pickListExperimentEnabled);
@@ -226,10 +235,12 @@ const OrderSummaryItems = ({
     // Only expand line-item backorder details when the toggle is actually available; otherwise the
     // persisted (module-scoped) selection could expand details on a surface where the toggle is
     // hidden (e.g. the mobile cart modal with the bundle experiment off).
-    const expandBackorderDetails = showBackorderToggle && showBackorderDetails;
+    const expandBackorderDetails = showBackorderSwitch && showBackorderDetails;
 
     const { nonBundledItems, bundleItemsMap } = pickListExperimentEnabled
-        ? removeAndBundleItemsTogether(items)
+        ? order?.bundledItems
+            ? buildBundleItemsMapFromOrder(items, order.bundledItems)
+            : removeAndBundleItemsTogether(items)
         : { nonBundledItems: removeBundledItems(items), bundleItemsMap: undefined };
 
     const collapsedLimit = isSmallScreen()
@@ -244,16 +255,16 @@ const OrderSummaryItems = ({
         [nonBundledItems],
     );
     const shouldShowActions = getLineItemCount() > collapsedLimit;
-    const handleToggle = () => setIsExpanded(!isExpanded);
+    const handleSwitch = () => setIsExpanded(!isExpanded);
 
     return (
         <>
-            {(displayLineItemsCount || showBackorderToggle) && (
+            {(displayLineItemsCount || showBackorderSwitch) && (
                 <SummaryHeading
                     displayLineItemsCount={displayLineItemsCount}
                     nonBundledItems={nonBundledItems}
                     showBackorderDetails={showBackorderDetails}
-                    showBackorderToggle={showBackorderToggle}
+                    showBackorderSwitch={showBackorderSwitch}
                     toggleBackorderDetails={toggleBackorderDetails}
                 />
             )}
@@ -266,7 +277,7 @@ const OrderSummaryItems = ({
                 showBackorderDetails={expandBackorderDetails}
             />
 
-            {shouldShowActions && <CartActions isExpanded={isExpanded} onToggle={handleToggle} />}
+            {shouldShowActions && <CartActions isExpanded={isExpanded} onSwitch={handleSwitch} />}
         </>
     );
 };

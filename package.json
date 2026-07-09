@@ -1,6 +1,6 @@
 {
   "name": "@bigcommerce/checkout",
-  "version": "1.820.2",
+  "version": "1.830.3",
   "private": true,
   "description": "Browser-based application providing a seamless UI for BigCommerce shoppers to complete their checkout.",
   "license": "MIT",
@@ -19,7 +19,7 @@
     "typecheck": "tsc --noEmit -p ./tsconfig.base.json",
     "dev": "npm-run-all nx:dev",
     "dev:vm": "WEBPACK_DONE='rsync -rvc --progress --delete --compress-level=9 build store.bcdev:/opt/bigcommerce_app/vagrant_code/vendor/bower_components/checkout-js/' npm run dev",
-    "dev:server": "http-server build --cors",
+    "dev:server": "http-server build --cors -c-1",
     "e2e": "npm run build && npx playwright install && PORT=5005 MODE=REPLAY npx playwright test",
     "release": "echo 'Please do not release locally, use CircleCi'",
     "release:alpha": "npm run lint && npm run test -- --coverage && npm run nx:prerelease-build && npm run release:version",
@@ -48,7 +48,7 @@
   "prettier": "@bigcommerce/eslint-config/prettier",
   "homepage": "https://github.com/bigcommerce/checkout-js#readme",
   "dependencies": {
-    "@bigcommerce/checkout-sdk": "^1.934.0",
+    "@bigcommerce/checkout-sdk": "^1.936.2",
     "@bigcommerce/citadel": "^2.15.1",
     "@bigcommerce/form-poster": "^1.2.2",
     "@bigcommerce/memoize": "^1.0.0",

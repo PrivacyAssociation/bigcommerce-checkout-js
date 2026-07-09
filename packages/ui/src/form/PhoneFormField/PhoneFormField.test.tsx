@@ -12,6 +12,7 @@ import { PhoneFormField, type PhoneFormFieldProps } from './PhoneFormField';
 
 const mockIsValidNumber = jest.fn();
 const mockSetCountry = jest.fn();
+const mockGetSelectedCountryData = jest.fn();
 
 jest.mock('@intl-tel-input/react', () => ({
     __esModule: true,
@@ -25,6 +26,7 @@ jest.mock('@intl-tel-input/react', () => ({
     >(({ inputProps, onChangeNumber, value }, ref) => {
         useImperativeHandle(ref, () => ({
             getInstance: () => ({
+                getSelectedCountryData: mockGetSelectedCountryData,
                 isValidNumber: mockIsValidNumber,
                 setCountry: mockSetCountry,
             }),
@@ -68,6 +70,7 @@ describe('PhoneFormField', () => {
         );
 
     beforeEach(() => {
+        mockGetSelectedCountryData.mockClear();
         mockIsValidNumber.mockClear();
         mockSetCountry.mockClear();
     });
@@ -110,6 +113,7 @@ describe('PhoneFormField', () => {
     });
 
     it('shows a validation error when the phone number is invalid', async () => {
+        mockGetSelectedCountryData.mockReturnValue({ iso2: 'us' });
         mockIsValidNumber.mockReturnValue(false);
 
         renderPhoneFormField();
@@ -123,6 +127,7 @@ describe('PhoneFormField', () => {
     });
 
     it('does not show a validation error when the phone number is valid', async () => {
+        mockGetSelectedCountryData.mockReturnValue({ iso2: 'us' });
         mockIsValidNumber.mockReturnValue(true);
 
         renderPhoneFormField();
@@ -130,6 +135,20 @@ describe('PhoneFormField', () => {
         fireEvent.change(screen.getByTestId('phone-text'), {
             target: { value: '+15551234567' },
         });
+        await userEvent.click(screen.getByText('Submit'));
+
+        await waitFor(() => {
+            expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        });
+    });
+
+    it('does not show a validation error when no country is selected', async () => {
+        mockGetSelectedCountryData.mockReturnValue(null);
+        mockIsValidNumber.mockReturnValue(false);
+
+        renderPhoneFormField();
+
+        fireEvent.change(screen.getByTestId('phone-text'), { target: { value: '123' } });
         await userEvent.click(screen.getByText('Submit'));
 
         await waitFor(() => {
