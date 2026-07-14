@@ -96,6 +96,7 @@ jobs:
           BC_PREVIEW_CODE: ${{ secrets.BC_PREVIEW_CODE }}
           WAF_TOKEN: ${{ secrets.MYIAPP_WAF_TOKEN }}
           COGNITO_WAF_TOKEN: ${{ secrets.MYIAPP_COGNITO_WAF_TOKEN }}
+          VISUAL_REGRESSION: 'true'
         run: |
           cd automated-testing
           if [ "$DEBUG_LOGS" == "true" ]; then

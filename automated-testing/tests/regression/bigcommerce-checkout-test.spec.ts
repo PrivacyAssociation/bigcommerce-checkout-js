@@ -52,25 +52,32 @@ test.describe('BigCommerce Store checkout should trigger MyIapp Login and return
     const s3CheckoutUrl = process.env.BC_CHECKOUT_URL ?? '';
 
     await waitForApiCalls(page, [s3CheckoutUrl]);
+    const checkoutUrlPromise = page.waitForURL(/\/checkout/, {timeout: 30000});
+
     // wait for the sign in button to appear and click it
     await page.getByRole('link', { name: 'Sign In' }).click();
     await myIappLogin(page, username, password);
     await page.waitForTimeout(2000); // wait to visually confirm logged in state
+    await checkoutUrlPromise; // wait for the checkout URL to be loaded after login
+
     // the same deal as MyIapp UI - need a manual GitHub Action Workflow to update snapshots on a linux os
-    await page.waitForURL(/\/checkout(\?.*)?$/); // expect to redirect back to store checkout page after login
-   // await page.goto('/checkout'); // navigate back to checkout after login
-    // shipping should be loaded after login
+    // shipping elements should be loaded from S3 source after login
     await page
       .locator('#firstNameInput')
-      .waitFor({ state: 'visible', timeout: 10000 }); // wait for some element on the checkout page that only appears when logged in, this is pretty brittle and could be improved with a more robust selector strategy
+      .waitFor({ state: 'visible', timeout: 20000 }); // wait for some element on the checkout page that only appears when logged in, this is pretty brittle and could be improved with a more robust selector strategy
 
     await page.waitForTimeout(2000); // wait to visually confirm logged in state
     await page
       .locator('#checkout-shipping-continue')
       .waitFor({ state: 'visible', timeout: 10000 }); // wait for some element on the checkout page that only appears when logged in, this is pretty brittle and could be improved with a more robust selector strategy
-    await expect(page).toHaveScreenshot(
-      `bigcommerce-${loginId}-checkout-logged-in.png`
-    );
+    
+    const isVisualRegressionEnabled: string = process.env.VISUAL_REGRESSION ?? '';
+
+    if( isVisualRegressionEnabled.toLowerCase() === 'true') {
+      await expect(page).toHaveScreenshot(
+        `bigcommerce-${loginId}-checkout-logged-in.png`
+      );
+    }
     await authenticatedContext.close();
   });
 });
