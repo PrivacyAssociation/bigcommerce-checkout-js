@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  timeout: 60000, // 60 seconds timeout for each test
+  timeout: 120000, // 12 seconds timeout for each test
   snapshotPathTemplate: 'snapshots/{projectName}/{platform}/{arg}{ext}',
 
   fullyParallel: true,

@@ -33,6 +33,7 @@ This project runs Playwright automation to invoke the following UI flow in a chr
 - `WAF_TOKEN` : for nonprod only, to get through to our IAPP internal network
   - look this up in the AWS WAF Console
 - `RUNTIME_ENVIRONMENT` : test or production
+- `VISUAL_REGRESSION`: if `true`, Playwright will compare visual regressions for the checkout page
 
 # Test Execution
 
