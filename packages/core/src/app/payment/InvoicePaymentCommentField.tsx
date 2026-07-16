@@ -1,20 +1,23 @@
+import classNames from 'classnames';
 import { type FieldProps } from 'formik';
 import React, { type FunctionComponent, useCallback } from 'react';
 
 import { TranslatedString } from '@bigcommerce/checkout/locale';
 import { FormField, TextArea } from '@bigcommerce/checkout/ui';
-import { B2BSessionStorage } from '@bigcommerce/checkout/utility';
 
-const InvoicePaymentCommentField: FunctionComponent = () => {
+interface InvoicePaymentCommentFieldProps {
+    isFloatingLabelEnabled?: boolean;
+}
+
+const InvoicePaymentCommentField: FunctionComponent<InvoicePaymentCommentFieldProps> = ({
+    isFloatingLabelEnabled,
+}) => {
     const renderInput = useCallback(
         ({ field }: FieldProps<string>) => (
             <TextArea
                 {...field}
                 id="invoicePaymentComment"
-                onChange={(event) => {
-                    field.onChange(event);
-                    B2BSessionStorage.set(B2BSessionStorage.invoiceCommentKey, event.target.value);
-                }}
+                isFloatingLabelEnabled={isFloatingLabelEnabled}
                 rows={4}
                 testId="invoicePaymentComment-input"
             />
@@ -23,10 +26,15 @@ const InvoicePaymentCommentField: FunctionComponent = () => {
     );
 
     return (
-        <div className="dynamic-form-field">
+        <div
+            className={classNames('dynamic-form-field', {
+                'floating-form-field': isFloatingLabelEnabled,
+            })}
+        >
             <FormField
                 id="invoicePaymentComment"
                 input={renderInput}
+                isFloatingLabelEnabled={isFloatingLabelEnabled}
                 labelContent={<TranslatedString id="payment.invoice_payment_comment_label" />}
                 name="invoicePaymentComment"
             />

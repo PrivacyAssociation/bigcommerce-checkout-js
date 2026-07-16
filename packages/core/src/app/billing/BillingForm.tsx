@@ -1,12 +1,6 @@
-import {
-    type Address,
-    type CustomerAddress,
-    type FormField,
-    isExtraField,
-} from '@bigcommerce/checkout-sdk/essential';
+import { type Address, type FormField, isExtraField } from '@bigcommerce/checkout-sdk/essential';
 import { type FormikProps, withFormik } from 'formik';
-import React, { type RefObject, useEffect, useRef, useState } from 'react';
-import { lazy } from 'yup';
+import React, { type RefObject, useRef, useState } from 'react';
 
 import { useCapabilities, useCheckout } from '@bigcommerce/checkout/contexts';
 import {
@@ -23,28 +17,19 @@ import {
     Form,
     LoadingOverlay,
 } from '@bigcommerce/checkout/ui';
-import { B2BSessionStorage } from '@bigcommerce/checkout/utility';
 
-import {
-    AddressForm,
-    type AddressFormValues,
-    AddressSelect,
-    AddressType,
-    getAddressFormFieldsValidationSchema,
-    getTranslateAddressError,
-    isValidCustomerAddress,
-    mapAddressToFormValues,
-} from '../address';
-import {
-    getAddressExtraFieldsValidationSchema,
-    getCustomFormFieldsValidationSchema,
-} from '../formFields';
+import { AddressForm, AddressSelect, AddressType, isValidCustomerAddress } from '../address';
 import { OrderComments } from '../orderComments';
 import { getShippableItemsCount } from '../shipping';
 
+import {
+    type BillingFormValues,
+    getBillingFormInitialValues,
+    getBillingFormValidationSchema,
+} from './billingFormConfig';
 import StaticBillingAddress from './StaticBillingAddress';
 
-export type BillingFormValues = AddressFormValues & { orderComment: string };
+export type { BillingFormValues } from './billingFormConfig';
 
 export interface BillingFormProps {
     methodId?: string;
@@ -80,7 +65,6 @@ const BillingForm = ({
     }));
     const {
         billing: { hideSaveToAddressBookCheck, restrictManualAddressEntry },
-        userJourney: { hasAddressExtraFields, hasCompanyAddressBook },
     } = useCapabilities();
 
     if (!config || !customer || !cart) {
@@ -112,31 +96,11 @@ const BillingForm = ({
     const shouldShowOrderComments = enableOrderComments && getShippableItemsCount(cart) < 1;
     const shouldShowSaveAddress = !hideSaveToAddressBookCheck && !isGuest;
 
-    // Once the address form opens (selected address is invalid or no longer matches a
-    // book entry), the stored book id can't faithfully represent it, so drop it.
-    useEffect(() => {
-        if (
-            hasCompanyAddressBook &&
-            !hasValidCustomerAddress &&
-            B2BSessionStorage.getAddressId(B2BSessionStorage.billingAddressIdKey)
-        ) {
-            B2BSessionStorage.remove(B2BSessionStorage.billingAddressIdKey);
-        }
-    }, [hasCompanyAddressBook, hasValidCustomerAddress]);
-
     const handleSelectAddress = async (address: Partial<Address>) => {
         setIsResettingAddress(true);
 
         try {
             await checkoutService.updateBillingAddress(address);
-
-            B2BSessionStorage.remove(B2BSessionStorage.billingAddressIdKey);
-
-            const selectedAddressId = (address as CustomerAddress).id;
-
-            if (hasCompanyAddressBook && selectedAddressId) {
-                B2BSessionStorage.set(B2BSessionStorage.billingAddressIdKey, selectedAddressId);
-            }
         } catch (error) {
             if (error instanceof Error) {
                 onUnhandledError(error);
@@ -147,10 +111,6 @@ const BillingForm = ({
     };
 
     const handleUseNewAddress = () => {
-        if (hasAddressExtraFields) {
-            B2BSessionStorage.remove(B2BSessionStorage.billingExtraFieldsKey);
-        }
-
         void handleSelectAddress({});
     };
 
@@ -215,43 +175,15 @@ export default withLanguage(
         handleSubmit: (values, { props: { onSubmit } }) => {
             onSubmit(values);
         },
-        mapPropsToValues: ({ getFields, customerMessage, billingAddress }) => ({
-            ...mapAddressToFormValues(
-                getFields(billingAddress && billingAddress.countryCode),
-                billingAddress,
-                B2BSessionStorage.billingExtraFieldsKey,
-            ),
-            orderComment: customerMessage,
-        }),
+        mapPropsToValues: ({ getFields, customerMessage, billingAddress }) =>
+            getBillingFormInitialValues(getFields, billingAddress, customerMessage),
         validateOnMount: true,
         validationSchema: ({
             language,
             getFields,
             methodId,
         }: BillingFormProps & WithLanguageProps) =>
-            methodId === 'amazonpay'
-                ? lazy<Partial<AddressFormValues>>((values) => {
-                      const translate = getTranslateAddressError(
-                          getFields(values && values.countryCode),
-                          language,
-                      );
-
-                      return getCustomFormFieldsValidationSchema({
-                          translate,
-                          formFields: getFields(values && values.countryCode),
-                      }).concat(
-                          getAddressExtraFieldsValidationSchema({
-                              translate,
-                              formFields: getFields(values && values.countryCode),
-                          }),
-                      );
-                  })
-                : lazy<Partial<AddressFormValues>>((values) =>
-                      getAddressFormFieldsValidationSchema({
-                          language,
-                          formFields: getFields(values && values.countryCode),
-                      }),
-                  ),
+            getBillingFormValidationSchema(language, getFields, methodId),
         enableReinitialize: true,
     })(BillingForm),
 );

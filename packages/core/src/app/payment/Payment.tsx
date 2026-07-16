@@ -1,4 +1,5 @@
 import {
+    type Address,
     type Capabilities,
     type Cart,
     type CartStockPositionsChangedError,
@@ -27,6 +28,7 @@ import { createSagePayPaymentStrategy } from '@bigcommerce/checkout-sdk/integrat
 import { memoizeOne } from '@bigcommerce/memoize';
 import { isEmpty, noop } from 'lodash';
 import React, {
+    type MutableRefObject,
     type ReactElement,
     type ReactNode,
     useCallback,
@@ -40,11 +42,13 @@ import {
     type AnalyticsContextProps,
     type CheckoutContextProps,
     useCapabilities,
+    useThemeContext,
 } from '@bigcommerce/checkout/contexts';
 import { type ErrorLogger } from '@bigcommerce/checkout/error-handling-utils';
 import { withLanguage, type WithLanguageProps } from '@bigcommerce/checkout/locale';
 import { type PaymentFormValues } from '@bigcommerce/checkout/payment-integration-api';
 import { ChecklistSkeleton } from '@bigcommerce/checkout/ui';
+import { B2BSessionStorage } from '@bigcommerce/checkout/utility';
 
 import { withAnalytics } from '../analytics';
 import { withCheckout } from '../checkout';
@@ -58,10 +62,17 @@ import {
 import { EMPTY_ARRAY, isExperimentEnabled } from '../common/utility';
 import { TermsConditionsType } from '../termsConditions';
 
+import {
+    type B2BPaymentFormValues,
+    clearB2BMetadataStorage,
+    storeB2BPaymentValues,
+} from './b2bMetadata';
+import { getB2BMetadataPayload } from './b2bMetadataForPostOrder';
+import { mapToB2BOrderRequestBody } from './b2bMetadataForSubmitOrder';
 import CartStockPositionsChangedModal from './CartStockPositionsChangedModal';
 import mapSubmitOrderErrorMessage, { mapSubmitOrderErrorTitle } from './mapSubmitOrderErrorMessage';
 import mapToOrderRequestBody from './mapToOrderRequestBody';
-import PaymentContext from './PaymentContext';
+import PaymentContext, { type EnsureBillingAddressSaved } from './PaymentContext';
 import PaymentForm from './PaymentForm';
 import { getUniquePaymentMethodId, PaymentMethodProviderType } from './paymentMethod';
 import { getFilteredPaymentMethodsWithDefault } from './paymentMethodFilters';
@@ -69,9 +80,11 @@ import { getFilteredPaymentMethodsWithDefault } from './paymentMethodFilters';
 export interface PaymentProps {
     capabilities: Capabilities;
     errorLogger: ErrorLogger;
+    isBillingSameAsShipping?: boolean;
     isEmbedded?: boolean;
     isUsingMultiShipping?: boolean;
     checkEmbeddedSupport?(methodIds: string[]): void; // TODO: We're currently doing this check in multiple places, perhaps we should move it up so this check get be done in a single place instead.
+    onBillingSameAsShippingChange?(isBillingSameAsShipping: boolean): void;
     onCartChangedError?(): void;
     onFinalize?(): void;
     onFinalizeError?(error: Error): void;
@@ -85,15 +98,20 @@ interface WithCheckoutPaymentProps {
     addressExtraFields?: FormField[];
     availableStoreCredit: number;
     b2bToken?: string;
+    billingAddress?: Address;
     cart?: Cart;
     consignments?: Consignment[];
+    shippingAddress?: Address;
     cartUrl: string;
     defaultMethod?: PaymentMethod;
     finalizeOrderError?: Error;
     isInitializingPayment: boolean;
+    isLoadingBillingCountries: boolean;
     isSubmittingOrder: boolean;
     isStoreCreditApplied: boolean;
     isTermsConditionsRequired: boolean;
+    isUpdatingBillingAddress: boolean;
+    isUpdatingCheckout: boolean;
     methods: PaymentMethod[];
     orderExtraFields?: FormField[];
     orderId?: number;
@@ -111,6 +129,7 @@ interface WithCheckoutPaymentProps {
     loadCheckout(): Promise<CheckoutSelectors>;
     loadPaymentMethods(): Promise<CheckoutSelectors>;
     refreshB2BPaymentMethods: CheckoutService['refreshB2BPaymentMethods'];
+    submitB2BMetadata: CheckoutService['persistB2BMetadata'];
     submitOrder(values: OrderRequestBody): Promise<CheckoutSelectors>;
     checkoutServiceSubscribe: CheckoutService['subscribe'];
 }
@@ -145,11 +164,16 @@ const Payment = (
     const grandTotalChangeUnsubscribe = useRef<() => void>();
     const validationSchemasRef = useRef<validationSchemas>({});
     const lastFormValuesRef = useRef<PaymentFormValues | null>(null);
+    // Set by the themeV2 billing form. Awaited before submitOrder so the order
+    // can't finalize before the entered billing address is validated and saved.
+    const ensureBillingAddressSavedRef: MutableRefObject<EnsureBillingAddressSaved | null> =
+        useRef(null);
 
     const {
-        orderConfirmation: { persistB2BMetadata },
+        orderConfirmation: { persistB2BMetadata, invoiceRedirect },
         userJourney: { disableStoreCredit },
     } = useCapabilities();
+    const { themeV2 } = useThemeContext();
 
     const renderCartStockPositionsChangedModal = (
         error: CartStockPositionsChangedError,
@@ -386,11 +410,42 @@ const Payment = (
             });
     };
 
+    const persistB2BMetadataIfNeeded = async (values?: B2BPaymentFormValues): Promise<void> => {
+        const {
+            addressExtraFields,
+            billingAddress,
+            orderExtraFields,
+            shippingAddress,
+            submitB2BMetadata,
+        } = props;
+
+        if (!persistB2BMetadata) {
+            return;
+        }
+
+        const metadataPayload = getB2BMetadataPayload(invoiceRedirect, {
+            formValues: values,
+            billingAddress,
+            shippingAddress,
+            orderExtraFields,
+            addressExtraFields,
+        });
+
+        try {
+            await submitB2BMetadata(metadataPayload);
+        } catch {
+            /* Do nothing: failing to persist B2B metadata should not fail the checkout flow. */
+        } finally {
+            clearB2BMetadataStorage();
+        }
+    };
+
     const handleSubmit = useCallback(
         async (values: PaymentFormValues) => {
             const {
                 defaultMethod,
                 loadPaymentMethods,
+                checkoutServiceSubscribe,
                 isPaymentDataRequired,
                 onCartChangedError = noop,
                 onSubmit = noop,
@@ -404,6 +459,24 @@ const Payment = (
 
             analyticsTracker.clickPayButton({ shouldCreateAccount: values.shouldCreateAccount });
 
+            const {
+                additionalPaymentField,
+                invoicePaymentComment,
+                orderExtraFields,
+                ...orderValues
+            } = values;
+            const b2bPaymentValues: B2BPaymentFormValues = {
+                poNumber: values.poNumber,
+                invoicePaymentComment,
+                additionalPaymentField,
+                orderExtraFields,
+            };
+
+            if (persistB2BMetadata) {
+                clearB2BMetadataStorage();
+                storeB2BPaymentValues(b2bPaymentValues);
+            }
+
             const customSubmit =
                 selectedMethod &&
                 submitFunctions[
@@ -411,7 +484,16 @@ const Payment = (
                 ];
 
             if (customSubmit) {
-                return customSubmit(values);
+                return customSubmit(orderValues);
+            }
+
+            // Ensure any pending themeV2 billing edit is saved before placing
+            // the order. If billing is invalid, block the order — errors are
+            // surfaced inline by the billing form.
+            const ensureBillingAddressSaved = ensureBillingAddressSavedRef.current;
+
+            if (ensureBillingAddressSaved && !(await ensureBillingAddressSaved())) {
+                return;
             }
 
             try {
@@ -419,10 +501,27 @@ const Payment = (
                     await refreshB2BPaymentMethods();
                 }
 
-                const state = await submitOrder(
-                    mapToOrderRequestBody(values, isPaymentDataRequired()),
-                );
+                const unsubscribeB2BContext = persistB2BMetadata
+                    ? checkoutServiceSubscribe(
+                          ({ data }) => {
+                              const b2bContext = data.getB2BContext();
+
+                              if (b2bContext?.billingAddressId || b2bContext?.shippingAddressId) {
+                                  B2BSessionStorage.setAddressIds(b2bContext);
+                              }
+                          },
+                          ({ data }) => data.getB2BContext(),
+                      )
+                    : noop;
+
+                const state = await submitOrder({
+                    ...mapToOrderRequestBody(orderValues, isPaymentDataRequired()),
+                    ...(persistB2BMetadata ? mapToB2BOrderRequestBody(b2bPaymentValues) : {}),
+                }).finally(unsubscribeB2BContext);
+
                 const order = state.data.getOrder();
+
+                await persistB2BMetadataIfNeeded(b2bPaymentValues);
 
                 analyticsTracker.paymentComplete();
 
@@ -504,6 +603,13 @@ const Payment = (
         [],
     );
 
+    const setEnsureBillingAddressSaved = useCallback(
+        (ensureBillingAddressSaved: EnsureBillingAddressSaved | null): void => {
+            ensureBillingAddressSavedRef.current = ensureBillingAddressSaved;
+        },
+        [],
+    );
+
     const loadPaymentMethodsOrThrow = async (): Promise<void> => {
         const { loadPaymentMethods, onUnhandledError = noop } = props;
 
@@ -550,6 +656,7 @@ const Payment = (
     const getContextValue = memoizeOne(() => {
         return {
             disableSubmit,
+            setEnsureBillingAddressSaved,
             setSubmit,
             setValidationSchema,
             hidePaymentSubmitButton,
@@ -609,6 +716,8 @@ const Payment = (
                 });
                 const order = state.data.getOrder();
 
+                await persistB2BMetadataIfNeeded();
+
                 onFinalize(order?.orderId);
             } catch (error) {
                 if (isErrorWithType(error) && error.type !== 'order_finalization_not_required') {
@@ -654,6 +763,16 @@ const Payment = (
         selectedMethod && getUniquePaymentMethodId(selectedMethod.id, selectedMethod.gateway);
     const shouldShowPaymentForm =
         props.shouldShowSubmitPaymentButton || (!isEmpty(props.methods) && props.defaultMethod);
+    // themeV2 embeds the billing form in the payment step. Disable "Place Order"
+    // while its billing address is loading or being persisted (initialization,
+    // address-book change, or the pre-submit save), so a click can't silently
+    // no-op or trigger a duplicate order submission. Scoped to themeV2 because
+    // only that layout owns the embedded billing form.
+    const isBillingFormBusy =
+        themeV2 &&
+        (props.isLoadingBillingCountries ||
+            props.isUpdatingBillingAddress ||
+            props.isUpdatingCheckout);
 
     return (
         <PaymentContext.Provider value={getContextValue()}>
@@ -666,6 +785,7 @@ const Payment = (
                         defaultMethodId={props.defaultMethod?.id || ''}
                         didExceedSpamLimit={state.didExceedSpamLimit}
                         disableStoreCredit={disableStoreCredit}
+                        isBillingSameAsShipping={props.isBillingSameAsShipping}
                         isEmbedded={props.isEmbedded}
                         isInitializingPayment={props.isInitializingPayment}
                         isPaymentDataRequired={props.isPaymentDataRequired}
@@ -673,6 +793,7 @@ const Payment = (
                         isTermsConditionsRequired={props.isTermsConditionsRequired}
                         isUsingMultiShipping={props.isUsingMultiShipping}
                         methods={props.methods}
+                        onBillingSameAsShippingChange={props.onBillingSameAsShippingChange}
                         onMethodSelect={setSelectedMethod}
                         onStoreCreditChange={handleStoreCreditChange}
                         onSubmit={handleSubmit}
@@ -682,6 +803,7 @@ const Payment = (
                         shouldDisableSubmit={
                             (uniqueSelectedMethodId &&
                                 state.shouldDisableSubmit[uniqueSelectedMethodId]) ||
+                            isBillingFormBusy ||
                             undefined
                         }
                         shouldExecuteSpamCheck={props.shouldExecuteSpamCheck}
@@ -716,6 +838,7 @@ export function mapToPaymentProps(
     const {
         data: {
             getAddressExtraFields,
+            getBillingAddress,
             getCart,
             getCheckout,
             getConfig,
@@ -725,11 +848,18 @@ export function mapToPaymentProps(
             getOrderExtraFields,
             getPaymentMethod,
             getPaymentMethods,
+            getShippingAddress,
             isPaymentDataRequired,
             getPaymentProviderCustomer,
         },
         errors: { getFinalizeOrderError, getSubmitOrderError },
-        statuses: { isInitializingPayment, isSubmittingOrder },
+        statuses: {
+            isInitializingPayment,
+            isLoadingBillingCountries,
+            isSubmittingOrder,
+            isUpdatingBillingAddress,
+            isUpdatingCheckout,
+        },
     } = checkoutState;
 
     const checkout = getCheckout();
@@ -779,8 +909,10 @@ export function mapToPaymentProps(
         availableStoreCredit: customer.storeCredit,
         addressExtraFields,
         b2bToken: checkoutState.data.getB2BToken(),
+        billingAddress: getBillingAddress(),
         cart: getCart(),
         consignments,
+        shippingAddress: getShippingAddress(),
         cartUrl: config.links.cartLink,
         clearError: checkoutService.clearError,
         defaultMethod,
@@ -788,15 +920,19 @@ export function mapToPaymentProps(
         finalizeOrderIfNeeded: checkoutService.finalizeOrderIfNeeded,
         loadCheckout: checkoutService.loadCheckout,
         isInitializingPayment: isInitializingPayment(),
+        isLoadingBillingCountries: isLoadingBillingCountries(),
         isPaymentDataRequired,
         isStoreCreditApplied,
         isSubmittingOrder: isSubmittingOrder(),
+        isUpdatingBillingAddress: isUpdatingBillingAddress(),
+        isUpdatingCheckout: isUpdatingCheckout(),
         isTermsConditionsRequired,
         loadPaymentMethods: checkoutService.loadPaymentMethods,
         methods: filteredMethods,
         orderExtraFields,
         orderId: checkout.orderId,
         refreshB2BPaymentMethods: checkoutService.refreshB2BPaymentMethods,
+        submitB2BMetadata: checkoutService.persistB2BMetadata,
         shouldExecuteSpamCheck: checkout.shouldExecuteSpamCheck,
         shouldLocaliseErrorMessages:
             features['PAYMENTS-6799.localise_checkout_payment_error_messages'],

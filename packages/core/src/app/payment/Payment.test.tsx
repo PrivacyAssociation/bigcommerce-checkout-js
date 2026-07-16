@@ -32,7 +32,8 @@ import {
     orderResponse,
     payments,
 } from '@bigcommerce/checkout/test-framework';
-import { renderWithoutWrapper as render, screen } from '@bigcommerce/checkout/test-utils';
+import { renderWithoutWrapper as render, screen, waitFor } from '@bigcommerce/checkout/test-utils';
+import { B2BSessionStorage } from '@bigcommerce/checkout/utility';
 
 import Checkout, { type CheckoutProps } from '../checkout/Checkout';
 import { createErrorLogger } from '../common/error';
@@ -40,6 +41,29 @@ import {
     createEmbeddedCheckoutStylesheet,
     createEmbeddedCheckoutSupport,
 } from '../embeddedCheckout';
+
+// Controllable billing save for the themeV2 pre-submit gate. Other tests keep
+// themeV2 off, so the block never renders and this stays unused there.
+
+let mockEnsureBillingAddressSaved: jest.Mock<Promise<boolean>>;
+
+jest.mock('./billingForm', () => {
+    const ReactActual = require('react');
+
+    const { default: PaymentContextActual } = require('./PaymentContext');
+
+    return {
+        PaymentBillingBlock: () => {
+            const context = ReactActual.useContext(PaymentContextActual);
+
+            ReactActual.useEffect(() => {
+                context?.setEnsureBillingAddressSaved(mockEnsureBillingAddressSaved);
+            }, [context]);
+
+            return ReactActual.createElement('div', { 'data-test': 'payment-billing-block' });
+        },
+    };
+});
 
 describe('Payment step', () => {
     let checkout: CheckoutPageNodeObject;
@@ -171,6 +195,99 @@ describe('Payment step', () => {
         await act(async () => userEvent.click(screen.getByText('Place Order')));
 
         expect(window.location.replace).toHaveBeenCalledWith('/order-confirmation');
+    });
+
+    it('does not place the order when embedded billing (themeV2) is invalid', async () => {
+        const themeV2Config = {
+            ...checkoutSettings,
+            storeConfig: {
+                ...checkoutSettings.storeConfig,
+                checkoutSettings: {
+                    ...checkoutSettings.storeConfig.checkoutSettings,
+                    checkoutUserExperienceSettings: {
+                        ...checkoutSettings.storeConfig.checkoutSettings
+                            .checkoutUserExperienceSettings,
+                        checkoutV2Theme: true,
+                    },
+                },
+            },
+        };
+
+        mockEnsureBillingAddressSaved = jest.fn<Promise<boolean>, []>().mockResolvedValue(false);
+
+        const location = window.location;
+
+        Object.defineProperty(window, 'location', {
+            value: {
+                // eslint-disable-next-line @typescript-eslint/no-misused-spread
+                ...location,
+                replace: jest.fn(),
+            },
+            writable: true,
+        });
+
+        checkoutService = checkout.use(CheckoutPreset.CheckoutWithShippingAndBilling, {
+            config: themeV2Config,
+        });
+
+        const submitOrderSpy = jest.spyOn(checkoutService, 'submitOrder');
+
+        render(<CheckoutTest {...defaultProps} />);
+
+        await checkout.waitForPaymentStep();
+
+        await act(async () => userEvent.click(screen.getByText('Place Order')));
+
+        expect(mockEnsureBillingAddressSaved).toHaveBeenCalled();
+        expect(submitOrderSpy).not.toHaveBeenCalled();
+        expect(window.location.replace).not.toHaveBeenCalled();
+    });
+
+    it('disables Place Order while the embedded billing (themeV2) address is being persisted', async () => {
+        const themeV2Config = {
+            ...checkoutSettings,
+            storeConfig: {
+                ...checkoutSettings.storeConfig,
+                checkoutSettings: {
+                    ...checkoutSettings.storeConfig.checkoutSettings,
+                    checkoutUserExperienceSettings: {
+                        ...checkoutSettings.storeConfig.checkoutSettings
+                            .checkoutUserExperienceSettings,
+                        checkoutV2Theme: true,
+                    },
+                },
+            },
+        };
+
+        mockEnsureBillingAddressSaved = jest.fn<Promise<boolean>, []>().mockResolvedValue(true);
+
+        checkoutService = checkout.use(CheckoutPreset.CheckoutWithShippingAndBilling, {
+            config: themeV2Config,
+        });
+
+        // Keep the billing-address update in flight so isUpdatingBillingAddress
+        // stays true while we assert the submit button is disabled.
+        checkout.setRequestHandler(
+            rest.put(
+                '/api/storefront/checkouts/*/billing-address/*',
+                () => new Promise<never>(() => undefined),
+            ),
+        );
+
+        render(<CheckoutTest {...defaultProps} />);
+
+        await checkout.waitForPaymentStep();
+
+        await act(async () => {
+            void checkoutService.updateBillingAddress({});
+        });
+
+        await waitFor(() =>
+            // eslint-disable-next-line jest-dom/prefer-to-have-attribute
+            expect(
+                screen.getByRole('button', { name: /place order/i }).hasAttribute('disabled'),
+            ).toBeTruthy(),
+        );
     });
 
     it('goes back to billing step after unmounting the component', async () => {
@@ -739,6 +856,336 @@ describe('Payment step', () => {
             await act(async () => userEvent.click(screen.getByText('Place Order')));
 
             expect(submitOrderSpy).not.toHaveBeenCalled();
+        });
+
+        it('persists B2B metadata after finalizing the order on mount when persistB2BMetadata capability is enabled', async () => {
+            const location = window.location;
+
+            Object.defineProperty(window, 'location', {
+                value: {
+                    // eslint-disable-next-line @typescript-eslint/no-misused-spread
+                    ...location,
+                    replace: jest.fn(),
+                },
+                writable: true,
+            });
+
+            checkoutService = checkout.use(CheckoutPreset.CheckoutWithShippingAndBilling, {
+                config: createConfigWithPersistB2BMetadata(),
+                checkout: {
+                    ...checkoutWithShippingAndBilling,
+                    customer,
+                    orderId: 12345,
+                },
+            });
+
+            jest.spyOn(checkoutService, 'refreshB2BPaymentMethods').mockImplementation(() =>
+                Promise.resolve(checkoutService.getState()),
+            );
+            jest.spyOn(checkoutService, 'finalizeOrderIfNeeded').mockResolvedValue(
+                checkoutService.getState(),
+            );
+
+            const persistSpy = jest
+                .spyOn(checkoutService, 'persistB2BMetadata')
+                .mockImplementation(() => Promise.resolve(checkoutService.getState()));
+
+            render(<CheckoutTest {...defaultProps} />);
+
+            await waitFor(() =>
+                expect(persistSpy).toHaveBeenCalledWith({
+                    isInvoice: false,
+                    invoiceComment: undefined,
+                    poNumber: undefined,
+                    referenceNumber: undefined,
+                    extraFields: [],
+                    extraInfo: {},
+                }),
+            );
+        });
+
+        it('persists the address extra fields from the checkout object after finalizing on mount', async () => {
+            const location = window.location;
+
+            Object.defineProperty(window, 'location', {
+                value: {
+                    // eslint-disable-next-line @typescript-eslint/no-misused-spread
+                    ...location,
+                    replace: jest.fn(),
+                },
+                writable: true,
+            });
+
+            const { billingAddress } = checkoutWithShippingAndBilling;
+            const [consignment] = checkoutWithShippingAndBilling.consignments;
+
+            checkoutService = checkout.use(CheckoutPreset.CheckoutWithShippingAndBilling, {
+                config: createConfigWithPersistB2BMetadata(),
+                checkout: {
+                    ...checkoutWithShippingAndBilling,
+                    customer,
+                    orderId: 12345,
+                    billingAddress: billingAddress && {
+                        ...billingAddress,
+                        extraFields: [{ fieldId: '30', fieldValue: 'Finance' }],
+                    },
+                    consignments: [
+                        {
+                            ...consignment,
+                            shippingAddress: {
+                                ...consignment.shippingAddress,
+                                extraFields: [{ fieldId: '31', fieldValue: 'B7' }],
+                            },
+                        },
+                    ],
+                },
+            });
+
+            jest.spyOn(checkoutService, 'refreshB2BPaymentMethods').mockImplementation(() =>
+                Promise.resolve(checkoutService.getState()),
+            );
+            jest.spyOn(checkoutService, 'finalizeOrderIfNeeded').mockResolvedValue(
+                checkoutService.getState(),
+            );
+
+            const persistSpy = jest
+                .spyOn(checkoutService, 'persistB2BMetadata')
+                .mockImplementation(() => Promise.resolve(checkoutService.getState()));
+
+            render(<CheckoutTest {...defaultProps} />);
+
+            await waitFor(() =>
+                expect(persistSpy).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        extraInfo: {
+                            addressExtraFields: {
+                                billingAddressExtraFields: [
+                                    { fieldName: '30', fieldValue: 'Finance' },
+                                ],
+                                shippingAddressExtraFields: [{ fieldName: '31', fieldValue: 'B7' }],
+                            },
+                        },
+                    }),
+                ),
+            );
+        });
+
+        it('stores the address IDs returned by the order endpoint, persists them and clears them afterwards', async () => {
+            checkout.setRequestHandler(
+                rest.post('/internalapi/v1/checkout/order', (_, res, ctx) =>
+                    res(
+                        ctx.json({
+                            ...orderResponse,
+                            data: {
+                                ...orderResponse.data,
+                                order: {
+                                    ...orderResponse.data.order,
+                                    b2bMetadata: {
+                                        billingAddressId: 111,
+                                        shippingAddressId: 222,
+                                    },
+                                },
+                            },
+                        }),
+                    ),
+                ),
+            );
+            checkout.setRequestHandler(
+                rest.get('/api/storefront/orders/*', (_, res, ctx) => res(ctx.json(orderResponse))),
+            );
+
+            const location = window.location;
+
+            Object.defineProperty(window, 'location', {
+                value: {
+                    // eslint-disable-next-line @typescript-eslint/no-misused-spread
+                    ...location,
+                    replace: jest.fn(),
+                },
+                writable: true,
+            });
+
+            checkoutService = checkout.use(CheckoutPreset.CheckoutWithShippingAndBilling, {
+                config: createConfigWithPersistB2BMetadata(),
+                checkout: {
+                    ...checkoutWithShippingAndBilling,
+                    customer,
+                },
+            });
+
+            jest.spyOn(checkoutService, 'refreshB2BPaymentMethods').mockImplementation(() =>
+                Promise.resolve(checkoutService.getState()),
+            );
+
+            const persistSpy = jest
+                .spyOn(checkoutService, 'persistB2BMetadata')
+                .mockImplementation(() => Promise.resolve(checkoutService.getState()));
+
+            render(<CheckoutTest {...defaultProps} />);
+
+            await checkout.waitForPaymentStep();
+
+            await act(async () => userEvent.click(screen.getByText('Place Order')));
+
+            await waitFor(() =>
+                expect(persistSpy).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        extraInfo: {
+                            billingAddressId: 111,
+                            shipppingAddressId: 222,
+                        },
+                    }),
+                ),
+            );
+
+            await waitFor(() =>
+                expect(B2BSessionStorage.getAddressIds()).toEqual({
+                    billingAddressId: undefined,
+                    shippingAddressId: undefined,
+                }),
+            );
+        });
+
+        it('persists B2B metadata with isInvoice true and the captured form values when the invoiceRedirect capability is enabled', async () => {
+            const location = window.location;
+
+            Object.defineProperty(window, 'location', {
+                value: {
+                    // eslint-disable-next-line @typescript-eslint/no-misused-spread
+                    ...location,
+                    replace: jest.fn(),
+                },
+                writable: true,
+            });
+
+            B2BSessionStorage.setPaymentValues({ invoicePaymentComment: 'Invoice me' });
+
+            checkoutService = checkout.use(CheckoutPreset.CheckoutWithShippingAndBilling, {
+                config: {
+                    ...checkoutSettings,
+                    storeConfig: {
+                        ...checkoutSettings.storeConfig,
+                        checkoutSettings: {
+                            ...checkoutSettings.storeConfig.checkoutSettings,
+                            capabilities: {
+                                ...defaultCapabilities,
+                                orderConfirmation: {
+                                    ...defaultCapabilities.orderConfirmation,
+                                    persistB2BMetadata: true,
+                                    invoiceRedirect: true,
+                                },
+                            },
+                        },
+                    },
+                },
+                checkout: {
+                    ...checkoutWithShippingAndBilling,
+                    customer,
+                    orderId: 12345,
+                },
+            });
+
+            jest.spyOn(checkoutService, 'refreshB2BPaymentMethods').mockImplementation(() =>
+                Promise.resolve(checkoutService.getState()),
+            );
+            jest.spyOn(checkoutService, 'finalizeOrderIfNeeded').mockResolvedValue(
+                checkoutService.getState(),
+            );
+
+            const persistSpy = jest
+                .spyOn(checkoutService, 'persistB2BMetadata')
+                .mockImplementation(() => Promise.resolve(checkoutService.getState()));
+
+            render(<CheckoutTest {...defaultProps} />);
+
+            await waitFor(() =>
+                expect(persistSpy).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        isInvoice: true,
+                        invoiceComment: 'Invoice me',
+                    }),
+                ),
+            );
+        });
+
+        it('clears B2B sessionStorage even when persisting metadata fails', async () => {
+            const location = window.location;
+
+            Object.defineProperty(window, 'location', {
+                value: {
+                    // eslint-disable-next-line @typescript-eslint/no-misused-spread
+                    ...location,
+                    replace: jest.fn(),
+                },
+                writable: true,
+            });
+
+            B2BSessionStorage.setAddressIds({ billingAddressId: 111, shippingAddressId: 222 });
+
+            checkoutService = checkout.use(CheckoutPreset.CheckoutWithShippingAndBilling, {
+                config: createConfigWithPersistB2BMetadata(),
+                checkout: {
+                    ...checkoutWithShippingAndBilling,
+                    customer,
+                    orderId: 12345,
+                },
+            });
+
+            jest.spyOn(checkoutService, 'refreshB2BPaymentMethods').mockImplementation(() =>
+                Promise.resolve(checkoutService.getState()),
+            );
+            jest.spyOn(checkoutService, 'finalizeOrderIfNeeded').mockResolvedValue(
+                checkoutService.getState(),
+            );
+
+            const persistSpy = jest
+                .spyOn(checkoutService, 'persistB2BMetadata')
+                .mockRejectedValue(new Error('Persist failed'));
+
+            render(<CheckoutTest {...defaultProps} />);
+
+            await waitFor(() => expect(persistSpy).toHaveBeenCalled());
+
+            await waitFor(() =>
+                expect(B2BSessionStorage.getAddressIds()).toEqual({
+                    billingAddressId: undefined,
+                    shippingAddressId: undefined,
+                }),
+            );
+        });
+
+        it('does not persist B2B metadata after finalizing the order on mount when persistB2BMetadata capability is disabled', async () => {
+            const location = window.location;
+
+            Object.defineProperty(window, 'location', {
+                value: {
+                    // eslint-disable-next-line @typescript-eslint/no-misused-spread
+                    ...location,
+                    replace: jest.fn(),
+                },
+                writable: true,
+            });
+
+            checkoutService = checkout.use(CheckoutPreset.CheckoutWithShippingAndBilling, {
+                checkout: {
+                    ...checkoutWithShippingAndBilling,
+                    customer,
+                    orderId: 12345,
+                },
+            });
+
+            const finalizeSpy = jest
+                .spyOn(checkoutService, 'finalizeOrderIfNeeded')
+                .mockResolvedValue(checkoutService.getState());
+            const persistSpy = jest
+                .spyOn(checkoutService, 'persistB2BMetadata')
+                .mockImplementation(() => Promise.resolve(checkoutService.getState()));
+
+            render(<CheckoutTest {...defaultProps} />);
+
+            await waitFor(() => expect(finalizeSpy).toHaveBeenCalled());
+
+            expect(persistSpy).not.toHaveBeenCalled();
         });
     });
 });

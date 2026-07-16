@@ -1,31 +1,27 @@
+import classNames from 'classnames';
 import { type FieldProps } from 'formik';
 import React, { type FunctionComponent, useCallback } from 'react';
 
 import { TranslatedString } from '@bigcommerce/checkout/locale';
 import { FormField, TextInput } from '@bigcommerce/checkout/ui';
-import { B2BSessionStorage } from '@bigcommerce/checkout/utility';
 
 interface AdditionalPaymentFieldProps {
     label: string;
     isRequired: boolean;
+    isFloatingLabelEnabled?: boolean;
 }
 
 const AdditionalPaymentField: FunctionComponent<AdditionalPaymentFieldProps> = ({
     label,
     isRequired,
+    isFloatingLabelEnabled,
 }) => {
     const renderInput = useCallback(
         ({ field }: FieldProps<string>) => (
             <TextInput
                 {...field}
                 id="additionalPaymentField"
-                onChange={(event) => {
-                    field.onChange(event);
-                    B2BSessionStorage.set(
-                        B2BSessionStorage.additionalPaymentFieldKey,
-                        event.target.value,
-                    );
-                }}
+                isFloatingLabelEnabled={isFloatingLabelEnabled}
                 testId="additionalPaymentField-input"
             />
         ),
@@ -33,10 +29,15 @@ const AdditionalPaymentField: FunctionComponent<AdditionalPaymentFieldProps> = (
     );
 
     return (
-        <div className="dynamic-form-field">
+        <div
+            className={classNames('dynamic-form-field', {
+                'floating-form-field': isFloatingLabelEnabled,
+            })}
+        >
             <FormField
                 id="additionalPaymentField"
                 input={renderInput}
+                isFloatingLabelEnabled={isFloatingLabelEnabled}
                 labelContent={
                     <>
                         {label}

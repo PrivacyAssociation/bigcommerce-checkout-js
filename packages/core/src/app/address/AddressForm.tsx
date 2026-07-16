@@ -61,6 +61,11 @@ const AddressForm: React.FC<AddressFormProps> = ({
         'CHECKOUT-9019.use_new_phone_number_validation',
         false,
     );
+    const isNewGooglePlacesApiEnabled = isExperimentEnabled(
+        config?.checkoutSettings,
+        'CHECKOUT-10026.new_google_places_api',
+        false,
+    );
     const countriesWithAutocomplete = ['US', 'CA', 'AU', 'NZ', 'GB'];
 
     const containerRef = useRef<HTMLDivElement>(null);
@@ -136,6 +141,10 @@ const AddressForm: React.FC<AddressFormProps> = ({
                 return field.default;
             }
 
+            if (isExtraField(field) && field.fieldType === DynamicFormFieldType.DROPDOWN) {
+                return language.translate('common.please_select_text');
+            }
+
             return translatedPlaceholderId && language.translate(translatedPlaceholderId);
         },
         [language],
@@ -174,6 +183,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
                                     countryCode={countryCode}
                                     field={field}
                                     isFloatingLabelEnabled={isFloatingLabelEnabledValue}
+                                    isNewPlacesApiEnabled={isNewGooglePlacesApiEnabled}
                                     key={field.id}
                                     nextElement={nextElementRef.current || undefined}
                                     onChange={handleAutocompleteChange}

@@ -5,7 +5,7 @@ import {
     type PaymentMethod,
 } from '@bigcommerce/checkout-sdk/essential';
 import { type FormikProps, type FormikState, withFormik, type WithFormikConfig } from 'formik';
-import { isEmpty, isNil, noop, omitBy } from 'lodash';
+import { isEmpty, noop, omitBy } from 'lodash';
 import React, { type FunctionComponent, memo, useCallback, useContext, useMemo } from 'react';
 import { object, type ObjectSchema, string } from 'yup';
 
@@ -21,7 +21,7 @@ import { Fieldset, Form, FormContext, Legend } from '@bigcommerce/checkout/ui';
 import { B2BSessionStorage } from '@bigcommerce/checkout/utility';
 
 import { getTranslateAddressError } from '../address';
-import { isExperimentEnabled } from '../common/utility';
+import { isExperimentEnabled, isFloatingLabelEnabled } from '../common/utility';
 import { getOrderExtraFieldsValidationSchema } from '../formFields';
 import { TermsConditions } from '../termsConditions';
 
@@ -44,6 +44,8 @@ import { ProvidersSectionOnTopOfPaymentsList } from './ProvidersSectionOnTopOfPa
 import SpamProtectionField from './SpamProtectionField';
 import { StoreCreditField, StoreCreditOverlay } from './storeCredit';
 
+import './PaymentForm.scss';
+
 export interface PaymentFormProps {
     additionalField?: Capabilities['payment']['additionalField'];
     availableStoreCredit?: number;
@@ -51,6 +53,7 @@ export interface PaymentFormProps {
     defaultGatewayId?: string;
     defaultMethodId: string;
     didExceedSpamLimit?: boolean;
+    isBillingSameAsShipping?: boolean;
     isEmbedded?: boolean;
     isInitializingPayment?: boolean;
     isTermsConditionsRequired?: boolean;
@@ -68,6 +71,7 @@ export interface PaymentFormProps {
     usableStoreCredit?: number;
     validationSchema?: ObjectSchema<Partial<PaymentFormValues>>;
     isPaymentDataRequired(): boolean;
+    onBillingSameAsShippingChange?(isBillingSameAsShipping: boolean): void;
     onMethodSelect?(method: PaymentMethod): void;
     onStoreCreditChange?(useStoreCredit?: boolean): void;
     onSubmit?(values: PaymentFormValues): void;
@@ -81,6 +85,7 @@ const PaymentForm: FunctionComponent<
     availableStoreCredit = 0,
     disableStoreCredit = false,
     didExceedSpamLimit,
+    isBillingSameAsShipping,
     isEmbedded,
     isInitializingPayment,
     isPaymentDataRequired,
@@ -89,6 +94,7 @@ const PaymentForm: FunctionComponent<
     isUsingMultiShipping,
     language,
     methods,
+    onBillingSameAsShippingChange,
     onMethodSelect,
     onStoreCreditChange,
     onUnhandledError,
@@ -138,6 +144,9 @@ const PaymentForm: FunctionComponent<
         payment: { invoicePaymentComment },
     } = useCapabilities();
     const { checkoutSettings } = config ?? {};
+    const isFloatingLabelEnabledValue = checkoutSettings
+        ? isFloatingLabelEnabled(checkoutSettings)
+        : false;
     const poMethodDisabledReason = usePoMethodDisabledReason(selectedMethod);
     const isSubmitDisabled = shouldDisableSubmit || Boolean(poMethodDisabledReason);
     const shouldShowSubmitButtonWhenPaymentNotRequired = isExperimentEnabled(
@@ -200,12 +209,20 @@ const PaymentForm: FunctionComponent<
                 />
             )}
 
-            {themeV2 && <PaymentBillingBlock />}
+            {themeV2 && (
+                <PaymentBillingBlock
+                    isBillingSameAsShipping={isBillingSameAsShipping ?? true}
+                    methodId={selectedMethod?.id}
+                    onBillingSameAsShippingChange={onBillingSameAsShippingChange ?? noop}
+                    onUnhandledError={onUnhandledError ?? noop}
+                />
+            )}
 
             <PaymentRedeemables />
 
             {additionalField && (
                 <AdditionalPaymentField
+                    isFloatingLabelEnabled={isFloatingLabelEnabledValue}
                     isRequired={additionalField.required}
                     label={additionalField.label}
                 />
@@ -219,10 +236,15 @@ const PaymentForm: FunctionComponent<
             )}
 
             {orderExtraFields && orderExtraFields.length > 0 && (
-                <OrderExtraFieldsFieldset formFields={orderExtraFields} />
+                <OrderExtraFieldsFieldset
+                    formFields={orderExtraFields}
+                    isFloatingLabelEnabled={isFloatingLabelEnabledValue}
+                />
             )}
 
-            {invoicePaymentComment && <InvoicePaymentCommentField />}
+            {invoicePaymentComment && (
+                <InvoicePaymentCommentField isFloatingLabelEnabled={isFloatingLabelEnabledValue} />
+            )}
 
             <div className="form-actions">
                 {hideSubmitPaymentButton ? (
@@ -331,9 +353,9 @@ const PaymentMethodListFieldset: FunctionComponent<PaymentMethodListFieldsetProp
 const paymentFormConfig: WithFormikConfig<PaymentFormProps & WithLanguageProps, PaymentFormValues> =
     {
         mapPropsToValues: ({ defaultGatewayId, defaultMethodId, orderExtraFields }) => {
-            const storedOrderExtraFields = B2BSessionStorage.get(
-                B2BSessionStorage.orderExtraFieldsKey,
-            );
+            // Restores the B2B values captured at submit time when the shopper
+            // comes back from an off-site payment redirect.
+            const storedPaymentValues = B2BSessionStorage.getPaymentValues();
 
             return {
                 ccCustomerCode: '',
@@ -364,35 +386,19 @@ const paymentFormConfig: WithFormikConfig<PaymentFormProps & WithLanguageProps, 
                 routingNumber: '',
                 orderExtraFields: getInitialOrderExtraFieldsValues(
                     orderExtraFields,
-                    storedOrderExtraFields,
+                    storedPaymentValues?.orderExtraFields,
                 ),
-                invoicePaymentComment: B2BSessionStorage.getValue(
-                    B2BSessionStorage.invoiceCommentKey,
-                ),
-                additionalPaymentField: B2BSessionStorage.getValue(
-                    B2BSessionStorage.additionalPaymentFieldKey,
-                ),
+                invoicePaymentComment: storedPaymentValues?.invoicePaymentComment ?? '',
+                additionalPaymentField: storedPaymentValues?.additionalPaymentField ?? '',
             };
         },
 
         handleSubmit: (values, { props: { onSubmit = noop } }) => {
-            const {
-                orderExtraFields,
-                invoicePaymentComment: _invoicePaymentComment,
-                additionalPaymentField: _additionalPaymentField,
-                ...rest
-            } = values as PaymentFormValues & {
-                orderExtraFields?: Record<string, unknown>;
-                invoicePaymentComment?: string;
-                additionalPaymentField?: string;
-            };
-
-            if (orderExtraFields && Object.keys(orderExtraFields).length > 0) {
-                B2BSessionStorage.set(B2BSessionStorage.orderExtraFieldsKey, orderExtraFields);
-            }
-
             onSubmit(
-                omitBy(rest, (value, key) => isNil(value) || value === '' || key === 'hostedForm'),
+                omitBy(
+                    values,
+                    (value, key) => value == null || value === '' || key === 'hostedForm',
+                ),
             );
         },
 

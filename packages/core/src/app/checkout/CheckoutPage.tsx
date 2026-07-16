@@ -167,7 +167,7 @@ const Checkout = ({
     });
 
     useEffect(() => {
-        if (quoteConfig?.id) {
+        if (quoteConfig?.id || invoiceRedirect) {
             return deleteCartOnExit(checkoutService);
         }
     }, []);
@@ -255,12 +255,12 @@ const Checkout = ({
 
         setState((prevState) => ({ ...prevState, isRedirecting: true }));
 
-        const receiptId = checkoutService.getState().data.getB2BReceiptId();
+        const b2bContext = checkoutService.getState().data.getB2BContext();
 
-        if (invoiceRedirect && receiptId) {
+        if (invoiceRedirect && b2bContext?.receiptId) {
             const { links: { siteLink = '' } = {} } = data.getConfig() || {};
 
-            window.location.replace(`${siteLink}/#/invoice?receiptId=${receiptId}`);
+            window.location.replace(`${siteLink}/#/invoice?receiptId=${b2bContext.receiptId}`);
 
             return;
         }
@@ -421,13 +421,20 @@ const Checkout = ({
         (isBillingSameAsShipping: boolean): void => {
             setState((prev) => ({ ...prev, isBillingSameAsShipping }));
 
-            if (isBillingSameAsShipping) {
+            if (isBillingSameAsShipping || themeV2) {
                 navigateToNextIncompleteStep();
             } else {
                 navigateToStep(CheckoutStepType.Billing);
             }
         },
-        [navigateToNextIncompleteStep, navigateToStep],
+        [navigateToNextIncompleteStep, navigateToStep, themeV2],
+    );
+
+    const handleBillingSameAsShippingChange = useCallback(
+        (isBillingSameAsShipping: boolean): void => {
+            setState((prev) => ({ ...prev, isBillingSameAsShipping }));
+        },
+        [],
     );
 
     const handleShippingSignIn = useCallback((): void => {
@@ -533,12 +540,14 @@ const Checkout = ({
                         checkEmbeddedSupport={checkEmbeddedSupport}
                         consignments={consignments}
                         errorLogger={errorLogger}
+                        isBillingSameAsShipping={isBillingSameAsShipping}
                         isEmbedded={isEmbedded()}
                         isUsingMultiShipping={
                             cart && consignments
                                 ? isUsingMultiShipping(consignments, cart.lineItems)
                                 : false
                         }
+                        onBillingSameAsShippingChange={handleBillingSameAsShippingChange}
                         onCartChangedError={handleCartChangedError}
                         onEdit={handleEditStep}
                         onExpanded={handleExpanded}
