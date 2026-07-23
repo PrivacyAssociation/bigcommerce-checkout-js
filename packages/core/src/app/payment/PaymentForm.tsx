@@ -21,7 +21,7 @@ import { Fieldset, Form, FormContext, Legend } from '@bigcommerce/checkout/ui';
 import { B2BSessionStorage } from '@bigcommerce/checkout/utility';
 
 import { getTranslateAddressError } from '../address';
-import { isExperimentEnabled, isFloatingLabelEnabled } from '../common/utility';
+import { isFloatingLabelEnabled } from '../common/utility';
 import { getOrderExtraFieldsValidationSchema } from '../formFields';
 import { TermsConditions } from '../termsConditions';
 
@@ -149,16 +149,8 @@ const PaymentForm: FunctionComponent<
         : false;
     const poMethodDisabledReason = usePoMethodDisabledReason(selectedMethod);
     const isSubmitDisabled = shouldDisableSubmit || Boolean(poMethodDisabledReason);
-    const shouldShowSubmitButtonWhenPaymentNotRequired = isExperimentEnabled(
-        checkoutSettings,
-        'CHECKOUT-9729.show_submit_button_when_payment_not_required',
-        false,
-    );
     const hideSubmitPaymentButton =
-        shouldHidePaymentSubmitButton ||
-        (shouldShowSubmitButtonWhenPaymentNotRequired &&
-            isPaymentDataRequired() &&
-            isEmpty(methods));
+        shouldHidePaymentSubmitButton || (isPaymentDataRequired() && isEmpty(methods));
 
     if (shouldExecuteSpamCheck) {
         return (
@@ -181,8 +173,7 @@ const PaymentForm: FunctionComponent<
                 />
             )}
 
-            {shouldShowSubmitButtonWhenPaymentNotRequired &&
-                isEmpty(methods) &&
+            {isEmpty(methods) &&
                 (isPaymentDataRequired() ? (
                     <NoPaymentMethods
                         message={
@@ -195,7 +186,7 @@ const PaymentForm: FunctionComponent<
                     />
                 ))}
 
-            {(!shouldShowSubmitButtonWhenPaymentNotRequired || !isEmpty(methods)) && (
+            {!isEmpty(methods) && (
                 <PaymentMethodListFieldset
                     isEmbedded={isEmbedded}
                     isInitializingPayment={isInitializingPayment}
@@ -298,6 +289,7 @@ const PaymentMethodListFieldset: FunctionComponent<PaymentMethodListFieldsetProp
     values,
 }) => {
     const { setSubmitted } = useContext(FormContext);
+    const { themeV2 } = useThemeContext();
 
     const handlePaymentMethodSelect = useCallback(
         (method: PaymentMethod) => {
@@ -327,7 +319,7 @@ const PaymentMethodListFieldset: FunctionComponent<PaymentMethodListFieldsetProp
     return (
         <Fieldset
             legend={
-                <Legend>
+                <Legend hidden={themeV2}>
                     <TranslatedString id="payment.payment_methods_text" />
                 </Legend>
             }

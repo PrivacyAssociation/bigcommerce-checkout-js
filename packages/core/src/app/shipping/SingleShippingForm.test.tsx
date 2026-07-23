@@ -40,13 +40,13 @@ describe('SingleShippingForm', () => {
         shippingAddress: getShippingAddress(),
         customerMessage: '',
         cartHasChanged: false,
+        hasAddressLabel: false,
         isBillingSameAsShipping: false,
         isInitialValueLoaded: true,
         shippingFormRenderTimestamp: undefined,
         onSubmit: jest.fn(),
         getFields: jest.fn(() => addressFormFields),
         onUnhandledError: jest.fn(),
-        validateMaxLength: false,
     };
 
     const shippingAutosaveDelay = 500;

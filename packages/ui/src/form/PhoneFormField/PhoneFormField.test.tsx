@@ -12,7 +12,9 @@ import { PhoneFormField, type PhoneFormFieldProps } from './PhoneFormField';
 
 const mockIsValidNumber = jest.fn();
 const mockSetCountry = jest.fn();
+const mockSetNumber = jest.fn();
 const mockGetSelectedCountryData = jest.fn();
+const mockGetNumber = jest.fn(() => '');
 
 jest.mock('@intl-tel-input/react', () => ({
     __esModule: true,
@@ -26,9 +28,13 @@ jest.mock('@intl-tel-input/react', () => ({
     >(({ inputProps, onChangeNumber, value }, ref) => {
         useImperativeHandle(ref, () => ({
             getInstance: () => ({
+                getNumber: mockGetNumber,
                 getSelectedCountryData: mockGetSelectedCountryData,
+                isActive: () => true,
                 isValidNumber: mockIsValidNumber,
+                promise: Promise.resolve(),
                 setCountry: mockSetCountry,
+                setNumber: mockSetNumber,
             }),
         }));
 
@@ -85,9 +91,11 @@ describe('PhoneFormField', () => {
     );
 
     beforeEach(() => {
+        mockGetNumber.mockClear();
         mockGetSelectedCountryData.mockClear();
         mockIsValidNumber.mockClear();
         mockSetCountry.mockClear();
+        mockSetNumber.mockClear();
     });
 
     it('renders IntlTelInput', () => {

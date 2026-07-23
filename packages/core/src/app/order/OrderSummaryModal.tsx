@@ -16,8 +16,8 @@ import {
     Modal,
     ModalHeader,
 } from '@bigcommerce/checkout/ui';
+import { isExperimentEnabled } from '@bigcommerce/checkout/utility';
 
-import { isExperimentEnabled } from '../common/utility';
 import { NewOrderSummarySubtotals } from '../coupon';
 import { ShopperCurrency } from '../currency';
 
@@ -136,7 +136,7 @@ const OrderSummaryModal: FunctionComponent<
             onRequestClose={onRequestClose}
         >
             <OrderSummarySection>
-                <OrderSummaryItems displayLineItemsCount={false} isMobileCartModal items={items} />
+                <OrderSummaryItems displayLineItemsCount={false} items={items} />
             </OrderSummarySection>
             {isMultiCouponEnabledForCheckout || isMultiCouponEnabledForOrder ? (
                 <NewOrderSummarySubtotals

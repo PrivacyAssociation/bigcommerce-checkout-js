@@ -4,9 +4,10 @@ import { createSelector } from 'reselect';
 
 import { isThemeV2Enabled } from '@bigcommerce/checkout/contexts';
 import { shouldUseStripeLinkByMinimumAmount } from '@bigcommerce/checkout/instrument-utils';
+import { isExperimentEnabled } from '@bigcommerce/checkout/utility';
 
 import { isValidAddress } from '../address';
-import { EMPTY_ARRAY, isExperimentEnabled } from '../common/utility';
+import { EMPTY_ARRAY } from '../common/utility';
 import { SUPPORTED_METHODS } from '../customer';
 import { PaymentMethodId } from '../payment/paymentMethod';
 import {
@@ -200,13 +201,8 @@ const getShippingStepStatus = createSelector(
     },
     ({ data }: CheckoutSelectors) => data.getConfig(),
     (shippingAddress, consignments, cart, shippingAddressFields, config) => {
-        const validateMaxLength = isExperimentEnabled(
-            config?.checkoutSettings,
-            'CHECKOUT-9768.form_fields_max_length_validation',
-            false,
-        );
         const hasAddress = shippingAddress
-            ? isValidAddress(shippingAddress, shippingAddressFields, validateMaxLength)
+            ? isValidAddress(shippingAddress, shippingAddressFields, true)
             : false;
         const hasOptions = consignments ? hasSelectedShippingOptions(consignments) : false;
         const hasUnassignedItems =

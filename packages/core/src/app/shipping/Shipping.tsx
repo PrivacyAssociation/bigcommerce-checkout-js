@@ -1,4 +1,4 @@
-import { type CheckoutSelectors } from '@bigcommerce/checkout-sdk';
+import { type CheckoutSelectors, type CustomerAddress } from '@bigcommerce/checkout-sdk';
 import { noop } from 'lodash';
 import React, { useCallback, useEffect, useState } from 'react';
 
@@ -8,6 +8,8 @@ import { AddressFormSkeleton, ConfirmationModal } from '@bigcommerce/checkout/ui
 
 import {
     AddressType,
+    decodeAddressLabel,
+    getShouldSaveAddress,
     isEqualAddress,
     mapAddressFromFormValues,
     setDefaultAddress,
@@ -73,8 +75,9 @@ function Shipping({
     } = useShipping();
     const {
         shipping: { restrictManualAddressEntry },
-        userJourney: { hasCompanyAddressBook },
+        userJourney: { hasCompanyAddressBook, hasAddressLabel },
     } = useCapabilities();
+    const decode = (address: CustomerAddress) => decodeAddressLabel(address, hasAddressLabel);
 
     useEffect(() => {
         const initializeShipping = async () => {
@@ -90,6 +93,7 @@ function Shipping({
                         type: AddressType.Shipping,
                         currentAddress: shippingAddress,
                         addresses: customer.addresses,
+                        decode,
                         updateAddress: updateShippingAddress,
                     });
                 }
@@ -123,6 +127,7 @@ function Shipping({
                         type: AddressType.Shipping,
                         currentAddress: consignments[0].shippingAddress,
                         addresses: customer.addresses,
+                        decode,
                         updateAddress: updateShippingAddress,
                     });
                 }
@@ -153,7 +158,7 @@ function Shipping({
 
         if (
             !isEqualAddress(updatedShippingAddress, shippingAddress) ||
-            shippingAddress?.shouldSaveAddress !== updatedShippingAddress?.shouldSaveAddress
+            getShouldSaveAddress(shippingAddress) !== getShouldSaveAddress(updatedShippingAddress)
         ) {
             promises.push(updateShippingAddress(updatedShippingAddress || {}));
         }

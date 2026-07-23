@@ -10,6 +10,7 @@ import { Fieldset, Form } from '@bigcommerce/checkout/ui';
 
 import {
     type AddressFormValues,
+    decodeAddressLabel,
     getAddressFormFieldsValidationSchema,
     getTranslateAddressError,
     isEqualAddress,
@@ -36,12 +37,12 @@ export interface SingleShippingFormProps {
     isBillingSameAsShipping: boolean;
     cartHasChanged: boolean;
     customerMessage: string;
+    hasAddressLabel: boolean;
     methodId?: string;
     shippingAddress?: Address;
     shippingAutosaveDelay?: number;
     isInitialValueLoaded: boolean;
     shippingFormRenderTimestamp?: number;
-    validateMaxLength: boolean;
     getFields(countryCode?: string): FormField[];
     onSubmit(values: SingleShippingFormValues): void;
     onUnhandledError?(error: Error): void;
@@ -72,6 +73,7 @@ const SingleShippingForm: React.FC<
     cartHasChanged,
     customerMessage,
     getFields,
+    hasAddressLabel,
     isBillingSameAsShipping,
     isInitialValueLoaded,
     isValid,
@@ -82,7 +84,6 @@ const SingleShippingForm: React.FC<
     shippingAddress,
     shippingAutosaveDelay = SHIPPING_AUTOSAVE_DELAY,
     shippingFormRenderTimestamp,
-    validateMaxLength,
     values,
 }) => {
     const {
@@ -181,7 +182,7 @@ const SingleShippingForm: React.FC<
                 orderComment: customerMessage,
                 shippingAddress: mapAddressToFormValues(
                     getFields(shippingAddress?.countryCode),
-                    shippingAddress,
+                    decodeAddressLabel(shippingAddress, hasAddressLabel),
                 ),
             });
         }
@@ -253,10 +254,11 @@ const SingleShippingForm: React.FC<
 
         try {
             const address = await deleteConsignments();
+            const decoded = decodeAddressLabel(address, hasAddressLabel);
 
             setValues({
                 ...propsRef.current.values,
-                shippingAddress: mapAddressToFormValues(getFields(address?.countryCode), address),
+                shippingAddress: mapAddressToFormValues(getFields(decoded?.countryCode), decoded),
             });
         } catch (error) {
             onUnhandledError(error);
@@ -300,7 +302,6 @@ const SingleShippingForm: React.FC<
                     onUnhandledError={onUnhandledError}
                     onUseNewAddress={handleUseNewAddress}
                     shippingAddress={shippingAddress}
-                    validateMaxLength={validateMaxLength}
                 />
                 {shouldShowBillingSameAsShipping && (
                     <div className="form-body">
@@ -332,6 +333,7 @@ export default withLanguage(
         mapPropsToValues: ({
             getFields,
             shippingAddress,
+            hasAddressLabel,
             isBillingSameAsShipping,
             customerMessage,
         }) => ({
@@ -339,7 +341,7 @@ export default withLanguage(
             orderComment: customerMessage,
             shippingAddress: mapAddressToFormValues(
                 getFields(shippingAddress?.countryCode),
-                shippingAddress,
+                decodeAddressLabel(shippingAddress, hasAddressLabel),
             ),
         }),
         validateOnMount: true,
@@ -347,7 +349,6 @@ export default withLanguage(
             language,
             getFields,
             methodId,
-            validateMaxLength,
         }: SingleShippingFormProps & WithLanguageProps) =>
             shouldHaveCustomValidation(methodId)
                 ? object({
@@ -371,7 +372,7 @@ export default withLanguage(
                           getAddressFormFieldsValidationSchema({
                               language,
                               formFields: getFields(formValues?.countryCode),
-                              validateMaxLength,
+                              validateMaxLength: true,
                           }),
                       ),
                   }),

@@ -1,3 +1,4 @@
+import { type AddressRequestBody } from '@bigcommerce/checkout-sdk';
 import { useCallback } from 'react';
 import { createSelector } from 'reselect';
 
@@ -8,8 +9,10 @@ import {
 } from '@bigcommerce/checkout/contexts';
 import { shouldUseStripeLinkByMinimumAmount } from '@bigcommerce/checkout/instrument-utils';
 import { PaymentMethodId } from '@bigcommerce/checkout/payment-integration-api';
+import { isExperimentEnabled } from '@bigcommerce/checkout/utility';
 
-import { EMPTY_ARRAY, isExperimentEnabled } from '../../common/utility';
+import { encodeAddressForWrite } from '../../address';
+import { EMPTY_ARRAY } from '../../common/utility';
 import getBackorderCount from '../../order/getBackorderCount';
 import getProviderWithCustomCheckout from '../../payment/getProviderWithCustomCheckout';
 import getShippableItemsCount from '../getShippableItemsCount';
@@ -83,7 +86,7 @@ export const useShipping = () => {
         }),
     );
     const {
-        userJourney: { hasAddressExtraFields },
+        userJourney: { hasAddressExtraFields, hasAddressLabel },
     } = useCapabilities();
 
     const {
@@ -176,8 +179,54 @@ export const useShipping = () => {
         [getShippingAddressFields, getAddressExtraFields, hasAddressExtraFields],
     );
 
+    // Write boundary for the address label: callers pass decoded addresses, these wrappers encode
+    // just before the request leaves the app (idempotent, no-op unless the capability is on).
+    const encodeAddr = useCallback(
+        <T extends Partial<AddressRequestBody> | undefined>(address: T): T =>
+            address && hasAddressLabel ? encodeAddressForWrite(address) : address,
+        [hasAddressLabel],
+    );
+    const encodeConsignmentReq = useCallback(
+        <T extends { address?: AddressRequestBody; shippingAddress?: AddressRequestBody }>(
+            req: T,
+        ): T =>
+            hasAddressLabel
+                ? {
+                      ...req,
+                      address: encodeAddr(req.address),
+                      shippingAddress: encodeAddr(req.shippingAddress),
+                  }
+                : req,
+        [encodeAddr, hasAddressLabel],
+    );
+
+    const assignItem = useCallback(
+        (...args: Parameters<typeof checkoutService.assignItemsToAddress>) => {
+            const [req, ...rest] = args;
+
+            return checkoutService.assignItemsToAddress(encodeConsignmentReq(req), ...rest);
+        },
+        [checkoutService, encodeConsignmentReq],
+    );
+    const updateShippingAddress = useCallback(
+        (...args: Parameters<typeof checkoutService.updateShippingAddress>) => {
+            const [address, ...rest] = args;
+
+            return checkoutService.updateShippingAddress(encodeAddr(address), ...rest);
+        },
+        [checkoutService, encodeAddr],
+    );
+    const updateConsignment = useCallback(
+        (...args: Parameters<typeof checkoutService.updateConsignment>) => {
+            const [req, ...rest] = args;
+
+            return checkoutService.updateConsignment(encodeConsignmentReq(req), ...rest);
+        },
+        [checkoutService, encodeConsignmentReq],
+    );
+
     return {
-        assignItem: checkoutService.assignItemsToAddress,
+        assignItem,
         billingAddress: getBillingAddress(),
         cart,
         cartHasPromotionalItems: hasPromotionalItems(cart),
@@ -220,16 +269,11 @@ export const useShipping = () => {
         unassignItem: checkoutService.unassignItemsToAddress,
         updateBillingAddress: checkoutService.updateBillingAddress,
         updateCheckout: checkoutService.updateCheckout,
-        updateShippingAddress: checkoutService.updateShippingAddress,
-        updateConsignment: checkoutService.updateConsignment,
+        updateShippingAddress,
+        updateConsignment,
         getConsignments,
         shouldRenderStripeForm:
             providerWithCustomCheckout === PaymentMethodId.StripeUPE &&
             shouldUseStripeLinkByMinimumAmount(cart),
-        validateMaxLength: isExperimentEnabled(
-            config.checkoutSettings,
-            'CHECKOUT-9768.form_fields_max_length_validation',
-            false,
-        ),
     };
 };

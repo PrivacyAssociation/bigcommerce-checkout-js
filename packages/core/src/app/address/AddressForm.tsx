@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef } from 'react';
 
 import { useCapabilities, useCheckout, useLocale } from '@bigcommerce/checkout/contexts';
 import { TranslatedString } from '@bigcommerce/checkout/locale';
+import { isPayPalFastlaneMethod } from '@bigcommerce/checkout/paypal-fastlane-integration';
 import {
     type AutocompleteItem,
     CheckboxFormField,
@@ -11,8 +12,10 @@ import {
     DynamicFormFieldType,
     Fieldset,
 } from '@bigcommerce/checkout/ui';
+import { isExperimentEnabled } from '@bigcommerce/checkout/utility';
 
-import { EMPTY_ARRAY, isExperimentEnabled, isFloatingLabelEnabled } from '../common/utility';
+import { EMPTY_ARRAY, isFloatingLabelEnabled } from '../common/utility';
+import getProviderWithCustomCheckout from '../payment/getProviderWithCustomCheckout';
 
 import {
     type AddressFormProps,
@@ -21,6 +24,7 @@ import {
     LABEL,
     PLACEHOLDER,
 } from './AddressFormType';
+import AddressLabelFormField from './AddressLabelFormField';
 import AddressType from './AddressType';
 import {
     getAddressFormFieldInputId,
@@ -40,7 +44,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
     type,
 }) => {
     const {
-        userJourney: { hasCompanyAddressBook },
+        userJourney: { hasCompanyAddressBook, hasAddressLabel },
     } = useCapabilities();
     const { language } = useLocale();
     const {
@@ -56,11 +60,17 @@ const AddressForm: React.FC<AddressFormProps> = ({
     const isFloatingLabelEnabledValue = config
         ? isFloatingLabelEnabled(config.checkoutSettings)
         : false;
-    const isNewPhoneValidationExperimentEnabled = isExperimentEnabled(
-        config?.checkoutSettings,
-        'CHECKOUT-9019.use_new_phone_number_validation',
-        false,
+    const isPayPalFastlaneEnabled = isPayPalFastlaneMethod(
+        getProviderWithCustomCheckout(config?.checkoutSettings.providerWithCustomCheckout),
     );
+    // PayPal Fastlane stores keep the legacy phone input for now, due to incident
+    const isNewPhoneValidationExperimentEnabled =
+        !isPayPalFastlaneEnabled &&
+        isExperimentEnabled(
+            config?.checkoutSettings,
+            'CHECKOUT-9019.use_new_phone_number_validation',
+            false,
+        );
     const isNewGooglePlacesApiEnabled = isExperimentEnabled(
         config?.checkoutSettings,
         'CHECKOUT-10026.new_google_places_api',
@@ -191,6 +201,19 @@ const AddressForm: React.FC<AddressFormProps> = ({
                                     onToggleOpen={onAutocompleteToggle}
                                     parentFieldName={fieldName}
                                     supportedCountries={countriesWithAutocomplete}
+                                />
+                            );
+                        }
+
+                        if (hasAddressLabel && addressFieldName === 'company') {
+                            return (
+                                <AddressLabelFormField
+                                    field={field}
+                                    inputId={getAddressFormFieldInputId(addressFieldName)}
+                                    isFloatingLabelEnabled={isFloatingLabelEnabledValue}
+                                    key={`${field.id}-${field.name}`}
+                                    onChange={handleDynamicFormFieldChange(addressFieldName)}
+                                    parentFieldName={getParentFieldName()}
                                 />
                             );
                         }
