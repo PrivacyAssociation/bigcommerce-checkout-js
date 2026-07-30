@@ -2,6 +2,69 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.847.1](https://github.com/bigcommerce/checkout-js/compare/v1.847.0...v1.847.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* **checkout:** CHECKOUT-10282 Send Empty Extra Fields ([#3204](https://github.com/bigcommerce/checkout-js/issues/3204)) ([480e487](https://github.com/bigcommerce/checkout-js/commit/480e48730ae10b883b03634b9274feafa910f6e8))
+
+## [1.847.0](https://github.com/bigcommerce/checkout-js/compare/v1.846.8...v1.847.0) (2026-07-30)
+
+
+### Features
+
+* **other:** CHECKOUT-10272 Make corners rounded for various UI elements ([#3202](https://github.com/bigcommerce/checkout-js/issues/3202)) ([cd35c15](https://github.com/bigcommerce/checkout-js/commit/cd35c154c72c99775a0fa4660f9ba872a7597623))
+
+### [1.846.8](https://github.com/bigcommerce/checkout-js/compare/v1.846.7...v1.846.8) (2026-07-29)
+
+### [1.846.7](https://github.com/bigcommerce/checkout-js/compare/v1.846.6...v1.846.7) (2026-07-29)
+
+### [1.846.6](https://github.com/bigcommerce/checkout-js/compare/v1.846.5...v1.846.6) (2026-07-29)
+
+### [1.846.5](https://github.com/bigcommerce/checkout-js/compare/v1.846.4...v1.846.5) (2026-07-29)
+
+### [1.846.4](https://github.com/bigcommerce/checkout-js/compare/v1.846.3...v1.846.4) (2026-07-29)
+
+### [1.846.3](https://github.com/bigcommerce/checkout-js/compare/v1.846.2...v1.846.3) (2026-07-29)
+
+### [1.846.2](https://github.com/bigcommerce/checkout-js/compare/v1.846.1...v1.846.2) (2026-07-29)
+
+### [1.846.1](https://github.com/bigcommerce/checkout-js/compare/v1.846.0...v1.846.1) (2026-07-28)
+
+## [1.846.0](https://github.com/bigcommerce/checkout-js/compare/v1.845.2...v1.846.0) (2026-07-27)
+
+
+### Features
+
+* **paymnet:** Migrate SagePay to Resolver Configuration ([#3169](https://github.com/bigcommerce/checkout-js/issues/3169)) ([edede5e](https://github.com/bigcommerce/checkout-js/commit/edede5e81f06b923ce1a9d2fdfdae672b873765a))
+
+### [1.845.2](https://github.com/bigcommerce/checkout-js/compare/v1.845.1...v1.845.2) (2026-07-27)
+
+
+### Bug Fixes
+
+* **checkout:** CHECKOUT-10187 Reduce order summary gap and payment margin for themeV2 ([#3193](https://github.com/bigcommerce/checkout-js/issues/3193)) ([bf5b005](https://github.com/bigcommerce/checkout-js/commit/bf5b0059ee389c32b5f8fc8b0bac83ef6c6b6be0))
+
+### [1.845.1](https://github.com/bigcommerce/checkout-js/compare/v1.845.0...v1.845.1) (2026-07-27)
+
+
+### Bug Fixes
+
+* **checkout:** CHECKOUT-10153 Always render billing step for digital items in themeV2 ([#3194](https://github.com/bigcommerce/checkout-js/issues/3194)) ([da1dca8](https://github.com/bigcommerce/checkout-js/commit/da1dca8f7f37eba96eb685d93f899665e6d0629d))
+
+## [1.845.0](https://github.com/bigcommerce/checkout-js/compare/v1.844.0...v1.845.0) (2026-07-24)
+
+
+### Features
+
+* **payment:** PAYPAL-6795 fixed payment submit button behavior ([09b28f8](https://github.com/bigcommerce/checkout-js/commit/09b28f8a7a24e572541cf0e5c1911e00390584cb))
+
+
+### Bug Fixes
+
+* **payment:** resolve prettier/lint formatting errors in Payment.tsx and Payment.test.tsx ([68bd422](https://github.com/bigcommerce/checkout-js/commit/68bd422ec5962300e6fc5815e2a5b153a0f0b686))
+
 ## [1.844.0](https://github.com/bigcommerce/checkout-js/compare/v1.843.0...v1.844.0) (2026-07-23)
 
 

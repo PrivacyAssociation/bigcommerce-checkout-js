@@ -11,14 +11,25 @@
         .layout-main {
             padding: 0;
         }
+        
+        .checkout-separator {
+            .sub-header {
+                color: $color-greyDark;
+                margin: 0;
+            }
+        }
 
         .checkout-separator::before,
         .checkout-separator::after {
-            background-color: $color-black;
+            background-color: $color-greyDark;
         }
         
         .checkout-steps {
             margin-top: #{spacing('base') + spacing('base')};
+        }
+
+        .discountBanner {
+            margin-top: 2rem;
         }
 
         .checkout-step {
@@ -26,6 +37,7 @@
             border-bottom: none;
             padding: #{spacing("base")} #{spacing("base") + spacing("base")};
             margin: spacing("single") 0;
+            border-radius: $element-border-radius;
         }
         
         // :not(:last-child) keeps collapsed steps unaffected
@@ -57,12 +69,13 @@
             }
 
             .stepHeader-figure {
-                align-items: flex-end;
+                align-items: center;
             }
         }
 
         .checkout-button-container {
             padding: 0 #{spacing("base") + spacing("base")};
+            margin-top: spacing("single");
         }
     }
 
@@ -74,7 +87,7 @@
         }
 
         .checkout-button-container {
-            padding: 0 #{spacing('double') + spacing('double')} 0 0;
+            padding: 0;
         }
     }
 
@@ -83,13 +96,17 @@
 
         .layout-main {
             width: grid-calc(7, $total-columns);
+            padding-right: remCalc(30px);
+        }
+
+        .checkout-steps {
+            padding-right: 0;
         }
     }
 
     @include themeV2-widescreen {
         .layout-main {
             width: grid-calc(8, $total-columns);
-            padding-right: spacing("single");
         }
     }
 }
