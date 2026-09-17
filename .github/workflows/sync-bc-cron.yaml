@@ -26,7 +26,8 @@ permissions:
   contents: write # This is required for actions/checkout
   pull-requests: write # necessary to create PR with gh CLI for updated snapshots
   id-token: write # This is required for requesting the JWT for AWS
-
+  
+# token: ${{ secrets.UPSTREAM_SYNC_GITHUB_PAT }} # Use the PAT with repo permissions
 jobs:
   sync-bc-main-to-master:
     runs-on: ubuntu-latest
@@ -37,7 +38,6 @@ jobs:
         with:
           ref: master
           fetch-depth: 0 # Fetch all history for all branches and tags
-          token: ${{ secrets.UPSTREAM_SYNC_GITHUB_PAT }} # Use the PAT with repo permissions
       
       - name: Configure Git
         run: |
