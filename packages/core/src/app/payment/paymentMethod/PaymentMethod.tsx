@@ -10,6 +10,7 @@ import { createNoPaymentStrategy } from '@bigcommerce/checkout-sdk/integrations/
 import React, { type FunctionComponent, lazy, memo, Suspense } from 'react';
 
 import { type CheckoutContextProps } from '@bigcommerce/checkout/contexts';
+import { CaptureMessageComponent } from '@bigcommerce/checkout/payment-integration-api';
 
 import { withCheckout } from '../../checkout';
 
@@ -43,6 +44,26 @@ export interface WithCheckoutPaymentMethodProps {
     initializePayment(options: PaymentInitializeOptions): Promise<CheckoutSelectors>;
 }
 
+const KNOWN_API_METHOD_IDS = new Set([
+    'authorizenet',
+    'cybersourcev2',
+    'ewayrapid',
+    'nmi',
+    'bigpaypay',
+    'usaepay',
+    'googlepay',
+    'quickbooks',
+    'orbital',
+    'stripe',
+    'firstdatae4v14',
+    'cybersource',
+    'hps',
+    'clover',
+    'elavon',
+    'bnz',
+    'vantivcore',
+]);
+
 /**
  * If possible, try to avoid having components that are specific to a specific
  * payment provider or method. Instead, try to generalise the requirements and
@@ -58,10 +79,15 @@ const PaymentMethodComponent: FunctionComponent<
     const { method } = props;
 
     if (method.id === PaymentMethodId.Humm || method.type === PaymentMethodProviderType.Hosted) {
+        const sentryMessage = `DataHostedPaymentMethod Hosted/Humm gateway=${method.gateway} id=${method.id} type=${method.type}`;
+
         return (
-            <Suspense>
-                <HostedPaymentMethod {...props} />
-            </Suspense>
+            <>
+                <CaptureMessageComponent message={sentryMessage} />
+                <Suspense>
+                    <HostedPaymentMethod {...props} />
+                </Suspense>
+            </>
         );
     }
 
@@ -72,10 +98,22 @@ const PaymentMethodComponent: FunctionComponent<
         method.method === PaymentMethodType.CreditCard ||
         method.type === PaymentMethodProviderType.Api
     ) {
+        const isKnownMethod =
+            method.gateway === null &&
+            method.type === PaymentMethodProviderType.Api &&
+            KNOWN_API_METHOD_IDS.has(method.id);
+
+        const sentryMessage = isKnownMethod
+            ? ''
+            : `DataHostedCreditCardPaymentMethod gateway=${method.gateway} id=${method.id} type=${method.type}`;
+
         return (
-            <Suspense>
-                <HostedCreditCardPaymentMethod {...props} />
-            </Suspense>
+            <>
+                <CaptureMessageComponent message={sentryMessage} />
+                <Suspense>
+                    <HostedCreditCardPaymentMethod {...props} />
+                </Suspense>
+            </>
         );
     }
 

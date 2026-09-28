@@ -4,7 +4,6 @@ import { Field, type FieldProps, Formik } from 'formik';
 import { noop } from 'lodash';
 import React from 'react';
 import { type Omit } from 'utility-types';
-import { config } from 'yargs';
 
 import { LocaleContext, type LocaleContextType } from '@bigcommerce/checkout/contexts';
 import { createLocaleContext } from '@bigcommerce/checkout/locale';
@@ -200,8 +199,7 @@ describe('AccountInstrumentSelect', () => {
             <Component selectedInstrumentId={defaultProps.selectedInstrumentId} show={true} />,
         );
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        screen.getByRole('form').submit();
+        fireEvent.submit(screen.getByRole('form'));
 
         await new Promise((resolve) => process.nextTick(resolve));
 
@@ -215,8 +213,7 @@ describe('AccountInstrumentSelect', () => {
 
         jest.runOnlyPendingTimers();
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-        screen.getByRole('form').submit();
+        fireEvent.submit(screen.getByRole('form'));
 
         await new Promise((resolve) => process.nextTick(resolve));
 

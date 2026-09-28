@@ -5,13 +5,14 @@ module.exports = {
   ...nxPreset,
   testPathIgnorePatterns: ['<rootDir>/e2e/'],
   transformIgnorePatterns: [
-    '/node_modules/(?!@intl-tel-input)',
+    '/node_modules/(?!(@intl-tel-input|@faker-js))',
     '\\.pnp\\.[^\\/]+$',
   ],
   moduleNameMapper: {
     '\\.css$': `${__dirname}/scripts/jest/file-transformer.js`,
     'intl-tel-input/styles': `${__dirname}/scripts/jest/file-transformer.js`,
     'intl-tel-input/data': `${__dirname}/scripts/jest/intl-tel-input-data.js`,
+    '^@playwright/test$': `${__dirname}/scripts/jest/playwright-test-stub.js`,
   },
   coverageThreshold: {
     global: {

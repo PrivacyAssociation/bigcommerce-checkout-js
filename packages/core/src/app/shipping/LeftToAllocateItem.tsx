@@ -26,7 +26,7 @@ const LeftToAllocateItem: FunctionComponent<LeftToAllocateItemProps> = ({
                     <p className="left-to-allocate-item-name body-regular">{item.name}</p>
                     {item.options?.map((option) => (
                         <p
-                            className="left-to-allocate-item-option sub-text-medium"
+                            className="left-to-allocate-item-option optimizedCheckout-contentSecondary sub-text-medium"
                             key={option.nameId}
                         >
                             {option.name}: {option.value}

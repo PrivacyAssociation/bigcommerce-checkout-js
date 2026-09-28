@@ -2,7 +2,9 @@ import {
     type CheckoutSelectors,
     type CheckoutService,
     createCheckoutService,
+    type FormField,
 } from '@bigcommerce/checkout-sdk';
+import userEvent from '@testing-library/user-event';
 import { noop } from 'lodash';
 import React, { type FunctionComponent } from 'react';
 
@@ -58,6 +60,27 @@ describe('PaymentBillingForm', () => {
     const renderForm = (props: PaymentBillingFormProps) =>
         render(<PaymentBillingFormTest {...props} />);
 
+    const getFieldsWithCountry = (): FormField[] => [
+        ...getFormFields(),
+        {
+            custom: false,
+            default: '',
+            fieldType: 'dropdown',
+            id: 'field_country',
+            label: 'Country',
+            name: 'countryCode',
+            options: {
+                helperLabel: 'Choose a Country',
+                items: [
+                    { label: 'United States', value: 'US' },
+                    { label: 'Canada', value: 'CA' },
+                ],
+            },
+            required: true,
+            type: 'array',
+        },
+    ];
+
     beforeEach(() => {
         checkoutService = createCheckoutService();
         checkoutState = checkoutService.getState();
@@ -86,10 +109,12 @@ describe('PaymentBillingForm', () => {
             getFields: () => getFormFields(),
             isBillingSameAsShipping: false,
             isLoading: false,
+            isUsingMultiShipping: false,
+            onBillingCountryChange: jest.fn(),
             onBillingSameAsShippingChange: jest.fn(),
             onPersist,
+            onSelectAddress: jest.fn().mockResolvedValue(undefined),
             onUnhandledError: noop,
-            updateBillingAddress: jest.fn().mockResolvedValue(undefined),
         };
     });
 
@@ -104,6 +129,7 @@ describe('PaymentBillingForm', () => {
     it('does not render its own <form> element', () => {
         renderForm(defaultProps);
 
+        // eslint-disable-next-line testing-library/no-node-access
         expect(document.querySelector('form')).not.toBeInTheDocument();
     });
 
@@ -132,13 +158,14 @@ describe('PaymentBillingForm', () => {
             ...getCustomer(),
             isGuest: false,
         });
-        // Keep updateBillingAddress in flight so isResettingAddress stays true.
-        const updateBillingAddress = jest.fn().mockReturnValue(new Promise(() => undefined));
 
-        renderForm({ ...defaultProps, updateBillingAddress });
+        // Keep the address selection in flight so isResettingAddress stays true.
+        const onSelectAddress = jest.fn().mockReturnValue(new Promise(() => undefined));
+
+        renderForm({ ...defaultProps, onSelectAddress });
 
         // Trigger an address-book selection ("Enter a new address"), which sets
-        // isResettingAddress while updateBillingAddress runs.
+        // isResettingAddress while onSelectAddress runs.
         fireEvent.click(await screen.findByTestId('address-select-button'));
         fireEvent.click(await screen.findByTestId('add-new-address'));
 
@@ -202,6 +229,37 @@ describe('PaymentBillingForm', () => {
         expect(onUnhandledError).toHaveBeenCalledWith(error);
     });
 
+    describe('billing country change', () => {
+        it('notifies onBillingCountryChange with the new country and the current form values', async () => {
+            renderForm({ ...defaultProps, getFields: getFieldsWithCountry });
+
+            await userEvent.clear(screen.getByTestId('firstNameInput-text'));
+            await userEvent.type(screen.getByTestId('firstNameInput-text'), 'Jane');
+
+            await userEvent.selectOptions(screen.getByTestId('countryCodeInput-select'), 'CA');
+
+            expect(defaultProps.onBillingCountryChange).toHaveBeenCalledWith(
+                'CA',
+                expect.objectContaining({ firstName: 'Jane' }),
+                '',
+            );
+
+            const [, addressValues] = (defaultProps.onBillingCountryChange as jest.Mock).mock
+                .calls[0];
+
+            expect(addressValues).not.toHaveProperty('billingSameAsShipping');
+            expect(addressValues).not.toHaveProperty('orderComment');
+        });
+
+        it('does not notify onBillingCountryChange when a non-country field changes', async () => {
+            renderForm({ ...defaultProps, getFields: getFieldsWithCountry });
+
+            await userEvent.type(screen.getByTestId('firstNameInput-text'), 'Jane');
+
+            expect(defaultProps.onBillingCountryChange).not.toHaveBeenCalled();
+        });
+    });
+
     describe('billing same as shipping toggle', () => {
         it('renders the toggle with the payment-step label', () => {
             renderForm(defaultProps);
@@ -246,6 +304,17 @@ describe('PaymentBillingForm', () => {
             renderForm({ ...defaultProps, methodId: 'amazonpay' });
 
             expect(screen.queryByTestId('billingSameAsShipping')).not.toBeInTheDocument();
+        });
+
+        it('hides the toggle and shows the address fields when using multi-shipping', () => {
+            renderForm({
+                ...defaultProps,
+                isBillingSameAsShipping: true,
+                isUsingMultiShipping: true,
+            });
+
+            expect(screen.queryByTestId('billingSameAsShipping')).not.toBeInTheDocument();
+            expect(screen.getByText('First Name')).toBeInTheDocument();
         });
 
         it('hides the toggle and shows the address fields for a digital-only cart', () => {
@@ -295,6 +364,88 @@ describe('PaymentBillingForm', () => {
             fireEvent.click(screen.getByTestId('billingSameAsShipping'));
 
             await waitFor(() => expect(onBillingSameAsShippingChange).toHaveBeenCalledWith(true));
+        });
+    });
+
+    describe('order comments', () => {
+        const orderCommentInput = () => screen.getByLabelText('Order Comments');
+
+        beforeEach(() => {
+            const cart = getCart();
+
+            jest.spyOn(checkoutState.data, 'getCart').mockReturnValue({
+                ...cart,
+                lineItems: { ...cart.lineItems, physicalItems: [] },
+            });
+
+            defaultProps = { ...defaultProps, getFields: getFieldsWithCountry };
+        });
+
+        it('seeds the order comment from the checkout customer message', () => {
+            renderForm({ ...defaultProps, customerMessage: 'leave at reception' });
+
+            expect(orderCommentInput()).toHaveValue('leave at reception');
+        });
+
+        it('sends the typed order comment to onBillingCountryChange', async () => {
+            renderForm(defaultProps);
+
+            await userEvent.type(orderCommentInput(), 'leave at reception');
+            await userEvent.selectOptions(screen.getByTestId('countryCodeInput-select'), 'CA');
+
+            expect(defaultProps.onBillingCountryChange).toHaveBeenCalledWith(
+                'CA',
+                expect.anything(),
+                'leave at reception',
+            );
+        });
+
+        it('sends a cleared order comment to onBillingCountryChange', async () => {
+            const props = { ...defaultProps, customerMessage: 'leave at reception' };
+
+            renderForm(props);
+
+            await userEvent.clear(orderCommentInput());
+            await userEvent.selectOptions(screen.getByTestId('countryCodeInput-select'), 'CA');
+
+            expect(props.onBillingCountryChange).toHaveBeenCalledWith('CA', expect.anything(), '');
+        });
+
+        it('sends the typed order comment to onSelectAddress', async () => {
+            jest.spyOn(checkoutState.data, 'getCustomer').mockReturnValue({
+                ...getCustomer(),
+                isGuest: false,
+            });
+
+            renderForm(defaultProps);
+
+            await userEvent.type(orderCommentInput(), 'leave at reception');
+
+            fireEvent.click(await screen.findByTestId('address-select-button'));
+            fireEvent.click(await screen.findByTestId('add-new-address'));
+
+            await waitFor(() =>
+                expect(defaultProps.onSelectAddress).toHaveBeenCalledWith({}, 'leave at reception'),
+            );
+        });
+
+        it('shows the saved order comment once it lands in checkout state', async () => {
+            const { rerender } = renderForm(defaultProps);
+
+            await userEvent.type(orderCommentInput(), 'leave at reception');
+
+            rerender(
+                <PaymentBillingFormTest
+                    {...defaultProps}
+                    billingAddress={{ ...getBillingAddress(), countryCode: 'CA' }}
+                    customerMessage="leave at reception"
+                />,
+            );
+
+            expect(screen.getByTestId('firstNameInput-text')).toHaveValue(
+                getBillingAddress().firstName,
+            );
+            expect(orderCommentInput()).toHaveValue('leave at reception');
         });
     });
 });
