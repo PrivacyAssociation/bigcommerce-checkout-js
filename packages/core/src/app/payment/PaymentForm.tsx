@@ -36,6 +36,7 @@ import { TermsConditions } from '../termsConditions';
 import AdditionalPaymentField from './AdditionalPaymentField';
 import { PaymentBillingBlock } from './billingForm';
 import getPaymentValidationSchema from './getPaymentValidationSchema';
+import IappOrderTermsNotice from './iappTerms/IappOrderTermsNotice';
 import InvoicePaymentCommentField from './InvoicePaymentCommentField';
 import { NoPaymentMethods } from './NoPaymentMethods';
 import { getInitialOrderExtraFieldsValues, OrderExtraFieldsFieldset } from './orderExtraFields';
@@ -285,6 +286,8 @@ const PaymentForm: FunctionComponent<
             {invoicePaymentComment && (
                 <InvoicePaymentCommentField isFloatingLabelEnabled={isFloatingLabelEnabledValue} />
             )}
+
+            <IappOrderTermsNotice />
 
             <div className="form-actions">
                 {hideSubmitPaymentButton ? (
