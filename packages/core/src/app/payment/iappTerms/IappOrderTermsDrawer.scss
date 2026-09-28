@@ -4,6 +4,7 @@ $iapp-order-terms-drawer-transition-speed: 300ms;
 $iapp-order-terms-drawer-transition-curve: cubic-bezier(0.77, 0, 0.175, 1);
 
 .iappOrderTermsNotice {
+    margin-top: 0.5rem;
     margin-bottom: spacing("single");
 }
 
@@ -52,14 +53,14 @@ $iapp-order-terms-drawer-transition-curve: cubic-bezier(0.77, 0, 0.175, 1);
     display: flex;
     flex-direction: column;
     height: 100%;
-    max-width: 100vw;
     outline: none;
     position: fixed;
     right: 0;
     top: 0;
     transform: translateX(100%);
     transition: transform $iapp-order-terms-drawer-transition-speed $iapp-order-terms-drawer-transition-curve;
-    width: remCalc(448px);
+    max-width: 40rem;
+    width: 100%;
     z-index: 500;
 }
 

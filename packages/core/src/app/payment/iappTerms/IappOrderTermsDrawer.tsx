@@ -50,6 +50,7 @@ const IappOrderTermsDrawer: FunctionComponent<IappOrderTermsDrawerProps> = ({
             }}
             shouldCloseOnEsc={true}
             shouldCloseOnOverlayClick={true}
+            style={{ content: {}, overlay: {} }}
         >
             <div className="iappOrderTermsDrawer-header">
                 <h2 className="iappOrderTermsDrawer-heading">{IAPP_ORDER_TERMS_HEADING}</h2>

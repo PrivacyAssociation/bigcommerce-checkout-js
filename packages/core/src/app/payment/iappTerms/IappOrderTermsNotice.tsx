@@ -28,6 +28,7 @@ const IappOrderTermsNotice: FunctionComponent = () => {
             >
                 {IAPP_ORDER_TERMS_LINK_TEXT}
             </button>
+            .
             <IappOrderTermsDrawer isOpen={isOpen} onRequestClose={handleClose} />
         </p>
     );
