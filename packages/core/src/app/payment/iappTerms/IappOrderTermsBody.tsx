@@ -264,7 +264,7 @@ const IappOrderTermsBody: FunctionComponent = () => (
 
         <h2>19. Contact Information</h2>
         <p>
-            For questions about these Terms, please contact{' '}
+            For questions about these Terms, please{' '}
             <ExternalLink href={CONTACT_URL}>contact IAPP</ExternalLink>.
         </p>
     </>
