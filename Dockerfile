@@ -1,4 +1,4 @@
-# Node JS offcial image for Node 22 (specifically required for this repo)
+# Node JS offcial image for Node 24 (specifically required for this repo)
 # Also a Linux container to meet compiling requirement
 FROM node:24
 
