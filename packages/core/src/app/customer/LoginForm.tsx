@@ -65,7 +65,7 @@ const LoginForm: FunctionComponent<
   // isFloatingLabelEnabled,
   viewType = CustomerViewType.Login,
 }) => {
-  const { themeV2 } = useThemeContext();
+  const { enhancedThemeV1 } = useThemeContext();
   const { checkoutState } = useCheckout();
 
   const {
@@ -161,7 +161,7 @@ const LoginForm: FunctionComponent<
 
         {/* {!shouldRedirectToStorefrontForAuth && <PasswordField isFloatingLabelEnabled={isFloatingLabelEnabled} />} */}
 
-        <p className={classNames('form-legend-container', { 'body-cta': themeV2 })}>
+        <p className={classNames('form-legend-container', { 'body-cta': enhancedThemeV1 })}>
           <span>
             {/* { isSignInEmailEnabled && !isEmbedded && !isBuyNowCart &&
                             <TranslatedLink
@@ -200,7 +200,7 @@ const LoginForm: FunctionComponent<
             />
           ) : (
             <a
-              className={`button button--primary optimizedCheckout-buttonPrimary${themeV2 ? ' body-bold' : ''}`}
+              className={`button button--primary optimizedCheckout-buttonPrimary${enhancedThemeV1 ? ' body-bold' : ''}`}
               id="checkout-customer-continue"
               test-id="customer-continue-button"
               href={loginHref}
@@ -212,7 +212,7 @@ const LoginForm: FunctionComponent<
           {viewType === CustomerViewType.SuggestedLogin && (
             <a
               className={classNames('button optimizedCheckout-buttonSecondary', {
-                'body-bold': themeV2,
+                'body-bold': enhancedThemeV1,
               })}
               data-test="customer-guest-continue"
               href="#"
@@ -228,7 +228,7 @@ const LoginForm: FunctionComponent<
             viewType !== CustomerViewType.SuggestedLogin && (
               <a
                 className={classNames('button optimizedCheckout-buttonSecondary', {
-                  'body-bold': themeV2,
+                  'body-bold': enhancedThemeV1,
                 })}
                 data-test="customer-cancel-button"
                 href="#"
