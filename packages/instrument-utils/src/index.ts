@@ -1,3 +1,4 @@
+export type { SignOutLinkProps } from './storedInstrument';
 export {
     AccountInstrumentFieldset,
     AccountInstrumentSelect,
@@ -12,29 +13,32 @@ export {
     ManageInstrumentsAlert,
     ManageInstrumentsModal,
     SignOutLink,
-    SignOutLinkProps,
     StoreInstrumentFieldset,
 } from './storedInstrument';
+export type {
+    CreditCardFieldsetValues,
+    CreditCardNameFieldProps,
+    CreditCardValidationSchemaOptions,
+} from './creditCard';
 export {
     configureCardValidator,
     CreditCardCodeField,
     CreditCardCodeTooltip,
+    CreditCardCodeTooltipTrigger,
     CreditCardCustomerCodeField,
     CreditCardExpiryField,
     CreditCardFieldset,
-    CreditCardFieldsetValues,
     CreditCardInputStylesType,
     CreditCardNameField,
-    CreditCardNameFieldProps,
     CreditCardNumberField,
     CreditCardValidation,
-    CreditCardValidationSchemaOptions,
     formatCreditCardExpiryDate,
     formatCreditCardNumber,
     getCreditCardInputStyles,
     getCreditCardValidationSchema,
     unformatCreditCardNumber,
 } from './creditCard';
+export type { IsInstrumentCardNumberRequiredState } from './guards';
 export {
     assertIsBankInstrument,
     assertIsCardInstrument,
@@ -48,7 +52,6 @@ export {
     isInstrumentCardCodeRequiredSelector,
     isInstrumentCardNumberRequired,
     isInstrumentCardNumberRequiredSelector,
-    IsInstrumentCardNumberRequiredState,
     isInstrumentFeatureAvailable,
     shouldUseStripeLinkByMinimumAmount,
     isHTMLElement,

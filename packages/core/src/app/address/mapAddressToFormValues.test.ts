@@ -12,7 +12,7 @@ describe('mapAddressToFormValues', () => {
             lastName: 'Doe',
             address1: '123 Main St',
             address2: '',
-        } as Address;
+        } as unknown as Address;
 
         const result = mapAddressToFormValues(fields, address);
 
@@ -64,7 +64,7 @@ describe('mapAddressToFormValues', () => {
         const address = {
             firstName: 'John',
             extraFields: [{ fieldId: '100', fieldValue: 'Actual Corp' }],
-        } as Address;
+        } as unknown as Address;
 
         const result = mapAddressToFormValues(fields, address);
 
@@ -87,7 +87,7 @@ describe('mapAddressToFormValues', () => {
         const address = {
             firstName: 'John',
             extraFields: [],
-        } as Address;
+        } as unknown as Address;
 
         const result = mapAddressToFormValues(fields, address);
 
@@ -155,7 +155,7 @@ describe('mapAddressToFormValues', () => {
                 ...getAddress(),
                 id: 1,
                 type: 'residential',
-                b2b: getCustomerAddressB2B({
+                ...getCustomerAddressB2B({
                     extraFields: [{ fieldId: '100', fieldValue: 'Company Corp' }],
                 }),
             };

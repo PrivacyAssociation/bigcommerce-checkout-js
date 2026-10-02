@@ -2,13 +2,13 @@ import { type CheckoutPayment, type CheckoutSelectors } from '@bigcommerce/check
 import { compact } from 'lodash';
 import { createSelector } from 'reselect';
 
-import { isThemeV2Enabled } from '@bigcommerce/checkout/contexts';
+import { isEnhancedThemeV1Enabled } from '@bigcommerce/checkout/contexts';
 import { shouldUseStripeLinkByMinimumAmount } from '@bigcommerce/checkout/instrument-utils';
 import { isExperimentEnabled } from '@bigcommerce/checkout/utility';
 
 import { isValidAddress } from '../address';
 import { EMPTY_ARRAY } from '../common/utility';
-import { SUPPORTED_METHODS } from '../customer';
+import { SUPPORTED_METHODS } from '../customer/getSupportedMethods';
 import { PaymentMethodId } from '../payment/paymentMethod';
 import {
     hasSelectedShippingOptions,
@@ -99,7 +99,7 @@ const getBillingStepStatus = createSelector(
     },
     ({ data }: CheckoutSelectors) => data.getConfig(),
     (checkout, billingAddress, billingAddressFields, config) => {
-        if (isThemeV2Enabled(config)) {
+        if (isEnhancedThemeV1Enabled(config)) {
             return undefined;
         }
 
@@ -278,5 +278,9 @@ const getCheckoutStepStatuses = createSelector(
         });
     },
 );
+
+export function isShippingStepComplete(checkoutState: CheckoutSelectors): boolean {
+    return getShippingStepStatus(checkoutState).isComplete;
+}
 
 export default getCheckoutStepStatuses;

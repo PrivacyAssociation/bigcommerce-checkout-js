@@ -25,6 +25,7 @@ describe('BigCommercePaymentsFastlanePaymentMethod', () => {
         },
         logoUrl: 'http://logo_url_path',
         method: 'credit-card',
+        skipRedirectConfirmationAlert: false,
         supportedCards: ['VISA', 'MC'],
         type: 'PAYMENT_TYPE_API',
     };
@@ -56,6 +57,7 @@ describe('BigCommercePaymentsFastlanePaymentMethod', () => {
                 onInit: expect.any(Function),
                 onChange: expect.any(Function),
                 onError: expect.any(Function),
+                onErrorLog: expect.any(Function),
             },
         });
     });

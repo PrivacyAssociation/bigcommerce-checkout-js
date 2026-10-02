@@ -1,14 +1,5 @@
-import { createCBAMPGSPaymentStrategy } from '@bigcommerce/checkout-sdk/integrations/cba-mpgs';
 import { createCreditCardPaymentStrategy } from '@bigcommerce/checkout-sdk/integrations/credit-card';
-import {
-    createCyberSourcePaymentStrategy,
-    createCyberSourceV2PaymentStrategy,
-} from '@bigcommerce/checkout-sdk/integrations/cybersource';
-import { createSagePayPaymentStrategy } from '@bigcommerce/checkout-sdk/integrations/sagepay';
 import React, { type FunctionComponent, useCallback } from 'react';
-
-import { useCheckout } from '@bigcommerce/checkout/contexts';
-import { isExperimentEnabled } from '@bigcommerce/checkout/utility';
 
 import {
     withHostedCreditCardFieldset,
@@ -38,18 +29,6 @@ const HostedCreditCardPaymentMethod: FunctionComponent<
     initializePayment,
     ...rest
 }) => {
-    const { selectedState: config } = useCheckout(({ data }) => data.getConfig());
-    const isCBAMPGSResolverEnabled = isExperimentEnabled(
-        config?.checkoutSettings,
-        'PI-4748.cba_resolver_configuration',
-        false,
-    );
-    const isSagePayResolverEnabled = isExperimentEnabled(
-        config?.checkoutSettings,
-        'PI-4754.sage_pay_resolver_configuration',
-        false,
-    );
-
     const initializeHostedCreditCardPayment: CreditCardPaymentMethodProps['initializePayment'] =
         useCallback(
             async (options, selectedInstrument) => {
@@ -58,22 +37,13 @@ const HostedCreditCardPaymentMethod: FunctionComponent<
                     integrations: [
                         ...(options.integrations ?? []),
                         createCreditCardPaymentStrategy,
-                        createCyberSourcePaymentStrategy,
-                        createCyberSourceV2PaymentStrategy,
-                        ...(!isSagePayResolverEnabled ? [createSagePayPaymentStrategy] : []),
-                        ...(!isCBAMPGSResolverEnabled ? [createCBAMPGSPaymentStrategy] : []),
                     ],
                     creditCard: getHostedFormOptions && {
                         form: await getHostedFormOptions(selectedInstrument),
                     },
                 });
             },
-            [
-                getHostedFormOptions,
-                initializePayment,
-                isCBAMPGSResolverEnabled,
-                isSagePayResolverEnabled,
-            ],
+            [getHostedFormOptions, initializePayment],
         );
 
     return (

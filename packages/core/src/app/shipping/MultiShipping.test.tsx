@@ -427,13 +427,13 @@ describe('Multi-shipping', () => {
 
         const address = JSON.parse(
             JSON.stringify({
-                firstName: faker.name.firstName(),
-                lastName: faker.name.lastName(),
-                address1: faker.address.streetAddress(),
-                city: faker.address.city(),
+                firstName: faker.person.firstName(),
+                lastName: faker.person.lastName(),
+                address1: faker.location.streetAddress(),
+                city: faker.location.city(),
                 countryCode: 'AU',
                 stateOrProvinceCode: faker.helpers.arrayElement(['NSW', 'VIC', 'QLD', 'TAS']),
-                postalCode: faker.address.zipCode(),
+                postalCode: faker.location.zipCode(),
             }),
         );
 
@@ -494,7 +494,7 @@ describe('Multi-shipping', () => {
 
             await userEvent.type(screen.getByLabelText('Postal Code'), address.postalCode);
 
-            await userEvent.click(screen.getByText('Save Address'));
+            await userEvent.click(screen.getByText('Save address'));
 
             expect(screen.getByText(getAddressContent(address))).toBeInTheDocument();
 
@@ -536,7 +536,7 @@ describe('Multi-shipping', () => {
         expect(screen.getByLabelText('Last Name')).toHaveDisplayValue(address.lastName);
 
         await userEvent.type(screen.getByLabelText('First Name'), ' Updated');
-        await userEvent.click(screen.getByText('Save Address'));
+        await userEvent.click(screen.getByText('Save address'));
 
         expect(screen.getByText(getAddressContent(updatedAddress))).toBeInTheDocument();
     });

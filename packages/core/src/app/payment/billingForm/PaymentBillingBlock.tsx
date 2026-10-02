@@ -1,10 +1,11 @@
-import type { CheckoutSelectors } from '@bigcommerce/checkout-sdk';
-import React, { type FunctionComponent } from 'react';
+import type { Address } from '@bigcommerce/checkout-sdk';
+import { omit } from 'lodash';
+import React, { type FunctionComponent, useRef } from 'react';
 
 import { TranslatedString } from '@bigcommerce/checkout/locale';
 import { AddressFormSkeleton, Legend } from '@bigcommerce/checkout/ui';
 
-import { isEqualAddress, mapAddressFromFormValues } from '../../address';
+import { type AddressFormValues, isEqualAddress, mapAddressFromFormValues } from '../../address';
 import { type BillingFormValues } from '../../billing/billingFormConfig';
 import { useBilling } from '../../billing/hooks/useBilling';
 
@@ -16,6 +17,7 @@ export interface PaymentBillingBlockProps {
     // + reduced schema). Must reflect the live selection, not checkout.payments.
     methodId?: string;
     isBillingSameAsShipping: boolean;
+    isUsingMultiShipping: boolean;
     onBillingSameAsShippingChange(isBillingSameAsShipping: boolean): void;
     onUnhandledError(error: Error): void;
 }
@@ -23,6 +25,7 @@ export interface PaymentBillingBlockProps {
 export const PaymentBillingBlock: FunctionComponent<PaymentBillingBlockProps> = ({
     methodId,
     isBillingSameAsShipping,
+    isUsingMultiShipping,
     onBillingSameAsShippingChange,
     onUnhandledError,
 }) => {
@@ -48,7 +51,9 @@ export const PaymentBillingBlock: FunctionComponent<PaymentBillingBlockProps> = 
         const shippingAddress = getShippingAddress();
 
         if (shippingAddress && !isEqualAddress(shippingAddress, getBillingAddress())) {
-            updateBillingAddress(shippingAddress).catch((error) => {
+            // The consignment address carries email: '' — sent as-is it overwrites
+            // the guest email; omitted, the SDK falls back to the stored one.
+            updateBillingAddress(omit(shippingAddress, 'email')).catch((error) => {
                 onBillingSameAsShippingChange(false);
 
                 if (error instanceof Error) {
@@ -58,6 +63,57 @@ export const PaymentBillingBlock: FunctionComponent<PaymentBillingBlockProps> = 
         }
     };
 
+    const saveOrderComment = async (orderComment: string): Promise<void> => {
+        if (customerMessage === orderComment) {
+            return;
+        }
+
+        await updateCheckout({ customerMessage: orderComment });
+    };
+
+    const handleSelectAddress = async (address: Partial<Address>, orderComment: string) => {
+        await saveOrderComment(orderComment);
+
+        return updateBillingAddress(address);
+    };
+
+    const lastRequestedCountryCodeRef = useRef<string | undefined>();
+
+    const handleBillingCountryChange = (
+        countryCode: string,
+        addressValues: AddressFormValues,
+        orderComment: string,
+    ) => {
+        const lastCountryCode =
+            lastRequestedCountryCodeRef.current ?? getBillingAddress()?.countryCode;
+
+        if (lastCountryCode === countryCode) {
+            return;
+        }
+
+        lastRequestedCountryCodeRef.current = countryCode;
+
+        saveOrderComment(orderComment)
+            .then(() =>
+                updateBillingAddress({
+                    ...mapAddressFromFormValues(addressValues),
+                    countryCode,
+                    stateOrProvince: '',
+                    stateOrProvinceCode: '',
+                }),
+            )
+            .catch((error) => {
+                if (error instanceof Error) {
+                    onUnhandledError(error);
+                }
+            })
+            .finally(() => {
+                if (lastRequestedCountryCodeRef.current === countryCode) {
+                    lastRequestedCountryCodeRef.current = undefined;
+                }
+            });
+    };
+
     // Persist without navigating — the payment step's "Place Order" is the only
     // submit. Called by PaymentBillingForm's pre-submit save;
     const handlePersist = async ({
@@ -65,15 +121,11 @@ export const PaymentBillingBlock: FunctionComponent<PaymentBillingBlockProps> = 
         ...addressValues
     }: BillingFormValues): Promise<void> => {
         const currentBillingAddress = getBillingAddress();
-        const promises: Array<Promise<CheckoutSelectors>> = [];
+        const promises: Array<Promise<unknown>> = [saveOrderComment(orderComment)];
         const address = mapAddressFromFormValues(addressValues);
 
         if (address && !isEqualAddress(address, currentBillingAddress)) {
             promises.push(updateBillingAddress(address));
-        }
-
-        if (customerMessage !== orderComment) {
-            promises.push(updateCheckout({ customerMessage: orderComment }));
         }
 
         await Promise.all(promises);
@@ -92,7 +144,7 @@ export const PaymentBillingBlock: FunctionComponent<PaymentBillingBlockProps> = 
             <div className="checkout-billing" data-test="payment-billing-block">
                 <div className="form-legend-container">
                     <Legend testId="billing-address-heading">
-                        <TranslatedString id="billing.billing_address_heading" />
+                        <TranslatedString id="billing.billing_address_heading_v2" />
                     </Legend>
                 </div>
                 <PaymentBillingForm
@@ -101,11 +153,13 @@ export const PaymentBillingBlock: FunctionComponent<PaymentBillingBlockProps> = 
                     getFields={getFields}
                     isBillingSameAsShipping={isBillingSameAsShipping}
                     isLoading={isInitializing}
+                    isUsingMultiShipping={isUsingMultiShipping}
                     methodId={methodId}
+                    onBillingCountryChange={handleBillingCountryChange}
                     onBillingSameAsShippingChange={handleBillingSameAsShippingChange}
                     onPersist={handlePersist}
+                    onSelectAddress={handleSelectAddress}
                     onUnhandledError={onUnhandledError}
-                    updateBillingAddress={updateBillingAddress}
                 />
             </div>
         </AddressFormSkeleton>

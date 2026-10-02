@@ -21,11 +21,10 @@ $allocate-items-table-image-width-small-screen: 40%;
 .consignment-header {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 0;
 
     h3 {
         font-size: fontSize("small");
-        margin: 0 0 spacing("single");
+        margin-bottom: 0;
     }
 }
 
@@ -93,6 +92,7 @@ $allocate-items-table-image-width-small-screen: 40%;
 .modal.modal--afterOpen.modal.modal--confirm {
     min-height: 0;
     top: 50%;
+    right: auto;
     bottom: auto;
     left: 50%;
     transform: translate(-50%, -50%);

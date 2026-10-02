@@ -2,7 +2,12 @@ import { type FormField, isExtraField } from '@bigcommerce/checkout-sdk/essentia
 import { forIn, noop } from 'lodash';
 import React, { useCallback, useEffect, useRef } from 'react';
 
-import { useCapabilities, useCheckout, useLocale } from '@bigcommerce/checkout/contexts';
+import {
+    useCapabilities,
+    useCheckout,
+    useLocale,
+    useThemeContext,
+} from '@bigcommerce/checkout/contexts';
 import { TranslatedString } from '@bigcommerce/checkout/locale';
 import { isPayPalFastlaneMethod } from '@bigcommerce/checkout/paypal-fastlane-integration';
 import {
@@ -31,6 +36,7 @@ import {
     getAddressFormFieldLegacyName,
 } from './getAddressFormFieldInputId';
 import { GoogleAutocompleteFormField, mapToAddress } from './googleAutocomplete';
+import { moveCountryFieldToTop } from './moveCountryFieldToTop';
 import './AddressForm.scss';
 
 const AddressForm: React.FC<AddressFormProps> = ({
@@ -47,6 +53,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
         userJourney: { hasCompanyAddressBook, hasAddressLabel },
     } = useCapabilities();
     const { language } = useLocale();
+    const { enhancedThemeV1 } = useThemeContext();
     const {
         selectedState: { config, countries },
     } = useCheckout(({ data }) => ({
@@ -64,19 +71,16 @@ const AddressForm: React.FC<AddressFormProps> = ({
         getProviderWithCustomCheckout(config?.checkoutSettings.providerWithCustomCheckout),
     );
     // PayPal Fastlane stores keep the legacy phone input for now, due to incident
-    const isNewPhoneValidationExperimentEnabled =
+    const isPhoneNumberValidationEnabled =
         !isPayPalFastlaneEnabled &&
-        isExperimentEnabled(
-            config?.checkoutSettings,
-            'CHECKOUT-9019.use_new_phone_number_validation',
-            false,
-        );
+        (config?.checkoutSettings.isPhoneNumberValidationEnabled ?? false);
     const isNewGooglePlacesApiEnabled = isExperimentEnabled(
         config?.checkoutSettings,
         'CHECKOUT-10026.new_google_places_api',
         false,
     );
     const countriesWithAutocomplete = ['US', 'CA', 'AU', 'NZ', 'GB'];
+    const sortedFormFields = enhancedThemeV1 ? moveCountryFieldToTop(formFields) : formFields;
 
     const containerRef = useRef<HTMLDivElement>(null);
     const nextElementRef = useRef<HTMLElement | null>(null);
@@ -126,14 +130,14 @@ const AddressForm: React.FC<AddressFormProps> = ({
         (place: google.maps.places.PlaceResult, item: AutocompleteItem) => {
             const { value: autocompleteValue } = item;
 
-            const address = mapToAddress(place, countries);
+            const address = mapToAddress(place, countries, autocompleteValue);
 
             forIn(address, (value, fieldName) => {
                 if (fieldName === AUTOCOMPLETE_FIELD_NAME && value === undefined) {
                     return;
                 }
 
-                setFieldValue(fieldName, value as string);
+                setFieldValue(fieldName, value);
             });
 
             const address1 = address.address1 ? address.address1 : autocompleteValue;
@@ -164,7 +168,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
         <>
             <Fieldset>
                 <div className="checkout-address" ref={containerRef}>
-                    {formFields.map((field) => {
+                    {sortedFormFields.map((field) => {
                         if (field.hidden) return null;
 
                         const addressFieldName = field.name;
@@ -228,9 +232,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
                                 inputId={getAddressFormFieldInputId(addressFieldName)}
                                 // stateOrProvince can sometimes be a dropdown or input, so relying on id is not sufficient
                                 isFloatingLabelEnabled={isFloatingLabelEnabledValue}
-                                isNewPhoneValidationExperimentEnabled={
-                                    isNewPhoneValidationExperimentEnabled
-                                }
+                                isPhoneNumberValidationEnabled={isPhoneNumberValidationEnabled}
                                 key={`${field.id}-${field.name}`}
                                 label={
                                     field.custom || isExtraField(field) ? (

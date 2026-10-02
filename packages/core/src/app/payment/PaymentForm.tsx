@@ -6,7 +6,15 @@ import {
 } from '@bigcommerce/checkout-sdk/essential';
 import { type FormikProps, type FormikState, withFormik, type WithFormikConfig } from 'formik';
 import { isEmpty, noop, omitBy } from 'lodash';
-import React, { type FunctionComponent, memo, useCallback, useContext, useMemo } from 'react';
+import React, {
+    type FunctionComponent,
+    memo,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useRef,
+} from 'react';
 import { object, type ObjectSchema, string } from 'yup';
 
 import { Extension } from '@bigcommerce/checkout/checkout-extension';
@@ -28,6 +36,7 @@ import { TermsConditions } from '../termsConditions';
 import AdditionalPaymentField from './AdditionalPaymentField';
 import { PaymentBillingBlock } from './billingForm';
 import getPaymentValidationSchema from './getPaymentValidationSchema';
+import IappOrderTermsNotice from './iappTerms/IappOrderTermsNotice';
 import InvoicePaymentCommentField from './InvoicePaymentCommentField';
 import { NoPaymentMethods } from './NoPaymentMethods';
 import { getInitialOrderExtraFieldsValues, OrderExtraFieldsFieldset } from './orderExtraFields';
@@ -36,8 +45,13 @@ import {
     getUniquePaymentMethodId,
     PaymentMethodId,
     PaymentMethodList,
+    useFallbackWhenMethodRemoved,
     usePoMethodDisabledReason,
 } from './paymentMethod';
+import {
+    PaymentMethodsRefreshAlert,
+    type PaymentMethodsRefreshAlertData,
+} from './PaymentMethodsRefreshAlert';
 import PaymentRedeemables from './PaymentRedeemables';
 import PaymentSubmitButton from './PaymentSubmitButton';
 import { ProvidersSectionOnTopOfPaymentsList } from './ProvidersSectionOnTopOfPaymentsList';
@@ -56,10 +70,12 @@ export interface PaymentFormProps {
     isBillingSameAsShipping?: boolean;
     isEmbedded?: boolean;
     isInitializingPayment?: boolean;
+    isReloadingPaymentMethods?: boolean;
     isTermsConditionsRequired?: boolean;
     isUsingMultiShipping?: boolean;
     isStoreCreditApplied: boolean;
     methods: PaymentMethod[];
+    methodsRefreshAlert?: PaymentMethodsRefreshAlertData;
     orderExtraFields?: FormField[];
     selectedMethod?: PaymentMethod;
     shouldShowStoreCredit?: boolean;
@@ -73,6 +89,7 @@ export interface PaymentFormProps {
     isPaymentDataRequired(): boolean;
     onBillingSameAsShippingChange?(isBillingSameAsShipping: boolean): void;
     onMethodSelect?(method: PaymentMethod): void;
+    onMethodsRefreshAlertDismiss?(): void;
     onStoreCreditChange?(useStoreCredit?: boolean): void;
     onSubmit?(values: PaymentFormValues): void;
     onUnhandledError?(error: Error): void;
@@ -89,18 +106,22 @@ const PaymentForm: FunctionComponent<
     isEmbedded,
     isInitializingPayment,
     isPaymentDataRequired,
+    isReloadingPaymentMethods,
     isTermsConditionsRequired,
     isStoreCreditApplied,
     isUsingMultiShipping,
     language,
     methods,
+    methodsRefreshAlert,
     onBillingSameAsShippingChange,
     onMethodSelect,
+    onMethodsRefreshAlertDismiss,
     onStoreCreditChange,
     onUnhandledError,
     orderExtraFields,
     resetForm,
     selectedMethod,
+    setFieldValue,
     shouldDisableSubmit,
     shouldHidePaymentSubmitButton,
     shouldExecuteSpamCheck,
@@ -139,7 +160,7 @@ const PaymentForm: FunctionComponent<
     }, [selectedMethod]);
 
     const { selectedState: config } = useCheckout(({ data }) => data.getConfig());
-    const { themeV2 } = useThemeContext();
+    const { enhancedThemeV1 } = useThemeContext();
     const {
         payment: { invoicePaymentComment },
     } = useCapabilities();
@@ -151,6 +172,20 @@ const PaymentForm: FunctionComponent<
     const isSubmitDisabled = shouldDisableSubmit || Boolean(poMethodDisabledReason);
     const hideSubmitPaymentButton =
         shouldHidePaymentSubmitButton || (isPaymentDataRequired() && isEmpty(methods));
+
+    const methodListRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!isReloadingPaymentMethods) {
+            return;
+        }
+
+        try {
+            methodListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch {
+            methodListRef.current?.scrollIntoView();
+        }
+    }, [isReloadingPaymentMethods]);
 
     if (shouldExecuteSpamCheck) {
         return (
@@ -172,6 +207,15 @@ const PaymentForm: FunctionComponent<
                     usableStoreCredit={usableStoreCredit}
                 />
             )}
+
+            <div ref={methodListRef}>
+                {methodsRefreshAlert && (
+                    <PaymentMethodsRefreshAlert
+                        alert={methodsRefreshAlert}
+                        onDismiss={onMethodsRefreshAlertDismiss ?? noop}
+                    />
+                )}
+            </div>
 
             {isEmpty(methods) &&
                 (isPaymentDataRequired() ? (
@@ -196,13 +240,19 @@ const PaymentForm: FunctionComponent<
                     onMethodSelect={onMethodSelect}
                     onUnhandledError={onUnhandledError}
                     resetForm={resetForm}
+                    selectedMethodUniqueId={
+                        selectedMethod &&
+                        getUniquePaymentMethodId(selectedMethod.id, selectedMethod.gateway)
+                    }
+                    setFieldValue={setFieldValue}
                     values={values}
                 />
             )}
 
-            {themeV2 && (
+            {enhancedThemeV1 && (
                 <PaymentBillingBlock
                     isBillingSameAsShipping={isBillingSameAsShipping ?? true}
+                    isUsingMultiShipping={isUsingMultiShipping ?? false}
                     methodId={selectedMethod?.id}
                     onBillingSameAsShippingChange={onBillingSameAsShippingChange ?? noop}
                     onUnhandledError={onUnhandledError ?? noop}
@@ -237,6 +287,8 @@ const PaymentForm: FunctionComponent<
                 <InvoicePaymentCommentField isFloatingLabelEnabled={isFloatingLabelEnabledValue} />
             )}
 
+            <IappOrderTermsNotice />
+
             <div className="form-actions">
                 {hideSubmitPaymentButton ? (
                     <PaymentMethodSubmitButtonContainer />
@@ -270,11 +322,13 @@ interface PaymentMethodListFieldsetProps {
     isInitializingPayment?: boolean;
     isUsingMultiShipping?: boolean;
     methods: PaymentMethod[];
+    selectedMethodUniqueId?: string;
     values: PaymentFormValues;
     isPaymentDataRequired(): boolean;
     onMethodSelect?(method: PaymentMethod): void;
     onUnhandledError?(error: Error): void;
     resetForm(nextValues?: Partial<FormikState<PaymentFormValues>>): void;
+    setFieldValue(field: string, value: string): void;
 }
 
 const PaymentMethodListFieldset: FunctionComponent<PaymentMethodListFieldsetProps> = ({
@@ -286,10 +340,12 @@ const PaymentMethodListFieldset: FunctionComponent<PaymentMethodListFieldsetProp
     onMethodSelect = noop,
     onUnhandledError,
     resetForm,
+    selectedMethodUniqueId,
     values,
+    setFieldValue,
 }) => {
     const { setSubmitted } = useContext(FormContext);
-    const { themeV2 } = useThemeContext();
+    const { enhancedThemeV1 } = useThemeContext();
 
     const handlePaymentMethodSelect = useCallback(
         (method: PaymentMethod) => {
@@ -316,10 +372,17 @@ const PaymentMethodListFieldset: FunctionComponent<PaymentMethodListFieldsetProp
         [values, onMethodSelect, resetForm, setSubmitted],
     );
 
+    useFallbackWhenMethodRemoved(
+        methods,
+        values.paymentProviderRadio,
+        selectedMethodUniqueId,
+        (fallbackUniqueId) => setFieldValue('paymentProviderRadio', fallbackUniqueId),
+    );
+
     return (
         <Fieldset
             legend={
-                <Legend hidden={themeV2}>
+                <Legend hidden={enhancedThemeV1}>
                     <TranslatedString id="payment.payment_methods_text" />
                 </Legend>
             }

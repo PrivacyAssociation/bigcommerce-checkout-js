@@ -291,7 +291,7 @@ describe('Shipping step', () => {
             // eslint-disable-next-line jest-dom/prefer-to-have-attribute
             expect(
                 screen
-                    .getByLabelText('Save this address in my address book.')
+                    .getByLabelText('Save this address in my address book')
                     .hasAttribute('checked'),
             ).toBeTruthy();
 
@@ -553,7 +553,7 @@ describe('Shipping step', () => {
             expect(await screen.findByLabelText('Last Name')).toHaveDisplayValue('Address');
             expect(screen.getByText('Address is required')).toBeInTheDocument();
             expect(
-                screen.getByLabelText('Save this address in my address book.'),
+                screen.getByLabelText('Save this address in my address book'),
             ).toBeInTheDocument();
 
             checkout.updateCheckout(
@@ -739,9 +739,30 @@ describe('Shipping step', () => {
 
         await checkout.fillAddressForm();
         await userEvent.type(screen.getByLabelText('Custom Text'), 'Custom Text');
+
+        // jsdom implements Element.matches via nwsapi, whose matchesNative() falls back to
+        // node.matches, so :modal recurses until the stack overflows and the error is
+        // swallowed (~213ms per call). It is always false in jsdom, and @floating-ui probes
+        // it on every element it positions while the datepicker calendar is open.
+        const originalMatches = Element.prototype.matches;
+
+        Object.defineProperty(Element.prototype, 'matches', {
+            configurable: true,
+            writable: true,
+            value(this: Element, selectors: string): boolean {
+                return selectors === ':modal' ? false : originalMatches.call(this, selectors);
+            },
+        });
+
         await userEvent.click(screen.getByPlaceholderText('DD/MM/YYYY'));
         await userEvent.type(screen.getByPlaceholderText('DD/MM/YYYY'), '01/01/2015');
         await userEvent.keyboard('{enter}');
+
+        Object.defineProperty(Element.prototype, 'matches', {
+            configurable: true,
+            writable: true,
+            value: originalMatches,
+        });
 
         expect(screen.getByPlaceholderText('DD/MM/YYYY')).toHaveDisplayValue('01/01/2020');
 
@@ -779,10 +800,10 @@ describe('Shipping step', () => {
 
         const customCheckbox = screen.getByText('Custom Checkbox');
 
-        // eslint-disable-next-line testing-library/no-node-access
-        await userEvent.click(within(customCheckbox.parentElement).getByLabelText('1'));
-        // eslint-disable-next-line testing-library/no-node-access
-        await userEvent.click(within(customCheckbox.parentElement).getByLabelText('2'));
+        // eslint-disable-next-line testing-library/no-node-access, @typescript-eslint/no-non-null-assertion
+        await userEvent.click(within(customCheckbox.parentElement!).getByLabelText('1'));
+        // eslint-disable-next-line testing-library/no-node-access, @typescript-eslint/no-non-null-assertion
+        await userEvent.click(within(customCheckbox.parentElement!).getByLabelText('2'));
 
         const customDropdown = screen.getByLabelText('Custom Dropdown');
 
@@ -790,8 +811,8 @@ describe('Shipping step', () => {
 
         const customRadio = screen.getByText('Custom Radio');
 
-        // eslint-disable-next-line testing-library/no-node-access
-        await userEvent.click(within(customRadio.parentElement).getByText('yes'));
+        // eslint-disable-next-line testing-library/no-node-access, @typescript-eslint/no-non-null-assertion
+        await userEvent.click(within(customRadio.parentElement!).getByText('yes'));
 
         await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -1158,7 +1179,7 @@ describe('Shipping step', () => {
                         {
                             ...shippingAddress,
                             id: 1,
-                            b2b: getCustomerAddressB2B({ isShipping: true }),
+                            ...getCustomerAddressB2B({ isShipping: true }),
                         },
                     ],
                 },
@@ -1212,7 +1233,7 @@ describe('Shipping step', () => {
             const modal = await screen.findByRole('dialog');
 
             expect(
-                within(modal).queryByLabelText('Save this address in my address book.'),
+                within(modal).queryByLabelText('Save this address in my address book'),
             ).not.toBeInTheDocument();
         });
 
@@ -1241,7 +1262,7 @@ describe('Shipping step', () => {
                 within(modal).getByTestId('addressLine1Input-text'),
                 shippingAddress.address1,
             );
-            await userEvent.click(within(modal).getByText('Save Address'));
+            await userEvent.click(within(modal).getByText('Save address'));
 
             await waitFor(() =>
                 expect(checkoutService.createCustomerAddress).not.toHaveBeenCalled(),

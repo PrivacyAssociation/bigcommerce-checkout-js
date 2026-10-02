@@ -71,13 +71,23 @@ describe('OrderSummaryItems', () => {
                     physicalItems: [
                         {
                             ...getPhysicalItem(),
-                            stockPosition: { quantityBackordered: 3 },
+                            stockPosition: {
+                                quantityBackordered: 3,
+                                quantityOnHand: 0,
+                                quantityOutOfStock: 0,
+                                backorderMessage: null,
+                            },
                         },
                     ],
                     digitalItems: [
                         {
                             ...getDigitalItem(),
-                            stockPosition: { quantityBackordered: 2 },
+                            stockPosition: {
+                                quantityBackordered: 2,
+                                quantityOnHand: 0,
+                                quantityOutOfStock: 0,
+                                backorderMessage: null,
+                            },
                         },
                     ],
                     giftCertificates: [],
@@ -98,7 +108,12 @@ describe('OrderSummaryItems', () => {
                     physicalItems: [
                         {
                             ...getPhysicalItem(),
-                            stockPosition: { quantityBackordered: 7 },
+                            stockPosition: {
+                                quantityBackordered: 7,
+                                quantityOnHand: 0,
+                                quantityOutOfStock: 0,
+                                backorderMessage: null,
+                            },
                         },
                     ],
                     digitalItems: [getDigitalItem()],
@@ -152,7 +167,12 @@ describe('OrderSummaryItems', () => {
                     physicalItems: [
                         {
                             ...getPhysicalItem(),
-                            stockPosition: { quantityBackordered: 0 },
+                            stockPosition: {
+                                quantityBackordered: 0,
+                                quantityOnHand: 0,
+                                quantityOutOfStock: 0,
+                                backorderMessage: null,
+                            },
                         },
                     ],
                     digitalItems: [],
@@ -170,7 +190,12 @@ describe('OrderSummaryItems', () => {
             physicalItems: [
                 {
                     ...getPhysicalItem(),
-                    stockPosition: { quantityBackordered: 3 },
+                    stockPosition: {
+                        quantityBackordered: 3,
+                        quantityOnHand: 0,
+                        quantityOutOfStock: 0,
+                        backorderMessage: null,
+                    },
                 },
             ],
             digitalItems: [],
@@ -340,6 +365,39 @@ describe('OrderSummaryItems', () => {
             });
 
             expect(screen.queryByText('See All')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('line item ordering', () => {
+        it('renders physical items sorted by variantId ascending', () => {
+            renderOrderSummaryItems({
+                displayLineItemsCount: true,
+                items: {
+                    customItems: [],
+                    physicalItems: [
+                        {
+                            ...getPhysicalItem(),
+                            id: '1',
+                            name: 'High Variant Item',
+                            variantId: 71,
+                        },
+                        {
+                            ...getPhysicalItem(),
+                            id: '2',
+                            name: 'Low Variant Item',
+                            variantId: 5,
+                        },
+                    ],
+                    digitalItems: [],
+                    giftCertificates: [],
+                },
+            });
+
+            const headings = screen.getAllByRole('heading').map((heading) => heading.textContent);
+
+            expect(headings.indexOf('1 x Low Variant Item')).toBeLessThan(
+                headings.indexOf('1 x High Variant Item'),
+            );
         });
     });
 

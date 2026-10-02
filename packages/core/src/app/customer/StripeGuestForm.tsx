@@ -3,6 +3,7 @@ import {
     type CustomerRequestOptions,
 } from '@bigcommerce/checkout-sdk';
 import { createStripeUPECustomerStrategy } from '@bigcommerce/checkout-sdk/integrations/stripe';
+import classNames from 'classnames';
 import { type FieldProps, type FormikProps, withFormik } from 'formik';
 import React, {
     type FunctionComponent,
@@ -77,7 +78,7 @@ const StripeGuestForm: FunctionComponent<StripeGuestFormProps & FormikProps<Gues
     const [authentication, setAuthentication] = useState(false);
     const [isStripeLoading, setIsStripeLoading] = useState(true);
     const [isNewAuth, setIsNewAuth] = useState(false);
-    const { themeV2 } = useThemeContext();
+    const { enhancedThemeV1 } = useThemeContext();
     const handleOnClickSubmitButton = () => {
         onContinueAsGuest({
             email: emailValue,
@@ -227,21 +228,6 @@ const StripeGuestForm: FunctionComponent<StripeGuestFormProps & FormikProps<Gues
                             )
                         }
                     >
-                        {themeV2 && !isLoading && (
-                            <p className="customer-login-link body-regular">
-                                <TranslatedString id="customer.login_text" />{' '}
-                                <a
-                                    data-test="customer-continue-button"
-                                    id="checkout-customer-login"
-                                    onClick={onShowLogin}
-                                    role="button"
-                                    tabIndex={0}
-                                >
-                                    <TranslatedString id="customer.login_action" />
-                                </a>
-                            </p>
-                        )}
-
                         <div className="customerEmail-container">
                             <div className="customerEmail-body">
                                 <div id="stripeupeLink" />
@@ -249,12 +235,21 @@ const StripeGuestForm: FunctionComponent<StripeGuestFormProps & FormikProps<Gues
                                 {(canSubscribe || requiresMarketingConsent) && (
                                     <BasicFormField name="shouldSubscribe" render={renderField} />
                                 )}
+
+                                {enhancedThemeV1 && privacyPolicyUrl && (
+                                    <PrivacyPolicyField
+                                        isExpressPrivacyPolicy={isExpressPrivacyPolicy}
+                                        url={privacyPolicyUrl}
+                                    />
+                                )}
                             </div>
 
                             <div className="form-actions customerEmail-action">
                                 {(!authentication || (authentication && !isNewAuth)) && (
                                     <Button
-                                        className="stripeCustomerEmail-button"
+                                        className={classNames({
+                                            'stripeCustomerEmail-button': !enhancedThemeV1,
+                                        })}
                                         disabled={continueAsAGuestButton}
                                         id="stripe-checkout-customer-continue"
                                         isLoading={isLoading}
@@ -268,14 +263,14 @@ const StripeGuestForm: FunctionComponent<StripeGuestFormProps & FormikProps<Gues
                             </div>
                         </div>
 
-                        {privacyPolicyUrl && (
+                        {!enhancedThemeV1 && privacyPolicyUrl && (
                             <PrivacyPolicyField
                                 isExpressPrivacyPolicy={isExpressPrivacyPolicy}
                                 url={privacyPolicyUrl}
                             />
                         )}
 
-                        {!themeV2 && !isLoading && (
+                        {!enhancedThemeV1 && !isLoading && (
                             <p>
                                 <TranslatedString id="customer.login_text" />{' '}
                                 <a

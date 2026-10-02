@@ -11,6 +11,7 @@ import { Fieldset, Form } from '@bigcommerce/checkout/ui';
 import {
     type AddressFormValues,
     decodeAddressLabel,
+    getAddressExtraFields,
     getAddressFormFieldsValidationSchema,
     getTranslateAddressError,
     isEqualAddress,
@@ -89,7 +90,7 @@ const SingleShippingForm: React.FC<
     const {
         shipping: { hideBillingSameAsShippingCheck },
     } = useCapabilities();
-    const { themeV2 } = useThemeContext();
+    const { enhancedThemeV1 } = useThemeContext();
     const {
         consignments,
         deinitializeShippingMethod: deinitialize,
@@ -203,6 +204,12 @@ const SingleShippingForm: React.FC<
                 ) || includeShippingOptions;
         }
 
+        newIncludeShippingOptions =
+            !isEqual(
+                getAddressExtraFields(currentShippingAddress),
+                getAddressExtraFields(updatedShippingAddress),
+            ) || newIncludeShippingOptions;
+
         if (
             !updatedShippingAddress ||
             isEqualAddress(updatedShippingAddress, currentShippingAddress)
@@ -282,7 +289,7 @@ const SingleShippingForm: React.FC<
 
     const shouldShowBillingSameAsShipping =
         !hideBillingSameAsShippingCheck &&
-        !themeV2 &&
+        !enhancedThemeV1 &&
         !PAYMENT_METHOD_VALID.some((method) => method === methodId);
 
     return (

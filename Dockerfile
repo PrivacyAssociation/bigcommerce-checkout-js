@@ -1,6 +1,6 @@
-# Node JS offcial image for Node 22 (specifically required for this repo)
+# Node JS offcial image for Node 24 (specifically required for this repo)
 # Also a Linux container to meet compiling requirement
-FROM node:22
+FROM node:24
 
 # Set the working directory in the container
 WORKDIR /usr/src/app

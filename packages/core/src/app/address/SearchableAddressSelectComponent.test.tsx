@@ -99,7 +99,7 @@ describe('SearchableAddressSelectComponent', () => {
     it('calls onSelectAddress with selected address when an address option is clicked', () => {
         const onSelectAddress = jest.fn();
         const addresses = getB2BCustomer().addresses;
-        const billingAddresses = addresses.filter((address) => address.b2b?.isBilling);
+        const billingAddresses = addresses.filter((address) => address.isBilling);
 
         renderComponent({ onSelectAddress, addresses });
 
@@ -111,9 +111,7 @@ describe('SearchableAddressSelectComponent', () => {
     });
 
     it('filters addresses when user types in search input', () => {
-        const addresses = getB2BCustomer().addresses;
-
-        renderComponent({ addresses });
+        renderComponent();
 
         const searchInput = screen.getByRole('textbox', { name: 'Search addresses' });
         const initialOptionCount = screen.getAllByTestId('address-select-option').length;
@@ -128,7 +126,7 @@ describe('SearchableAddressSelectComponent', () => {
 
     it('renders only billing addresses on the billing step', () => {
         const addresses = getB2BCustomer().addresses;
-        const billingAddresses = addresses.filter((address) => address.b2b?.isBilling);
+        const billingAddresses = addresses.filter((address) => address.isBilling);
 
         renderComponent({ addresses, type: AddressType.Billing });
 
@@ -141,7 +139,7 @@ describe('SearchableAddressSelectComponent', () => {
 
     it('renders only shipping addresses on the shipping step', () => {
         const addresses = getB2BCustomer().addresses;
-        const shippingAddresses = addresses.filter((address) => address.b2b?.isShipping);
+        const shippingAddresses = addresses.filter((address) => address.isShipping);
 
         renderComponent({ addresses, type: AddressType.Shipping });
 
