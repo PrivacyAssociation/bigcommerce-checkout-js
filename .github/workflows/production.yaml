@@ -47,7 +47,7 @@ jobs:
         if: ${{ steps.download_build_artifact.outcome == 'skipped' }}
         uses: actions/setup-node@v6
         with:
-          node-version: '24' # DOES NOT WORK WITH NODE 24
+          node-version: '24'
 
       - name: Install dependencies
         if: ${{ steps.download_build_artifact.outcome == 'skipped' }}
