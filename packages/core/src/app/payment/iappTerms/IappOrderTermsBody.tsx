@@ -15,7 +15,7 @@ const ExternalLink: FunctionComponent<{ href: string; children: React.ReactNode 
 const IappOrderTermsBody: FunctionComponent = () => (
     <>
         <p>
-            <strong>Last Updated:</strong> September 28, 2026
+            <strong>Last Updated:</strong> 14 Oct. 2026
         </p>
         <p>
             These Terms and Conditions of Sale (“Terms”) govern the purchase of products and
