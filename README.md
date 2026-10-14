@@ -23,9 +23,9 @@ Hello fellow IAPP developer. First of all, you might be like "Why all this nonse
 
 The repo requires the below environment to compile.
 
-- Node >= v22.
-- NPM >= v10.
-- Unix-based operating system. (WSL on Windows (they are fibbing here))
+* Node >= 24.
+* NPM >= v11.
+* Unix-based operating system. (WSL on Windows)
 
 But that is really hard to get working on a standard IAPP development laptop because Nicole hates us having Macs.
 To work around this we are going to install a docker environment locally and build from there.
@@ -145,6 +145,8 @@ You should be able to view your changes in the checkout app inside of the IAPP A
 Follow [this guide](https://developer.bigcommerce.com/stencil-docs/customizing-checkout/installing-custom-checkouts) for instructions on how to fork and install this app as a Custom Checkout in your store.
 
 And enter the local URL for `auto-loader-dev.js` in Checkout Settings, e.g `http://127.0.0.1:8080/auto-loader-dev.js`
+
+To have the page reload itself on every change instead, run `npm run dev:hmr` in place of `npm run dev` and `npm run dev:server`. It serves the same URL. Stylesheet edits apply without a reload.
 
 ## BC CI/CD Release
 

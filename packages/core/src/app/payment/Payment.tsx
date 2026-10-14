@@ -3,6 +3,7 @@ import {
     type Capabilities,
     type Cart,
     type CartStockPositionsChangedError,
+    type CheckoutPayment,
     type CheckoutSelectors,
     type CheckoutService,
     type Consignment,
@@ -22,6 +23,20 @@ import {
     createCheckoutComSepaPaymentStrategy,
 } from '@bigcommerce/checkout-sdk/integrations/checkoutcom-custom';
 import { createClearpayPaymentStrategy } from '@bigcommerce/checkout-sdk/integrations/clearpay';
+import {
+    createGooglePayAdyenV2PaymentStrategy,
+    createGooglePayAdyenV3PaymentStrategy,
+    createGooglePayAuthorizeNetPaymentStrategy,
+    createGooglePayBigCommercePaymentsPaymentStrategy,
+    createGooglePayBraintreePaymentStrategy,
+    createGooglePayCheckoutComPaymentStrategy,
+    createGooglePayCybersourcePaymentStrategy,
+    createGooglePayOrbitalPaymentStrategy,
+    createGooglePayPPCPPaymentStrategy,
+    createGooglePayStripePaymentStrategy,
+    createGooglePayTdOnlineMartPaymentStrategy,
+    createGooglePayWorldpayAccessPaymentStrategy,
+} from '@bigcommerce/checkout-sdk/integrations/google-pay';
 import { createOffsitePaymentStrategy } from '@bigcommerce/checkout-sdk/integrations/offsite';
 import { createPaypalExpressPaymentStrategy } from '@bigcommerce/checkout-sdk/integrations/paypal-express';
 import { createSagePayPaymentStrategy } from '@bigcommerce/checkout-sdk/integrations/sagepay';
@@ -42,12 +57,17 @@ import {
     type AnalyticsContextProps,
     type CheckoutContextProps,
     useCapabilities,
+    useCheckout,
     useThemeContext,
 } from '@bigcommerce/checkout/contexts';
-import { type ErrorLogger } from '@bigcommerce/checkout/error-handling-utils';
+import { assignTopLocation, replaceLocation } from '@bigcommerce/checkout/dom-utils';
+import { ErrorLevelType, type ErrorLogger } from '@bigcommerce/checkout/error-handling-utils';
 import { withLanguage, type WithLanguageProps } from '@bigcommerce/checkout/locale';
-import { type PaymentFormValues } from '@bigcommerce/checkout/payment-integration-api';
-import { ChecklistSkeleton } from '@bigcommerce/checkout/ui';
+import {
+    isGooglePayHandleUnsuccessful3dsCheckExperimentOn,
+    type PaymentFormValues,
+} from '@bigcommerce/checkout/payment-integration-api';
+import { ChecklistSkeleton, LoadingOverlay } from '@bigcommerce/checkout/ui';
 import { B2BSessionStorage } from '@bigcommerce/checkout/utility';
 
 import { withAnalytics } from '../analytics';
@@ -70,12 +90,19 @@ import {
 import { getB2BMetadataPayload } from './b2bMetadataForPostOrder';
 import { mapToB2BOrderRequestBody } from './b2bMetadataForSubmitOrder';
 import CartStockPositionsChangedModal from './CartStockPositionsChangedModal';
+import getPaymentMethodsRefreshAlert from './getPaymentMethodsRefreshAlert';
 import mapSubmitOrderErrorMessage, { mapSubmitOrderErrorTitle } from './mapSubmitOrderErrorMessage';
 import mapToOrderRequestBody from './mapToOrderRequestBody';
 import PaymentContext, { type EnsureBillingAddressSaved } from './PaymentContext';
 import PaymentForm from './PaymentForm';
-import { getUniquePaymentMethodId, PaymentMethodProviderType } from './paymentMethod';
+import {
+    getUniquePaymentMethodId,
+    isSamePaymentMethod,
+    PaymentMethodProviderType,
+    useFallbackWhenMethodRemoved,
+} from './paymentMethod';
 import { getFilteredPaymentMethodsWithDefault } from './paymentMethodFilters';
+import { type PaymentMethodsRefreshAlertData } from './PaymentMethodsRefreshAlert';
 
 export interface PaymentProps {
     capabilities: Capabilities;
@@ -107,6 +134,7 @@ interface WithCheckoutPaymentProps {
     finalizeOrderError?: Error;
     isInitializingPayment: boolean;
     isLoadingBillingCountries: boolean;
+    isLoadingPaymentMethods: boolean;
     isSubmittingOrder: boolean;
     isStoreCreditApplied: boolean;
     isTermsConditionsRequired: boolean;
@@ -115,6 +143,7 @@ interface WithCheckoutPaymentProps {
     methods: PaymentMethod[];
     orderExtraFields?: FormField[];
     orderId?: number;
+    payments?: CheckoutPayment[];
     shouldExecuteSpamCheck: boolean;
     shouldLocaliseErrorMessages: boolean;
     submitOrderError?: Error;
@@ -158,21 +187,28 @@ const Payment = (
     });
 
     const [isCartStockRefreshComplete, setIsCartStockRefreshComplete] = useState(false);
+    const [methodsRefreshAlert, setMethodsRefreshAlert] = useState<
+        PaymentMethodsRefreshAlertData | undefined
+    >();
 
     const isReadyRef = useRef(state.isReady);
     const grandTotalChangeUnsubscribe = useRef<() => void>();
+    const billingAddressChangeUnsubscribe = useRef<() => void>();
+    const selectedMethodRef = useRef<PaymentMethod | undefined>();
     const validationSchemasRef = useRef<validationSchemas>({});
     const lastFormValuesRef = useRef<PaymentFormValues | null>(null);
-    // Set by the themeV2 billing form. Awaited before submitOrder so the order
+    // Set by the enhancedThemeV1 billing form. Awaited before submitOrder so the order
     // can't finalize before the entered billing address is validated and saved.
     const ensureBillingAddressSavedRef: MutableRefObject<EnsureBillingAddressSaved | null> =
         useRef(null);
+
+    const { checkoutState: initialCheckoutState } = useCheckout(() => undefined);
 
     const {
         orderConfirmation: { persistB2BMetadata, invoiceRedirect },
         userJourney: { disableStoreCredit },
     } = useCapabilities();
-    const { themeV2 } = useThemeContext();
+    const { enhancedThemeV1 } = useThemeContext();
 
     const renderCartStockPositionsChangedModal = (
         error: CartStockPositionsChangedError,
@@ -336,7 +372,7 @@ const Payment = (
             errorType === 'provider_fatal_error' ||
             errorType === 'order_could_not_be_finalized_error'
         ) {
-            window.location.replace(cartUrl || '/');
+            replaceLocation(cartUrl || '/');
         }
 
         if (errorType === 'tax_provider_unavailable') {
@@ -351,7 +387,7 @@ const Payment = (
             const { body, headers, status } = error;
 
             if (body.type === 'provider_error' && headers.location) {
-                window.top?.location.assign(headers.location);
+                assignTopLocation(headers.location);
             }
 
             // Reload the checkout object to get the latest `shouldExecuteSpamCheck` value,
@@ -445,7 +481,6 @@ const Payment = (
         async (values: PaymentFormValues) => {
             const {
                 defaultMethod,
-                loadPaymentMethods,
                 checkoutServiceSubscribe,
                 isPaymentDataRequired,
                 onCartChangedError = noop,
@@ -488,7 +523,7 @@ const Payment = (
                 return customSubmit(orderValues);
             }
 
-            // Ensure any pending themeV2 billing edit is saved before placing
+            // Ensure any pending enhancedThemeV1 billing edit is saved before placing
             // the order. If billing is invalid, block the order — errors are
             // surfaced inline by the billing form.
             const ensureBillingAddressSaved = ensureBillingAddressSavedRef.current;
@@ -531,7 +566,7 @@ const Payment = (
                 analyticsTracker.paymentRejected();
 
                 if (isErrorWithType(error) && error.type === 'payment_method_invalid') {
-                    return loadPaymentMethods();
+                    return loadPaymentMethodsOrThrow();
                 }
 
                 if (isCartChangedError(error)) {
@@ -557,19 +592,30 @@ const Payment = (
         analyticsTracker.selectedPaymentMethod(methodName, methodId);
     };
 
+    const dismissMethodsRefreshAlert = useCallback(() => setMethodsRefreshAlert(undefined), []);
+
     const setSelectedMethod = useCallback((method?: PaymentMethod): void => {
-        const { selectedMethod } = state;
-
-        if (selectedMethod === method) {
-            return;
-        }
-
-        if (method) {
-            trackSelectedPaymentMethod(method);
-        }
-
-        setState((prevState) => ({ ...prevState, selectedMethod: method }));
+        setState((prevState) =>
+            prevState.selectedMethod === method
+                ? prevState
+                : { ...prevState, selectedMethod: method },
+        );
     }, []);
+
+    const handleMethodSelect = useCallback(
+        (method: PaymentMethod): void => {
+            const currentMethod = selectedMethodRef.current;
+            // The fallback echoes back here as a reselection; it must not dismiss the alert.
+            const isReselection = !!currentMethod && isSamePaymentMethod(currentMethod, method);
+
+            if (!isReselection) {
+                dismissMethodsRefreshAlert();
+            }
+
+            setSelectedMethod(method);
+        },
+        [dismissMethodsRefreshAlert, setSelectedMethod],
+    );
 
     const setSubmit = (
         method: PaymentMethod,
@@ -611,7 +657,9 @@ const Payment = (
         [],
     );
 
-    const loadPaymentMethodsOrThrow = async (): Promise<void> => {
+    const loadPaymentMethodsOrThrow = async (billingCountryChange?: {
+        previousSelectedMethod?: PaymentMethod;
+    }): Promise<void> => {
         const { loadPaymentMethods, onUnhandledError = noop } = props;
 
         try {
@@ -619,7 +667,7 @@ const Payment = (
             const checkout = updatedState.data.getCheckout();
             const config = updatedState.data.getConfig();
             const methods = updatedState.data.getPaymentMethods() || EMPTY_ARRAY;
-            const defaultMethod =
+            const filteredMethodsWithDefault =
                 checkout && config
                     ? getFilteredPaymentMethodsWithDefault({
                           checkout,
@@ -628,12 +676,18 @@ const Payment = (
                           methods,
                           paymentProviderCustomer: updatedState.data.getPaymentProviderCustomer(),
                           capabilities: props.capabilities,
-                      }).defaultMethod
+                      })
                     : undefined;
-            const selectedMethod = state.selectedMethod || defaultMethod;
 
-            if (selectedMethod) {
-                trackSelectedPaymentMethod(selectedMethod);
+            if (billingCountryChange) {
+                const refreshAlert = getPaymentMethodsRefreshAlert({
+                    billingAddress: updatedState.data.getBillingAddress(),
+                    language: props.language,
+                    previousSelectedMethod: billingCountryChange.previousSelectedMethod,
+                    refreshedMethods: filteredMethodsWithDefault?.filteredMethods ?? [],
+                });
+
+                setMethodsRefreshAlert(refreshAlert);
             }
         } catch (error) {
             onUnhandledError(error);
@@ -646,6 +700,8 @@ const Payment = (
         if (!isReady) {
             return;
         }
+
+        dismissMethodsRefreshAlert();
 
         setState((prevState) => ({ ...prevState, isReady: false }));
 
@@ -669,18 +725,89 @@ const Payment = (
     }, [state.isReady]);
 
     useEffect(() => {
+        selectedMethodRef.current = state.selectedMethod || props.defaultMethod;
+    }, [state.selectedMethod, props.defaultMethod]);
+
+    // The only analytics emitter for method selection.
+    const effectiveSelectedMethod = state.selectedMethod || props.defaultMethod;
+    const trackedSelectedMethodId = effectiveSelectedMethod
+        ? getUniquePaymentMethodId(effectiveSelectedMethod.id, effectiveSelectedMethod.gateway)
+        : undefined;
+
+    useEffect(() => {
+        if (effectiveSelectedMethod) {
+            trackSelectedPaymentMethod(effectiveSelectedMethod);
+        }
+    }, [trackedSelectedMethodId]);
+
+    useFallbackWhenMethodRemoved(
+        props.methods,
+        state.selectedMethod
+            ? getUniquePaymentMethodId(state.selectedMethod.id, state.selectedMethod.gateway)
+            : undefined,
+        props.defaultMethod
+            ? getUniquePaymentMethodId(props.defaultMethod.id, props.defaultMethod.gateway)
+            : undefined,
+        () => setSelectedMethod(props.defaultMethod),
+    );
+
+    useEffect(() => {
         const init = async () => {
             const {
+                cart,
+                errorLogger,
                 finalizeOrderIfNeeded,
                 onFinalize = noop,
                 onFinalizeError = noop,
                 onReady = noop,
                 onUnhandledError = noop,
                 orderId,
+                payments,
                 refreshB2BPaymentMethods,
                 usableStoreCredit,
                 checkoutServiceSubscribe,
             } = props;
+
+            // Diagnostic logging: shoppers redirected back from
+            // Afterpay sometimes land with no order created and no server-side trace.
+            const isReturningFromAfterpay = () =>
+                typeof document !== 'undefined' && /afterpay\.com/i.test(document.referrer || '');
+
+            const logAfterpayRedirectOutcome = (error?: unknown) => {
+                if (!isReturningFromAfterpay()) {
+                    return;
+                }
+
+                const isExpectedSkip =
+                    isErrorWithType(error) && error.type === 'order_finalization_not_required';
+                const outcome = !error ? 'success' : isExpectedSkip ? 'skipped' : 'failure';
+
+                // `payments` (checkout.payments) is already loaded by the time Payment mounts,
+                // unlike the payment methods list, so read the attempted method straight off the
+                // HOSTED payment record rather than off `defaultMethod`, which is still empty at
+                // this point (loadPaymentMethodsOrThrow hasn't resolved yet).
+                const hostedPayment = (payments || []).find(
+                    (payment) => payment.providerType === 'PAYMENT_TYPE_HOSTED',
+                );
+
+                const meta = {
+                    stage: 'afterpay-redirect-finalize',
+                    outcome,
+                    errorType: isErrorWithType(error) ? error.type : undefined,
+                    methodId: hostedPayment?.providerId,
+                    gatewayId: hostedPayment?.gatewayId,
+                    cartId: cart?.id,
+                    hasHostedPayment: Boolean(hostedPayment),
+                };
+
+                if (outcome === 'failure' && error instanceof Error) {
+                    errorLogger.log(error, undefined, ErrorLevelType.Warning, meta);
+                } else {
+                    errorLogger.logMessage?.(
+                        `Afterpay redirect-back finalize: ${JSON.stringify(meta)}`,
+                    );
+                }
+            };
 
             if (!disableStoreCredit && usableStoreCredit) {
                 await handleStoreCreditChange(true);
@@ -698,6 +825,11 @@ const Payment = (
                 }
             }
 
+            const isHandleUnsuccessful3dsCheckExperimentOn =
+                isGooglePayHandleUnsuccessful3dsCheckExperimentOn(
+                    initialCheckoutState.data.getConfig()?.checkoutSettings,
+                );
+
             try {
                 const state = await finalizeOrderIfNeeded({
                     integrations: [
@@ -710,6 +842,22 @@ const Payment = (
                         createCheckoutComIdealPaymentStrategy,
                         createCheckoutComSepaPaymentStrategy,
                         createClearpayPaymentStrategy,
+                        ...(isHandleUnsuccessful3dsCheckExperimentOn
+                            ? [
+                                  createGooglePayAdyenV2PaymentStrategy,
+                                  createGooglePayAdyenV3PaymentStrategy,
+                                  createGooglePayAuthorizeNetPaymentStrategy,
+                                  createGooglePayBigCommercePaymentsPaymentStrategy,
+                                  createGooglePayBraintreePaymentStrategy,
+                                  createGooglePayCheckoutComPaymentStrategy,
+                                  createGooglePayCybersourcePaymentStrategy,
+                                  createGooglePayOrbitalPaymentStrategy,
+                                  createGooglePayPPCPPaymentStrategy,
+                                  createGooglePayStripePaymentStrategy,
+                                  createGooglePayTdOnlineMartPaymentStrategy,
+                                  createGooglePayWorldpayAccessPaymentStrategy,
+                              ]
+                            : []),
                         createOffsitePaymentStrategy,
                         createPaypalExpressPaymentStrategy,
                         createSagePayPaymentStrategy,
@@ -719,8 +867,11 @@ const Payment = (
 
                 await persistB2BMetadataIfNeeded();
 
+                logAfterpayRedirectOutcome();
                 onFinalize(order?.orderId);
             } catch (error) {
+                logAfterpayRedirectOutcome(error);
+
                 if (isErrorWithType(error) && error.type !== 'order_finalization_not_required') {
                     onFinalizeError(error);
                 }
@@ -731,6 +882,27 @@ const Payment = (
                 ({ data }) => data.getCheckout()?.grandTotal,
                 ({ data }) => data.getCheckout()?.outstandingBalance,
             );
+
+            if (enhancedThemeV1) {
+                let lastCountryCode = props.billingAddress?.countryCode;
+
+                billingAddressChangeUnsubscribe.current = checkoutServiceSubscribe(
+                    ({ data }) => {
+                        const countryCode = data.getBillingAddress()?.countryCode;
+
+                        if (countryCode === lastCountryCode) {
+                            return;
+                        }
+
+                        lastCountryCode = countryCode;
+
+                        void loadPaymentMethodsOrThrow({
+                            previousSelectedMethod: selectedMethodRef.current,
+                        });
+                    },
+                    ({ data }) => data.getBillingAddress()?.countryCode,
+                );
+            }
 
             window.addEventListener('beforeunload', handleBeforeUnload);
             setState((prevState) => ({ ...prevState, isReady: true }));
@@ -744,6 +916,11 @@ const Payment = (
                 if (grandTotalChangeUnsubscribe.current) {
                     grandTotalChangeUnsubscribe.current();
                     grandTotalChangeUnsubscribe.current = undefined;
+                }
+
+                if (billingAddressChangeUnsubscribe.current) {
+                    billingAddressChangeUnsubscribe.current();
+                    billingAddressChangeUnsubscribe.current = undefined;
                 }
 
                 window.removeEventListener('beforeunload', handleBeforeUnload);
@@ -762,64 +939,74 @@ const Payment = (
     const { selectedMethod = props.defaultMethod } = state;
     const uniqueSelectedMethodId =
         selectedMethod && getUniquePaymentMethodId(selectedMethod.id, selectedMethod.gateway);
-    // themeV2 embeds the billing form in the payment step. Disable "Place Order"
+    // enhancedThemeV1 embeds the billing form in the payment step. Disable "Place Order"
     // while its billing address is loading or being persisted (initialization,
     // address-book change, or the pre-submit save), so a click can't silently
-    // no-op or trigger a duplicate order submission. Scoped to themeV2 because
+    // no-op or trigger a duplicate order submission. Scoped to enhancedThemeV1 because
     // only that layout owns the embedded billing form.
     const isBillingFormBusy =
-        themeV2 &&
+        enhancedThemeV1 &&
         (props.isLoadingBillingCountries ||
             props.isUpdatingBillingAddress ||
             props.isUpdatingCheckout);
+    const isReloadingPaymentMethods = enhancedThemeV1 && props.isLoadingPaymentMethods;
+    const isPlacingOrder = enhancedThemeV1 && props.isSubmittingOrder;
 
     return (
         <PaymentContext.Provider value={getContextValue()}>
             <ChecklistSkeleton isLoading={!state.isReady}>
-                <PaymentForm
-                    additionalField={props.capabilities.payment.additionalField}
-                    availableStoreCredit={props.availableStoreCredit}
-                    defaultGatewayId={props.defaultMethod?.gateway}
-                    defaultMethodId={props.defaultMethod?.id || ''}
-                    didExceedSpamLimit={state.didExceedSpamLimit}
-                    disableStoreCredit={disableStoreCredit}
-                    isBillingSameAsShipping={props.isBillingSameAsShipping}
-                    isEmbedded={props.isEmbedded}
-                    isInitializingPayment={props.isInitializingPayment}
-                    isPaymentDataRequired={props.isPaymentDataRequired}
-                    isStoreCreditApplied={props.isStoreCreditApplied}
-                    isTermsConditionsRequired={props.isTermsConditionsRequired}
-                    isUsingMultiShipping={props.isUsingMultiShipping}
-                    methods={props.methods}
-                    onBillingSameAsShippingChange={props.onBillingSameAsShippingChange}
-                    onMethodSelect={setSelectedMethod}
-                    onStoreCreditChange={handleStoreCreditChange}
-                    onSubmit={handleSubmit}
-                    onUnhandledError={handleError}
-                    orderExtraFields={props.orderExtraFields}
-                    selectedMethod={state.selectedMethod || props.defaultMethod}
-                    shouldDisableSubmit={
-                        (uniqueSelectedMethodId &&
-                            state.shouldDisableSubmit[uniqueSelectedMethodId]) ||
-                        isBillingFormBusy ||
-                        undefined
-                    }
-                    shouldExecuteSpamCheck={props.shouldExecuteSpamCheck}
-                    shouldHidePaymentSubmitButton={
-                        (uniqueSelectedMethodId &&
-                            props.isPaymentDataRequired() &&
-                            state.shouldHidePaymentSubmitButton[uniqueSelectedMethodId]) ||
-                        undefined
-                    }
-                    termsConditionsText={props.termsConditionsText}
-                    termsConditionsUrl={props.termsConditionsUrl}
-                    usableStoreCredit={props.usableStoreCredit}
-                    validationSchema={
-                        (uniqueSelectedMethodId &&
-                            validationSchemasRef.current[uniqueSelectedMethodId]) ||
-                        undefined
-                    }
-                />
+                <LoadingOverlay
+                    isLoading={isBillingFormBusy || isReloadingPaymentMethods || isPlacingOrder}
+                >
+                    <PaymentForm
+                        additionalField={props.capabilities.payment.additionalField}
+                        availableStoreCredit={props.availableStoreCredit}
+                        defaultGatewayId={props.defaultMethod?.gateway}
+                        defaultMethodId={props.defaultMethod?.id || ''}
+                        didExceedSpamLimit={state.didExceedSpamLimit}
+                        disableStoreCredit={disableStoreCredit}
+                        isBillingSameAsShipping={props.isBillingSameAsShipping}
+                        isEmbedded={props.isEmbedded}
+                        isInitializingPayment={props.isInitializingPayment}
+                        isPaymentDataRequired={props.isPaymentDataRequired}
+                        isReloadingPaymentMethods={isReloadingPaymentMethods}
+                        isStoreCreditApplied={props.isStoreCreditApplied}
+                        isTermsConditionsRequired={props.isTermsConditionsRequired}
+                        isUsingMultiShipping={props.isUsingMultiShipping}
+                        methods={props.methods}
+                        methodsRefreshAlert={methodsRefreshAlert}
+                        onBillingSameAsShippingChange={props.onBillingSameAsShippingChange}
+                        onMethodSelect={handleMethodSelect}
+                        onMethodsRefreshAlertDismiss={dismissMethodsRefreshAlert}
+                        onStoreCreditChange={handleStoreCreditChange}
+                        onSubmit={handleSubmit}
+                        onUnhandledError={handleError}
+                        orderExtraFields={props.orderExtraFields}
+                        selectedMethod={state.selectedMethod || props.defaultMethod}
+                        shouldDisableSubmit={
+                            (uniqueSelectedMethodId &&
+                                state.shouldDisableSubmit[uniqueSelectedMethodId]) ||
+                            isBillingFormBusy ||
+                            isReloadingPaymentMethods ||
+                            undefined
+                        }
+                        shouldExecuteSpamCheck={props.shouldExecuteSpamCheck}
+                        shouldHidePaymentSubmitButton={
+                            (uniqueSelectedMethodId &&
+                                props.isPaymentDataRequired() &&
+                                state.shouldHidePaymentSubmitButton[uniqueSelectedMethodId]) ||
+                            undefined
+                        }
+                        termsConditionsText={props.termsConditionsText}
+                        termsConditionsUrl={props.termsConditionsUrl}
+                        usableStoreCredit={props.usableStoreCredit}
+                        validationSchema={
+                            (uniqueSelectedMethodId &&
+                                validationSchemasRef.current[uniqueSelectedMethodId]) ||
+                            undefined
+                        }
+                    />
+                </LoadingOverlay>
             </ChecklistSkeleton>
 
             {renderOrderErrorModal()}
@@ -853,6 +1040,7 @@ export function mapToPaymentProps(
         statuses: {
             isInitializingPayment,
             isLoadingBillingCountries,
+            isLoadingPaymentMethods,
             isSubmittingOrder,
             isUpdatingBillingAddress,
             isUpdatingCheckout,
@@ -918,6 +1106,7 @@ export function mapToPaymentProps(
         loadCheckout: checkoutService.loadCheckout,
         isInitializingPayment: isInitializingPayment(),
         isLoadingBillingCountries: isLoadingBillingCountries(),
+        isLoadingPaymentMethods: isLoadingPaymentMethods(),
         isPaymentDataRequired,
         isStoreCreditApplied,
         isSubmittingOrder: isSubmittingOrder(),
@@ -928,6 +1117,7 @@ export function mapToPaymentProps(
         methods: filteredMethods,
         orderExtraFields,
         orderId: checkout.orderId,
+        payments: checkout.payments,
         refreshB2BPaymentMethods: checkoutService.refreshB2BPaymentMethods,
         submitB2BMetadata: checkoutService.persistB2BMetadata,
         shouldExecuteSpamCheck: checkout.shouldExecuteSpamCheck,

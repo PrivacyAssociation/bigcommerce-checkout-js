@@ -2,6 +2,7 @@ import { ExtensionRegion } from '@bigcommerce/checkout-sdk/essential';
 import React, { type FunctionComponent } from 'react';
 
 import { Extension } from '@bigcommerce/checkout/checkout-extension';
+import { useThemeContext } from '@bigcommerce/checkout/contexts';
 import { TranslatedString } from '@bigcommerce/checkout/locale';
 import {
     Alert,
@@ -14,6 +15,7 @@ import {
 
 import { OrderComments } from '../orderComments';
 
+import { ShippingExpectationMessage } from './ShippingExpectationMessage';
 import { ShippingOptions } from './shippingOption';
 
 export interface ShippingFormFooterProps {
@@ -39,6 +41,8 @@ const ShippingFormFooter: FunctionComponent<ShippingFormFooterProps> = ({
     isLoading,
     shippingFormRenderTimestamp,
 }) => {
+    const { enhancedThemeV1 } = useThemeContext();
+
     return (
         <>
             <Extension region={ExtensionRegion.ShippingShippingAddressFormAfter} />
@@ -47,13 +51,15 @@ const ShippingFormFooter: FunctionComponent<ShippingFormFooterProps> = ({
                 legend={
                     <>
                         <Legend>
-                            <TranslatedString id="shipping.shipping_method_label" />
+                            <TranslatedString
+                                id={
+                                    enhancedThemeV1
+                                        ? 'shipping.shipping_method_label_v2'
+                                        : 'shipping.shipping_method_label'
+                                }
+                            />
                         </Legend>
-                        {defaultShippingExpectationMessage && (
-                            <p className="shipping-ExpectationMessage">
-                                {defaultShippingExpectationMessage}
-                            </p>
-                        )}
+                        <ShippingExpectationMessage message={defaultShippingExpectationMessage} />
 
                         {cartHasChanged && (
                             <Alert type={AlertType.Error}>
@@ -85,7 +91,13 @@ const ShippingFormFooter: FunctionComponent<ShippingFormFooterProps> = ({
                     type="submit"
                     variant={ButtonVariant.Primary}
                 >
-                    <TranslatedString id="common.continue_action" />
+                    <TranslatedString
+                        id={
+                            enhancedThemeV1
+                                ? 'common.continue_to_payment_action'
+                                : 'common.continue_action'
+                        }
+                    />
                 </Button>
             </div>
         </>

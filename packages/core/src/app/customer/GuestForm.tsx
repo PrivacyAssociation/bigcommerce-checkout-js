@@ -21,6 +21,7 @@ import {
 
 import { getPrivacyPolicyValidationSchema, PrivacyPolicyField } from '../privacyPolicy';
 
+import { attemptStorefrontLoginRedirect } from './attemptStorefrontLoginRedirect';
 import EmailField from './EmailField';
 import SubscribeField from './SubscribeField';
 import { SubscribeSessionStorage } from './SubscribeSessionStorage';
@@ -76,7 +77,7 @@ const GuestForm: FunctionComponent<
     setFieldValue,
 }) => {
     const { selectedState: config } = useCheckout(({ data }) => data.getConfig());
-    const { themeV2 } = useThemeContext();
+    const { enhancedThemeV1 } = useThemeContext();
 
     const renderField = useCallback(
         (fieldProps: FieldProps<boolean>) => (
@@ -96,15 +97,8 @@ const GuestForm: FunctionComponent<
         return null;
     }
 
-    const {
-        checkoutSettings: { shouldRedirectToStorefrontForAuth },
-        links: { checkoutLink, loginLink },
-    } = config;
-
     const handleLogin: () => void = () => {
-        if (shouldRedirectToStorefrontForAuth) {
-            window.location.assign(`${loginLink}?redirectTo=${checkoutLink}`);
-
+        if (attemptStorefrontLoginRedirect(config)) {
             return;
         }
 
@@ -124,21 +118,6 @@ const GuestForm: FunctionComponent<
                     </Legend>
                 }
             >
-                {themeV2 && !isLoading && (
-                    <p className="customer-login-link body-regular">
-                        <TranslatedString id="customer.login_text" />{' '}
-                        <a
-                            data-test="customer-continue-button"
-                            id="checkout-customer-login"
-                            onClick={handleLogin}
-                            role="button"
-                            tabIndex={0}
-                        >
-                            <TranslatedString id="customer.login_action" />
-                        </a>
-                    </p>
-                )}
-
                 <div className="customerEmail-container">
                     <div className="customerEmail-body">
                         <EmailField
@@ -151,6 +130,13 @@ const GuestForm: FunctionComponent<
                         {(canSubscribe || requiresMarketingConsent) && (
                             <BasicFormField name="shouldSubscribe" render={renderField} />
                         )}
+
+                        {enhancedThemeV1 && privacyPolicyUrl && (
+                            <PrivacyPolicyField
+                                isExpressPrivacyPolicy={isExpressPrivacyPolicy}
+                                url={privacyPolicyUrl}
+                            />
+                        )}
                     </div>
 
                     <div
@@ -159,7 +145,9 @@ const GuestForm: FunctionComponent<
                         })}
                     >
                         <Button
-                            className="customerEmail-button body-bold"
+                            className={classNames('body-bold', {
+                                'customerEmail-button': !enhancedThemeV1,
+                            })}
                             id="checkout-customer-continue"
                             isLoading={isLoading}
                             testId="customer-continue-as-guest-button"
@@ -171,14 +159,14 @@ const GuestForm: FunctionComponent<
                     </div>
                 </div>
 
-                {privacyPolicyUrl && (
+                {!enhancedThemeV1 && privacyPolicyUrl && (
                     <PrivacyPolicyField
                         isExpressPrivacyPolicy={isExpressPrivacyPolicy}
                         url={privacyPolicyUrl}
                     />
                 )}
 
-                {!themeV2 && !isLoading && (
+                {!enhancedThemeV1 && !isLoading && (
                     <p className="customer-login-link">
                         <TranslatedString id="customer.login_text" />{' '}
                         <a

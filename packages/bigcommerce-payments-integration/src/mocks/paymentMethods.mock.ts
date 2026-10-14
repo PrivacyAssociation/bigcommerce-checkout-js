@@ -49,6 +49,7 @@ export function getBigCommercePaymentsMethod() {
         method: 'paypal',
         nonce: undefined,
         returnUrl: undefined,
+        skipRedirectConfirmationAlert: false,
         supportedCards: [
             'PAYPAL',
             'PAYPALCREDIT',
@@ -87,6 +88,16 @@ export function getBigCommercePaymentsVenmoMethod() {
         ...bigCommercePayments,
         id: 'bigcommerce_payments_venmo',
         method: 'paypal-venmo',
+    };
+}
+
+export function getBigCommercePaymentsInvoicesMethod() {
+    const bigCommercePayments = getBigCommercePaymentsMethod();
+
+    return {
+        ...bigCommercePayments,
+        id: 'bigcommerce_payments_invoices',
+        method: 'bigcommerce_payments_invoices',
     };
 }
 

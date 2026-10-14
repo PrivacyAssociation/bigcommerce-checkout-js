@@ -6,14 +6,17 @@ export const defaultCapabilities: Capabilities = {
         disableEditCart: false,
         disableGiftCertificate: false,
         disableStoreCredit: false,
+        disableWalletButtons: false,
         hasCompanyAddressBook: false,
         hasAddressExtraFields: false,
         hasOrderExtraFields: false,
         requiresB2BToken: false,
         hasAddressLabel: false,
         quoteConfig: null,
+        invoiceConfig: null,
     },
     customer: {
+        reloadPageAfterSignIn: false,
         superAdminCompanySelector: false,
     },
     shipping: {

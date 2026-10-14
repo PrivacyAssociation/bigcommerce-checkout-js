@@ -39,10 +39,10 @@ export default toResolvableComponent<PaymentMethodProps, PaymentMethodResolveId>
         { id: 'credit_card', gateway: 'checkoutcom' },
 
         { id: 'tdonlinemart' },
-        { id: 'cba_mpgs', experiment: 'PI-4748_cba_resolver_configuration' },
-        {
-            id: 'sagepay',
-            experiment: 'PI-4754_sage_pay_resolver_configuration',
-        },
+        { id: 'cba_mpgs' },
+        { id: 'sagepay' },
+        { id: 'cybersource' },
+        { id: 'cybersourcev2' },
+        { id: 'bnz' },
     ],
 );

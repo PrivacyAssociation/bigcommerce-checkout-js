@@ -55,6 +55,7 @@ export const ConsignmentLineItemContent = ({
             {shouldDisplayBackorderQuantity && (
                 <span
                     className={classNames(
+                        'optimizedCheckout-contentSecondary',
                         { 'body-thin': !isMultiShippingSummary },
                         { 'sub-text-medium': isMultiShippingSummary },
                     )}

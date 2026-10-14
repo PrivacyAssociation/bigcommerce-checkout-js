@@ -1,48 +1,20 @@
-import {
-    type Checkout,
-    type ShopperCurrency as ShopperCurrencyType,
-    type StoreCurrency,
-} from '@bigcommerce/checkout-sdk';
-import React, { type FunctionComponent, useRef, useState } from 'react';
+import React, { type FunctionComponent } from 'react';
 
 import { useCheckout } from '@bigcommerce/checkout/contexts';
-import { TranslatedString } from '@bigcommerce/checkout/locale';
-import {
-    CollapseCSSTransition,
-    IconArrowLeft,
-    IconChevronDown,
-    IconChevronUp,
-} from '@bigcommerce/checkout/ui';
 
-import { ShopperCurrency } from '../currency';
-import OrderSummary from '../order/OrderSummary';
+import { OrderSummaryDrawerV2 } from '../order/OrderSummaryDrawerV2';
 
 import { CartHeaderLink } from './CartHeaderLink';
 import mapToCartSummaryProps from './mapToCartSummaryProps';
-import { type RedeemableProps } from './Redeemable';
 import withRedeemable from './withRedeemable';
 
-export type WithCheckoutCartSummaryProps = {
-    checkout: Checkout;
-    cartUrl: string;
-    storeCurrency: StoreCurrency;
-    shopperCurrency: ShopperCurrencyType;
-    storeCreditAmount?: number;
-    isBuyNowCart: boolean;
-    isShippingDiscountDisplayEnabled: boolean;
-} & RedeemableProps;
-
-export interface CartSummaryDrawerV2Props {
+interface CartSummaryDrawerV2Props {
     isMultiShippingMode: boolean;
 }
 
 const CartSummaryDrawerV2: FunctionComponent<CartSummaryDrawerV2Props> = ({
     isMultiShippingMode,
 }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-
-    const nodeRef = useRef<HTMLDivElement>(null);
-
     const checkoutContext = useCheckout();
     const props = mapToCartSummaryProps(checkoutContext);
 
@@ -50,49 +22,18 @@ const CartSummaryDrawerV2: FunctionComponent<CartSummaryDrawerV2Props> = ({
         return null;
     }
 
-    const { cartUrl, isBuyNowCart, checkout } = props;
+    const { cartUrl, isBuyNowCart } = props;
 
-    return (
-        <div className="cart-summary-drawer">
-            <div className="cart-summary-header">
-                <IconArrowLeft />
-                <CartHeaderLink
-                    cartUrl={cartUrl}
-                    isBuyNowCart={isBuyNowCart}
-                    isMultiShippingMode={isMultiShippingMode}
-                    label={<TranslatedString id="cart.go_to_cart_action" />}
-                />
-            </div>
-            <button
-                aria-expanded={isExpanded}
-                className="cart-summary-toggle"
-                onClick={() => setIsExpanded(!isExpanded)}
-            >
-                <span className="body-regular">
-                    <TranslatedString
-                        id={
-                            isExpanded
-                                ? 'cart.hide_order_summary_action'
-                                : 'cart.show_order_summary_action'
-                        }
-                    />
-                    {isExpanded ? <IconChevronUp /> : <IconChevronDown />}
-                </span>
-                <span className="sub-header">
-                    <ShopperCurrency amount={checkout.outstandingBalance} />
-                </span>
-            </button>
-            <CollapseCSSTransition isVisible={isExpanded} nodeRef={nodeRef}>
-                <div className="cart-summary-content" ref={nodeRef}>
-                    {withRedeemable(OrderSummary)({
-                        ...props,
-                        headerLink: null,
-                        showHeader: false,
-                    })}
-                </div>
-            </CollapseCSSTransition>
-        </div>
-    );
+    return withRedeemable(OrderSummaryDrawerV2)({
+        ...props,
+        headerLink: (
+            <CartHeaderLink
+                cartUrl={cartUrl}
+                isBuyNowCart={isBuyNowCart}
+                isMultiShippingMode={isMultiShippingMode}
+            />
+        ),
+    });
 };
 
 export default CartSummaryDrawerV2;

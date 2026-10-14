@@ -137,6 +137,10 @@ export function getPaymentMethodTitle(
                 logoUrl: method.logoUrl || '',
                 titleText: method.logoUrl ? '' : methodDisplayName,
             },
+            [PaymentMethodId.BigCommercePaymentsInvoices]: {
+                logoUrl: method.logoUrl || '',
+                titleText: methodDisplayName,
+            },
             [PaymentMethodId.PaypalCommerce]: {
                 logoUrl: cdnPath('/img/payment-providers/paypal_commerce_logo.svg'),
                 titleText: '',
@@ -481,7 +485,7 @@ const PaymentMethodTitle: FunctionComponent<
 
                 {titleText && (
                     <div
-                        className="paymentProviderHeader-name sub-header"
+                        className="paymentProviderHeader-name optimizedCheckout-headingSecondary sub-header"
                         data-test="payment-method-name"
                     >
                         {titleText}

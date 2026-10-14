@@ -13,6 +13,7 @@ import {
     CheckoutProvider,
     LocaleContext,
     type LocaleContextType,
+    ThemeContext,
 } from '@bigcommerce/checkout/contexts';
 import { createLocaleContext } from '@bigcommerce/checkout/locale';
 import { render, screen } from '@bigcommerce/checkout/test-utils';
@@ -20,7 +21,9 @@ import { render, screen } from '@bigcommerce/checkout/test-utils';
 import { getCheckout } from '../checkout/checkouts.mock';
 import { getStoreConfig } from '../config/config.mock';
 
-import AddressForm, { type AddressFormProps } from './AddressForm';
+import AddressForm from './AddressForm';
+import { type AddressFormProps } from './AddressFormType';
+import AddressType from './AddressType';
 import { getFormFields } from './formField.mock';
 
 jest.mock('@intl-tel-input/react', () => {
@@ -41,14 +44,19 @@ describe('AddressForm Component', () => {
     let localeContext: LocaleContextType;
     let formFields: FormField[];
 
-    const renderAddressFormComponent = (addressFormProps: AddressFormProps): void => {
+    const renderAddressFormComponent = (
+        addressFormProps: Omit<AddressFormProps, 'type'> & Partial<Pick<AddressFormProps, 'type'>>,
+        { enhancedThemeV1 = false }: { enhancedThemeV1?: boolean } = {},
+    ): void => {
         render(
             <CheckoutProvider checkoutService={checkoutService}>
-                <LocaleContext.Provider value={localeContext}>
-                    <Formik initialValues={{}} onSubmit={noop}>
-                        <AddressForm {...addressFormProps} />
-                    </Formik>
-                </LocaleContext.Provider>
+                <ThemeContext.Provider value={{ enhancedThemeV1 }}>
+                    <LocaleContext.Provider value={localeContext}>
+                        <Formik initialValues={{}} onSubmit={noop}>
+                            <AddressForm type={AddressType.Shipping} {...addressFormProps} />
+                        </Formik>
+                    </LocaleContext.Provider>
+                </ThemeContext.Provider>
             </CheckoutProvider>,
         );
     };
@@ -85,7 +93,7 @@ describe('AddressForm Component', () => {
             shouldShowSaveAddress: true,
         });
 
-        expect(screen.getByText('Save this address in my address book.')).toBeInTheDocument();
+        expect(screen.getByText('Save this address in my address book')).toBeInTheDocument();
     });
 
     it('renders google autocomplete address field instead of default address field', () => {
@@ -147,34 +155,51 @@ describe('AddressForm Component', () => {
         expect(onChange).toHaveBeenCalledWith(fieldId, fieldValue);
     });
 
-    describe('new phone number validation experiment', () => {
+    describe('new phone number validation setting', () => {
         const phoneFormFieldMock = {
             fieldType: 'text',
             id: 'phone',
             name: 'phone',
         } as FormField;
 
-        const getConfigMockWithPhoneExperimentTrue = (
-            providerWithCustomCheckout: string | null = null,
-        ) => {
+        const getConfigMockWithPhoneValidation = ({
+            isPhoneNumberValidationEnabled,
+            providerWithCustomCheckout = null,
+        }: {
+            isPhoneNumberValidationEnabled: boolean;
+            providerWithCustomCheckout?: string | null;
+        }) => {
             const config = getStoreConfig();
 
             return {
                 ...config,
                 checkoutSettings: {
                     ...config.checkoutSettings,
-                    features: {
-                        ...config.checkoutSettings.features,
-                        'CHECKOUT-9019.use_new_phone_number_validation': true,
-                    },
+                    isPhoneNumberValidationEnabled,
                     providerWithCustomCheckout,
                 },
             };
         };
 
+        it('renders new phone number field when setting is true', () => {
+            jest.spyOn(checkoutService.getState().data, 'getConfig').mockReturnValue(
+                getConfigMockWithPhoneValidation({
+                    isPhoneNumberValidationEnabled: true,
+                }),
+            );
+
+            renderAddressFormComponent({ formFields: [...formFields, phoneFormFieldMock] });
+
+            expect(screen.getByTestId('intl-tel-input-mock')).toBeInTheDocument();
+            expect(screen.queryByTestId('phoneInput-text')).not.toBeInTheDocument();
+        });
+
         it('renders legacy phone field when PayPal Fastlane powers custom checkout', () => {
             jest.spyOn(checkoutService.getState().data, 'getConfig').mockReturnValue(
-                getConfigMockWithPhoneExperimentTrue('bigcommerce_payments_fastlane'),
+                getConfigMockWithPhoneValidation({
+                    isPhoneNumberValidationEnabled: true,
+                    providerWithCustomCheckout: 'bigcommerce_payments_fastlane',
+                }),
             );
 
             renderAddressFormComponent({ formFields: [...formFields, phoneFormFieldMock] });
@@ -185,13 +210,104 @@ describe('AddressForm Component', () => {
 
         it('renders new phone number field when custom checkout provider is not PayPal Fastlane', () => {
             jest.spyOn(checkoutService.getState().data, 'getConfig').mockReturnValue(
-                getConfigMockWithPhoneExperimentTrue('100%_definitely_not_fastlane'),
+                getConfigMockWithPhoneValidation({
+                    isPhoneNumberValidationEnabled: true,
+                    providerWithCustomCheckout: '100%_definitely_not_fastlane',
+                }),
             );
 
             renderAddressFormComponent({ formFields: [...formFields, phoneFormFieldMock] });
 
             expect(screen.getByTestId('intl-tel-input-mock')).toBeInTheDocument();
             expect(screen.queryByTestId('phoneInput-text')).not.toBeInTheDocument();
+        });
+
+        it('renders legacy phone field when setting is false', () => {
+            jest.spyOn(checkoutService.getState().data, 'getConfig').mockReturnValue(
+                getConfigMockWithPhoneValidation({
+                    isPhoneNumberValidationEnabled: false,
+                }),
+            );
+
+            renderAddressFormComponent({ formFields: [...formFields, phoneFormFieldMock] });
+
+            expect(screen.queryByTestId('intl-tel-input-mock')).not.toBeInTheDocument();
+            expect(screen.getByTestId('phoneInput-text')).toBeInTheDocument();
+        });
+
+        it('renders legacy phone field when setting is missing from config', () => {
+            jest.spyOn(checkoutService.getState().data, 'getConfig').mockReturnValue(
+                getStoreConfig(),
+            );
+
+            renderAddressFormComponent({ formFields: [...formFields, phoneFormFieldMock] });
+
+            expect(screen.queryByTestId('intl-tel-input-mock')).not.toBeInTheDocument();
+            expect(screen.getByTestId('phoneInput-text')).toBeInTheDocument();
+        });
+    });
+
+    describe('address field order', () => {
+        const countryFormFieldMock = {
+            custom: false,
+            default: '',
+            fieldType: 'text',
+            id: 'field_11',
+            label: 'Country',
+            name: 'countryCode',
+            required: true,
+        } as FormField;
+
+        const getRenderedFieldNames = () =>
+            screen
+                .getAllByTestId(/Input-(text|select)$/)
+                .map((element) =>
+                    element.getAttribute('data-test')?.replace(/Input-(text|select)$/, ''),
+                );
+
+        it('pins country field first and keeps the given order when enhanced theme is enabled', () => {
+            renderAddressFormComponent(
+                {
+                    formFields: [
+                        ...formFields.slice(0, 2),
+                        countryFormFieldMock,
+                        ...formFields.slice(2),
+                    ],
+                },
+                { enhancedThemeV1: true },
+            );
+
+            expect(getRenderedFieldNames()).toEqual([
+                'countryCode',
+                'firstName',
+                'lastName',
+                'addressLine1',
+                'addressLine2',
+                'field_25',
+                'field_27',
+                'field_31',
+            ]);
+        });
+
+        it('renders fields in the given order when enhanced theme is disabled', () => {
+            renderAddressFormComponent({
+                formFields: [
+                    ...formFields.slice(0, 2),
+                    countryFormFieldMock,
+                    ...formFields.slice(2),
+                ],
+            });
+
+            expect(getRenderedFieldNames()).toEqual([
+                'firstName',
+                'lastName',
+                'countryCode',
+                'addressLine1',
+                'addressLine2',
+                'field_25',
+                'field_27',
+                'field_31',
+            ]);
         });
     });
 });

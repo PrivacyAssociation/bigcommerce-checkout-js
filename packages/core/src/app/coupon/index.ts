@@ -1,3 +1,3 @@
-export { default as AppliedCoupon } from './components/AppliedCoupon';
-export { default as NewOrderSummarySubtotals } from './NewOrderSummarySubtotals';
+export type { OrderSummarySubtotalsProps } from './OrderSummarySubtotals';
+export { default as OrderSummarySubtotals } from './OrderSummarySubtotals';
 export { useMultiCoupon } from './useMultiCoupon';
