@@ -45,9 +45,7 @@ export interface WithCheckoutPaymentMethodProps {
 }
 
 const KNOWN_API_METHOD_IDS = new Set([
-    'authorizenet',
     'cybersourcev2',
-    'ewayrapid',
     'nmi',
     'bigpaypay',
     'usaepay',
@@ -57,8 +55,6 @@ const KNOWN_API_METHOD_IDS = new Set([
     'stripe',
     'firstdatae4v14',
     'cybersource',
-    'hps',
-    'clover',
     'elavon',
     'bnz',
     'vantivcore',

@@ -28,6 +28,7 @@ import getEmailValidationSchema from './getEmailValidationSchema';
 import mapErrorMessage from './mapErrorMessage';
 // import PasswordField from './PasswordField';
 import { RedirectToStorefrontLogin } from './RedirectToStorefrontLogin';
+import { useCreateAccount } from './useCreateAccount';
 
 export interface LoginFormProps {
   continueAsGuestButtonLabelId: string;

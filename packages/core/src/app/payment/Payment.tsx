@@ -190,6 +190,7 @@ const Payment = (
     const [methodsRefreshAlert, setMethodsRefreshAlert] = useState<
         PaymentMethodsRefreshAlertData | undefined
     >();
+    const [isPriceChangedAlertVisible, setIsPriceChangedAlertVisible] = useState(false);
 
     const isReadyRef = useRef(state.isReady);
     const grandTotalChangeUnsubscribe = useRef<() => void>();
@@ -202,7 +203,7 @@ const Payment = (
     const ensureBillingAddressSavedRef: MutableRefObject<EnsureBillingAddressSaved | null> =
         useRef(null);
 
-    const { checkoutState: initialCheckoutState } = useCheckout(() => undefined);
+    const { checkoutService, checkoutState: initialCheckoutState } = useCheckout(() => undefined);
 
     const {
         orderConfirmation: { persistB2BMetadata, invoiceRedirect },
@@ -528,8 +529,23 @@ const Payment = (
             // surfaced inline by the billing form.
             const ensureBillingAddressSaved = ensureBillingAddressSavedRef.current;
 
-            if (ensureBillingAddressSaved && !(await ensureBillingAddressSaved())) {
-                return;
+            if (ensureBillingAddressSaved) {
+                const getGrandTotal = () =>
+                    checkoutService.getState().data.getCheckout()?.grandTotal;
+                const grandTotalBeforeSave = getGrandTotal();
+
+                setIsPriceChangedAlertVisible(false);
+
+                if (!(await ensureBillingAddressSaved())) {
+                    return;
+                }
+
+                // Saving the billing address can change tax: let the shopper review it.
+                if (getGrandTotal() !== grandTotalBeforeSave) {
+                    setIsPriceChangedAlertVisible(true);
+
+                    return;
+                }
             }
 
             try {
@@ -593,6 +609,7 @@ const Payment = (
     };
 
     const dismissMethodsRefreshAlert = useCallback(() => setMethodsRefreshAlert(undefined), []);
+    const dismissPriceChangedAlert = useCallback(() => setIsPriceChangedAlertVisible(false), []);
 
     const setSelectedMethod = useCallback((method?: PaymentMethod): void => {
         setState((prevState) =>
@@ -657,6 +674,30 @@ const Payment = (
         [],
     );
 
+    const persistGeoBillingCountryIfMissing = async (): Promise<void> => {
+        if (initialCheckoutState.data.getCheckout()?.billingAddress?.countryCode) {
+            return;
+        }
+
+        // Unlike getCheckout().billingAddress, getBillingAddress() falls back to the geo country.
+        const countryCode = initialCheckoutState.data.getBillingAddress()?.countryCode;
+
+        if (!countryCode) {
+            return;
+        }
+
+        try {
+            await checkoutService.updateBillingAddress({ countryCode });
+        } catch (error) {
+            if (error instanceof Error) {
+                props.errorLogger.log(error, undefined, ErrorLevelType.Warning, {
+                    stage: 'persist-geo-billing-country',
+                    countryCode,
+                });
+            }
+        }
+    };
+
     const loadPaymentMethodsOrThrow = async (billingCountryChange?: {
         previousSelectedMethod?: PaymentMethod;
     }): Promise<void> => {
@@ -703,16 +744,13 @@ const Payment = (
 
         dismissMethodsRefreshAlert();
 
-        setState((prevState) => ({ ...prevState, isReady: false }));
-
         await loadPaymentMethodsOrThrow();
-
-        setState((prevState) => ({ ...prevState, isReady: true }));
     };
 
     const getContextValue = memoizeOne(() => {
         return {
             disableSubmit,
+            reloadPaymentMethods: () => loadPaymentMethodsOrThrow(),
             setEnsureBillingAddressSaved,
             setSubmit,
             setValidationSchema,
@@ -811,6 +849,10 @@ const Payment = (
 
             if (!disableStoreCredit && usableStoreCredit) {
                 await handleStoreCreditChange(true);
+            }
+
+            if (enhancedThemeV1) {
+                await persistGeoBillingCountryIfMissing();
             }
 
             await loadPaymentMethodsOrThrow();
@@ -949,7 +991,7 @@ const Payment = (
         (props.isLoadingBillingCountries ||
             props.isUpdatingBillingAddress ||
             props.isUpdatingCheckout);
-    const isReloadingPaymentMethods = enhancedThemeV1 && props.isLoadingPaymentMethods;
+    const isReloadingPaymentMethods = props.isLoadingPaymentMethods;
     const isPlacingOrder = enhancedThemeV1 && props.isSubmittingOrder;
 
     return (
@@ -969,7 +1011,8 @@ const Payment = (
                         isEmbedded={props.isEmbedded}
                         isInitializingPayment={props.isInitializingPayment}
                         isPaymentDataRequired={props.isPaymentDataRequired}
-                        isReloadingPaymentMethods={isReloadingPaymentMethods}
+                        isPriceChangedAlertVisible={isPriceChangedAlertVisible}
+                        isReloadingPaymentMethods={enhancedThemeV1 && isReloadingPaymentMethods}
                         isStoreCreditApplied={props.isStoreCreditApplied}
                         isTermsConditionsRequired={props.isTermsConditionsRequired}
                         isUsingMultiShipping={props.isUsingMultiShipping}
@@ -978,6 +1021,7 @@ const Payment = (
                         onBillingSameAsShippingChange={props.onBillingSameAsShippingChange}
                         onMethodSelect={handleMethodSelect}
                         onMethodsRefreshAlertDismiss={dismissMethodsRefreshAlert}
+                        onPriceChangedAlertDismiss={dismissPriceChangedAlert}
                         onStoreCreditChange={handleStoreCreditChange}
                         onSubmit={handleSubmit}
                         onUnhandledError={handleError}

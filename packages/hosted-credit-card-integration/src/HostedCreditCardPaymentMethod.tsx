@@ -41,8 +41,16 @@ export default toResolvableComponent<PaymentMethodProps, PaymentMethodResolveId>
         { id: 'tdonlinemart' },
         { id: 'cba_mpgs' },
         { id: 'sagepay' },
+        { id: 'clover', experiment: 'PI-4747_clover_resolver_configuration' },
+        { id: 'hps', experiment: 'PI-4751_hps_resolver_configuration' },
         { id: 'cybersource' },
         { id: 'cybersourcev2' },
         { id: 'bnz' },
+        { id: 'ewayrapid', experiment: 'PI-4750_ewayrapid_resolver_configuration' },
+
+        {
+            id: 'authorizenet',
+            experiment: 'PI-4745_authorizenet_resolver_configuration',
+        },
     ],
 );
