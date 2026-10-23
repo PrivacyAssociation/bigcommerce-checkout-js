@@ -112,8 +112,8 @@ const LoginForm: FunctionComponent<
   // }, [email, onCancel]);
 
   const loginHref =  window.location.origin === 'https://store.iapp.org' 
-    ? 'https://myiapp.org/store?redirectPage=checkout' 
-    : 'https://test.myiapp.org/store?redirectPage=checkout';
+    ? 'https://iapp.org/store?redirectPage=checkout' 
+    : 'https://test.iapp.org/store?redirectPage=checkout';
     
   return (
     <Form
