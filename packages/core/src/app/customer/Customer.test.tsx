@@ -11,7 +11,7 @@ import {
 } from '@bigcommerce/checkout-sdk';
 import { faker } from '@faker-js/faker';
 import userEvent from '@testing-library/user-event';
-import { rest } from 'msw';
+import { http, HttpResponse } from 'msw';
 import React, { act, type FunctionComponent } from 'react';
 
 import { ExtensionService } from '@bigcommerce/checkout/checkout-extension';
@@ -19,12 +19,15 @@ import {
     type AnalyticsContextProps,
     type AnalyticsEvents,
     AnalyticsProviderMock,
+    CapabilitiesContext,
     CheckoutProvider,
+    defaultCapabilities,
     ExtensionProvider,
     type ExtensionServiceInterface,
     LocaleContext,
     type LocaleContextType,
     LocaleProvider,
+    ThemeContext,
     ThemeProvider,
 } from '@bigcommerce/checkout/contexts';
 import { assignLocation } from '@bigcommerce/checkout/dom-utils';
@@ -70,6 +73,8 @@ describe('Customer Component', () => {
     let defaultProps: CheckoutProps & AnalyticsContextProps;
     let embeddedMessengerMock: EmbeddedCheckoutMessenger;
     let analyticsTracker: AnalyticsEvents;
+    let capabilities = defaultCapabilities;
+    let enhancedThemeV1 = false;
 
     beforeAll(() => {
         checkout = new CheckoutPageNodeObject();
@@ -88,6 +93,8 @@ describe('Customer Component', () => {
         window.scrollTo = jest.fn();
 
         (assignLocation as jest.Mock).mockClear();
+        capabilities = defaultCapabilities;
+        enhancedThemeV1 = false;
 
         checkoutService = createCheckoutService();
         extensionService = new ExtensionService(checkoutService, createErrorLogger());
@@ -130,7 +137,11 @@ describe('Customer Component', () => {
                     <AnalyticsProviderMock>
                         <ExtensionProvider extensionService={extensionService}>
                             <ThemeProvider>
-                                <Checkout {...props} />
+                                <ThemeContext.Provider value={{ enhancedThemeV1 }}>
+                                    <CapabilitiesContext.Provider value={capabilities}>
+                                        <Checkout {...props} />
+                                    </CapabilitiesContext.Provider>
+                                </ThemeContext.Provider>
                             </ThemeProvider>
                         </ExtensionProvider>
                     </AnalyticsProviderMock>
@@ -263,8 +274,8 @@ describe('Customer Component', () => {
         await userEvent.type(await screen.findByLabelText('Password'), password);
 
         checkout.setRequestHandler(
-            rest.post('/internalapi/v1/checkout/customer', (_, res, ctx) =>
-                res(ctx.json({ data: { persistentCartRetrievalInformation: false } })),
+            http.post('/internalapi/v1/checkout/customer', () =>
+                HttpResponse.json({ data: { persistentCartRetrievalInformation: false } }),
             ),
         );
 
@@ -293,14 +304,14 @@ describe('Customer Component', () => {
         await checkout.waitForCustomerStep();
 
         checkout.setRequestHandler(
-            rest.post('/api/storefront/checkouts/*/billing-address', (_, res, ctx) =>
-                res(
-                    ctx.status(400),
-                    ctx.json({
+            http.post('/api/storefront/checkouts/*/billing-address', () =>
+                HttpResponse.json(
+                    {
                         type: 'empty_cart',
                         title: 'Empty cart',
                         detail: 'Cart is empty',
-                    }),
+                    },
+                    { status: 400 },
                 ),
             ),
         );
@@ -320,6 +331,61 @@ describe('Customer Component', () => {
                 "Your cart contains items that aren't available for purchase or have exceeded the purchase limit. To place your order, please create a new cart with the quantities to the allowed limit or with different items.",
             ),
         ).toBeInTheDocument();
+    });
+
+    describe('createAccountViaBuyerPortal capability', () => {
+        const openPage = jest.fn();
+
+        const clickCreateAccount = async () => {
+            checkoutService = checkout.use(CheckoutPreset.CheckoutWithDigitalCart);
+            render(<CheckoutTest {...defaultProps} />);
+            await checkout.waitForCustomerStep();
+
+            await userEvent.click(screen.getByText('Sign in now'));
+            await userEvent.click(screen.getByText('Create an account instead'));
+        };
+
+        beforeEach(() => {
+            enhancedThemeV1 = true;
+            openPage.mockClear();
+        });
+
+        afterEach(() => {
+            delete (window as { b2b?: unknown }).b2b;
+        });
+
+        it('opens the buyer portal register page when capability is on and b2b utils are available', async () => {
+            capabilities = {
+                ...defaultCapabilities,
+                customer: { ...defaultCapabilities.customer, createAccountViaBuyerPortal: true },
+            };
+            (window as { b2b?: unknown }).b2b = { utils: { openPage } };
+
+            await clickCreateAccount();
+
+            expect(openPage).toHaveBeenCalledWith('/register');
+            expect(screen.queryByLabelText('First Name')).not.toBeInTheDocument();
+        });
+
+        it('falls back to the create account form when b2b utils are unavailable', async () => {
+            capabilities = {
+                ...defaultCapabilities,
+                customer: { ...defaultCapabilities.customer, createAccountViaBuyerPortal: true },
+            };
+
+            await clickCreateAccount();
+
+            expect(await screen.findByLabelText('First Name')).toBeInTheDocument();
+        });
+
+        it('shows the create account form when capability is off even if b2b utils exist', async () => {
+            (window as { b2b?: unknown }).b2b = { utils: { openPage } };
+
+            await clickCreateAccount();
+
+            expect(await screen.findByLabelText('First Name')).toBeInTheDocument();
+            expect(openPage).not.toHaveBeenCalled();
+        });
     });
 
     describe('sign in link shouldRedirectToStorefrontForAuth', () => {
@@ -365,14 +431,14 @@ describe('Customer Component', () => {
         await checkout.waitForCustomerStep();
 
         checkout.setRequestHandler(
-            rest.post('/api/storefront/checkouts/*/billing-address', (_, res, ctx) =>
-                res(
-                    ctx.status(403),
-                    ctx.json({
+            http.post('/api/storefront/checkouts/*/billing-address', () =>
+                HttpResponse.json(
+                    {
                         type: 'existing_customer_require_login',
                         title: 'Sign in to Your Account',
                         detail: 'This email is already associated to an account. Please login to continue.',
-                    }),
+                    },
+                    { status: 403 },
                 ),
             ),
         );

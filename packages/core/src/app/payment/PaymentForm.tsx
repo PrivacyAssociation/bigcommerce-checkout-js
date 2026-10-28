@@ -54,6 +54,7 @@ import {
 } from './PaymentMethodsRefreshAlert';
 import PaymentRedeemables from './PaymentRedeemables';
 import PaymentSubmitButton from './PaymentSubmitButton';
+import { PriceChangedAlert } from './PriceChangedAlert';
 import { ProvidersSectionOnTopOfPaymentsList } from './ProvidersSectionOnTopOfPaymentsList';
 import SpamProtectionField from './SpamProtectionField';
 import { StoreCreditField, StoreCreditOverlay } from './storeCredit';
@@ -70,6 +71,7 @@ export interface PaymentFormProps {
     isBillingSameAsShipping?: boolean;
     isEmbedded?: boolean;
     isInitializingPayment?: boolean;
+    isPriceChangedAlertVisible?: boolean;
     isReloadingPaymentMethods?: boolean;
     isTermsConditionsRequired?: boolean;
     isUsingMultiShipping?: boolean;
@@ -90,6 +92,7 @@ export interface PaymentFormProps {
     onBillingSameAsShippingChange?(isBillingSameAsShipping: boolean): void;
     onMethodSelect?(method: PaymentMethod): void;
     onMethodsRefreshAlertDismiss?(): void;
+    onPriceChangedAlertDismiss?(): void;
     onStoreCreditChange?(useStoreCredit?: boolean): void;
     onSubmit?(values: PaymentFormValues): void;
     onUnhandledError?(error: Error): void;
@@ -106,6 +109,7 @@ const PaymentForm: FunctionComponent<
     isEmbedded,
     isInitializingPayment,
     isPaymentDataRequired,
+    isPriceChangedAlertVisible,
     isReloadingPaymentMethods,
     isTermsConditionsRequired,
     isStoreCreditApplied,
@@ -116,6 +120,7 @@ const PaymentForm: FunctionComponent<
     onBillingSameAsShippingChange,
     onMethodSelect,
     onMethodsRefreshAlertDismiss,
+    onPriceChangedAlertDismiss,
     onStoreCreditChange,
     onUnhandledError,
     orderExtraFields,
@@ -174,9 +179,15 @@ const PaymentForm: FunctionComponent<
         shouldHidePaymentSubmitButton || (isPaymentDataRequired() && isEmpty(methods));
 
     const methodListRef = useRef<HTMLDivElement>(null);
+    // A postal code or state save can reload methods while the shopper is still filling
+    // in the billing address; don't scroll them away from it.
+    const isEditingBillingAddressRef = useRef(false);
+    const handleAddressEditingChange = useCallback((isEditing: boolean) => {
+        isEditingBillingAddressRef.current = isEditing;
+    }, []);
 
     useEffect(() => {
-        if (!isReloadingPaymentMethods) {
+        if (!isReloadingPaymentMethods || isEditingBillingAddressRef.current) {
             return;
         }
 
@@ -254,6 +265,7 @@ const PaymentForm: FunctionComponent<
                     isBillingSameAsShipping={isBillingSameAsShipping ?? true}
                     isUsingMultiShipping={isUsingMultiShipping ?? false}
                     methodId={selectedMethod?.id}
+                    onAddressEditingChange={handleAddressEditingChange}
                     onBillingSameAsShippingChange={onBillingSameAsShippingChange ?? noop}
                     onUnhandledError={onUnhandledError ?? noop}
                 />
@@ -288,6 +300,10 @@ const PaymentForm: FunctionComponent<
             )}
 
             <IappOrderTermsNotice />
+            
+            {isPriceChangedAlertVisible && (
+                <PriceChangedAlert onDismiss={onPriceChangedAlertDismiss ?? noop} />
+            )}
 
             <div className="form-actions">
                 {hideSubmitPaymentButton ? (

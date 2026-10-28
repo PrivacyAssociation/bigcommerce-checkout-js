@@ -28,6 +28,7 @@ import getEmailValidationSchema from './getEmailValidationSchema';
 import mapErrorMessage from './mapErrorMessage';
 // import PasswordField from './PasswordField';
 import { RedirectToStorefrontLogin } from './RedirectToStorefrontLogin';
+import { useCreateAccount } from './useCreateAccount';
 
 export interface LoginFormProps {
   continueAsGuestButtonLabelId: string;
@@ -111,8 +112,8 @@ const LoginForm: FunctionComponent<
   // }, [email, onCancel]);
 
   const loginHref =  window.location.origin === 'https://store.iapp.org' 
-    ? 'https://myiapp.org/store?redirectPage=checkout' 
-    : 'https://test.myiapp.org/store?redirectPage=checkout';
+    ? 'https://iapp.org/account/store?redirectPage=checkout'
+    : 'https://test.iapp.org/account/store?redirectPage=checkout';
     
   return (
     <Form
