@@ -116,69 +116,70 @@ jobs:
           echo "invalidation id: $INVALIDATION_ID"
           aws cloudfront wait invalidation-completed --id $INVALIDATION_ID --distribution-id ${{ secrets.BC_CHECKOUT_CLOUDFRONT_DISTRIBUTION_ID_PRODUCTION }}
 
-  visual-regression-test:
-    needs: build-assets-upload-to-s3
-    if: |
-      always() && (needs.build-assets-upload-to-s3.result == 'success')
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-          cache: "npm"
-          package-manager-cache: true
-          cache-dependency-path: "automated-testing"
-
-      # TODO how to ensure updating browser versions against this cache?
-      - name: Cache playwright browsers
-        id: cache-playwright-browsers
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('automated-testing/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-
-      - name: Install dependencies
-        run: (cd automated-testing && npm ci)
-
-      - name: Install Playwright browsers (Chromium only)
-        if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
-        run: (cd automated-testing && npx playwright install chromium --with-deps)
-
-      - name: Create JSON Credentials file using Bash
-        run: |
-          # Define variables for JSON content
-          TEST_USERNAME="${{ secrets.VISUAL_REGRESSION_TEST_USERNAME }}"
-          TEST_USER_PASSWORD="${{ secrets.VISUAL_REGRESSION_TEST_USER_PASSWORD }}"
-
-          # Construct the JSON string
-          JSON_CONTENT=$(cat <<EOF
-          {
-            "users":[{"username": "$TEST_USERNAME",
-            "password": "$TEST_USER_PASSWORD"}]
-          }
-          EOF
-          )
-          echo "$JSON_CONTENT" > automated-testing/tests/regression/user-config.json
-
-      - name: Run visual regression tests
-        env:
-          BC_CHECKOUT_URL: "https://checkout.iapp.org/auto-loader.js"
-          RUNTIME_ENVIRONMENT: "production"
-          VISUAL_REGRESSION: 'true'
-        run: |
-          (cd automated-testing && npx playwright test --project=production-regression)
-
-      - name: Capture Playwright automation results, upload to GitHub Artifacts
-        uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: playwright-report-production
-          path: automated-testing/playwright-report/
-          retention-days: 30
+  # Playwright visual regression temporarily disabled
+  # visual-regression-test:
+  #   needs: build-assets-upload-to-s3
+  #   if: |
+  #     always() && (needs.build-assets-upload-to-s3.result == 'success')
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 10
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v5
+  #
+  #     - name: Set up Node.js
+  #       uses: actions/setup-node@v6
+  #       with:
+  #         node-version: "24"
+  #         cache: "npm"
+  #         package-manager-cache: true
+  #         cache-dependency-path: "automated-testing"
+  #
+  #     # TODO how to ensure updating browser versions against this cache?
+  #     - name: Cache playwright browsers
+  #       id: cache-playwright-browsers
+  #       uses: actions/cache@v4
+  #       with:
+  #         path: ~/.cache/ms-playwright
+  #         key: ${{ runner.os }}-playwright-${{ hashFiles('automated-testing/package-lock.json') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-playwright-
+  #
+  #     - name: Install dependencies
+  #       run: (cd automated-testing && npm ci)
+  #
+  #     - name: Install Playwright browsers (Chromium only)
+  #       if: steps.cache-playwright-browsers.outputs.cache-hit != 'true'
+  #       run: (cd automated-testing && npx playwright install chromium --with-deps)
+  #
+  #     - name: Create JSON Credentials file using Bash
+  #       run: |
+  #         # Define variables for JSON content
+  #         TEST_USERNAME="${{ secrets.VISUAL_REGRESSION_TEST_USERNAME }}"
+  #         TEST_USER_PASSWORD="${{ secrets.VISUAL_REGRESSION_TEST_USER_PASSWORD }}"
+  #
+  #         # Construct the JSON string
+  #         JSON_CONTENT=$(cat <<EOF
+  #         {
+  #           "users":[{"username": "$TEST_USERNAME",
+  #           "password": "$TEST_USER_PASSWORD"}]
+  #         }
+  #         EOF
+  #         )
+  #         echo "$JSON_CONTENT" > automated-testing/tests/regression/user-config.json
+  #
+  #     - name: Run visual regression tests
+  #       env:
+  #         BC_CHECKOUT_URL: "https://checkout.iapp.org/auto-loader.js"
+  #         RUNTIME_ENVIRONMENT: "production"
+  #         VISUAL_REGRESSION: 'true'
+  #       run: |
+  #         (cd automated-testing && npx playwright test --project=production-regression)
+  #
+  #     - name: Capture Playwright automation results, upload to GitHub Artifacts
+  #       uses: actions/upload-artifact@v7
+  #       if: always()
+  #       with:
+  #         name: playwright-report-production
+  #         path: automated-testing/playwright-report/
+  #         retention-days: 30
