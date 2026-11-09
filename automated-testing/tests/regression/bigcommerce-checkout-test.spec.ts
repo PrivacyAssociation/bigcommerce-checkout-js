@@ -24,6 +24,12 @@ test.describe('BigCommerce Store checkout should trigger IAPP Account Login and 
   }) => {
     const authenticatedContext = await browser.newContext({
       storageState: 'storageState.json',
+      // Prefer context headers over page.route — custom headers on top-level
+      // navigations are unreliable via route.continue() and TEST is behind WAF/App Proxy.
+      extraHTTPHeaders: {
+        'x-myiapp-waf': process.env.WAF_TOKEN ?? '',
+        'x-myiapp-cognito-waf': process.env.COGNITO_WAF_TOKEN ?? '',
+      },
     });
     const page = await authenticatedContext.newPage();
     page.on('console', (msg) => {
@@ -36,7 +42,6 @@ test.describe('BigCommerce Store checkout should trigger IAPP Account Login and 
     loginId = username;
     const password = userProfile.password;
 
-    await addWafHeaders(page);
     await navigateToStoreWaitForLoad(page);
     await acceptOneTrustIfPresent(page);
     await addAigpExamToCart(page);
@@ -49,8 +54,12 @@ test.describe('BigCommerce Store checkout should trigger IAPP Account Login and 
     await waitForApiCalls(page, [s3CheckoutUrl]);
     const checkoutUrlPromise = page.waitForURL(/\/checkout/, {timeout: 30000});
 
-    // wait for the sign in button to appear and click it
-    await page.getByRole('link', { name: 'Sign In' }).click();
+    // Use the checkout LoginForm control — a generic "Sign In" link can match the
+    // storefront nav, which may still point at the legacy myiapp.org URL.
+    const signIn = page.locator('#checkout-customer-continue');
+    await signIn.waitFor({ state: 'visible', timeout: 15000 });
+    console.log(`Sign In href: ${await signIn.getAttribute('href')}`);
+    await signIn.click();
     await iappAccountLogin(page, username, password);
     await checkoutUrlPromise; // wait for the checkout URL to be loaded after login
 
@@ -92,29 +101,28 @@ async function waitForApiCalls(page: Page, expectedApiCalls: string[]) {
   }
 }
 
-// test is behind internal WAF, punch a hole for this test when invoked from GitHub Actions
-async function addWafHeaders(page: Page) {
-  const wafHeaderValue = process.env.WAF_TOKEN ?? '';
-  const cognitoWafHeaderValue = process.env.COGNITO_WAF_TOKEN ?? '';
-
-  await page.route('**/*', (route, request) => {
-    const originalHeaders = request.headers();
-    originalHeaders['x-myiapp-cognito-waf'] = cognitoWafHeaderValue;
-    originalHeaders['x-myiapp-waf'] = wafHeaderValue;
-    route.continue({ headers: originalHeaders });
-  });
-}
-
 /**
  * Completes Cognito Managed Login reached via /account/store?redirectPage=checkout.
  * Flow: username -> Next -> password -> Sign in, then redirect back to checkout.
  */
 async function iappAccountLogin(page: Page, username: string, password: string) {
-  // /account/store redirects to Cognito Managed Login (auth.myiapp.org/login or test equivalent)
-  await page.waitForURL(/\/(login|account\/store)/, { timeout: 15000 });
+  // /account/store redirects to Cognito Managed Login (auth.myiapp.org/login or test equivalent).
+  // Fail fast if we landed on Azure AD App Proxy — that means WAF bypass headers did not apply.
+  await page.waitForURL(
+    (url) =>
+      /\/(login|account\/store)/.test(url.pathname) ||
+      url.hostname.includes('login.microsoftonline.com'),
+    { timeout: 20000 }
+  );
+
+  if (page.url().includes('login.microsoftonline.com')) {
+    throw new Error(
+      `Reached Azure AD App Proxy instead of Cognito Managed Login. WAF bypass headers may be missing. Current URL: ${page.url()}`
+    );
+  }
 
   const usernameInput = page.locator('input[name="username"]');
-  await usernameInput.waitFor({ state: 'visible', timeout: 15000 });
+  await usernameInput.waitFor({ state: 'visible', timeout: 20000 });
   await usernameInput.fill(username);
 
   // Cognito Managed Login uses a "Next" button on the username step
