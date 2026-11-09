@@ -24,12 +24,6 @@ test.describe('BigCommerce Store checkout should trigger IAPP Account Login and 
   }) => {
     const authenticatedContext = await browser.newContext({
       storageState: 'storageState.json',
-      // Prefer context headers over page.route — custom headers on top-level
-      // navigations are unreliable via route.continue() and TEST is behind WAF/App Proxy.
-      extraHTTPHeaders: {
-        'x-myiapp-waf': process.env.WAF_TOKEN ?? '',
-        'x-myiapp-cognito-waf': process.env.COGNITO_WAF_TOKEN ?? '',
-      },
     });
     const page = await authenticatedContext.newPage();
     page.on('console', (msg) => {
@@ -42,6 +36,7 @@ test.describe('BigCommerce Store checkout should trigger IAPP Account Login and 
     loginId = username;
     const password = userProfile.password;
 
+    await addWafHeaders(page);
     await navigateToStoreWaitForLoad(page);
     await acceptOneTrustIfPresent(page);
     await addAigpExamToCart(page);
@@ -98,6 +93,54 @@ async function waitForApiCalls(page: Page, expectedApiCalls: string[]) {
     console.error(
       `Failed to load all expected backend API calls page: ${JSON.stringify(expectedApiCalls)}`
     );
+  }
+}
+
+/**
+ * Attach WAF bypass headers only for IAPP account/auth hosts.
+ * Do NOT send them globally — that triggers CORS preflights against BC CDN,
+ * fonts, and test-checkout.iapp.org and prevents checkout JS from loading.
+ */
+async function addWafHeaders(page: Page) {
+  const wafHeaderValue = process.env.WAF_TOKEN ?? '';
+  const cognitoWafHeaderValue = process.env.COGNITO_WAF_TOKEN ?? '';
+
+  await page.route('**/*', async (route, request) => {
+    if (!needsWafBypassHeaders(request.url())) {
+      await route.continue();
+      return;
+    }
+
+    const headers = {
+      ...request.headers(),
+      'x-myiapp-waf': wafHeaderValue,
+      'x-myiapp-cognito-waf': cognitoWafHeaderValue,
+    };
+    await route.continue({ headers });
+  });
+}
+
+function needsWafBypassHeaders(urlString: string): boolean {
+  try {
+    const { hostname } = new URL(urlString);
+    // Checkout asset hosts must be excluded — they are loaded cross-origin from BC.
+    if (
+      hostname === 'checkout.iapp.org' ||
+      hostname === 'test-checkout.iapp.org'
+    ) {
+      return false;
+    }
+
+    return (
+      hostname === 'iapp.org' ||
+      hostname === 'test.iapp.org' ||
+      hostname === 'myiapp.org' ||
+      hostname === 'test.myiapp.org' ||
+      hostname.endsWith('.myiapp.org') ||
+      hostname.endsWith('.iapp.org')
+    );
+  } catch {
+    return false;
   }
 }
 
