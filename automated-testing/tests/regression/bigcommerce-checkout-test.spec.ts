@@ -3,6 +3,11 @@ import testUserConfig from './user-config.json';
 
 let loginId = '';
 
+test.beforeAll(async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+});
+
 test.afterEach(async ({ page }, testInfo) => {
   if (testInfo.status !== testInfo.expectedStatus) {
     const screenshotPath = testInfo.outputPath(
@@ -18,8 +23,8 @@ test.afterEach(async ({ page }, testInfo) => {
   }
 });
 
-test.describe('BigCommerce Store checkout should trigger IAPP Account Login and return on success', () => {
-  test('should navigate successfully to the BC Store and login via IAPP account at checkout', async ({
+test.describe('BigCommerce Store checkout should trigger MyIapp Login and return on success', () => {
+  test('should navigate successfully to the BC Store and login via MyIapp at checkout', async ({
     browser,
   }) => {
     const authenticatedContext = await browser.newContext({
@@ -49,13 +54,10 @@ test.describe('BigCommerce Store checkout should trigger IAPP Account Login and 
     await waitForApiCalls(page, [s3CheckoutUrl]);
     const checkoutUrlPromise = page.waitForURL(/\/checkout/, {timeout: 30000});
 
-    // Use the checkout LoginForm control — a generic "Sign In" link can match the
-    // storefront nav, which may still point at the legacy myiapp.org URL.
-    const signIn = page.locator('#checkout-customer-continue');
-    await signIn.waitFor({ state: 'visible', timeout: 15000 });
-    console.log(`Sign In href: ${await signIn.getAttribute('href')}`);
-    await signIn.click();
-    await iappAccountLogin(page, username, password);
+    // wait for the sign in button to appear and click it
+    await page.getByRole('link', { name: 'Sign In' }).click();
+    await myIappLogin(page, username, password);
+    await page.waitForTimeout(2000); // wait to visually confirm logged in state
     await checkoutUrlPromise; // wait for the checkout URL to be loaded after login
 
     // the same deal as MyIapp UI - need a manual GitHub Action Workflow to update snapshots on a linux os
@@ -64,6 +66,7 @@ test.describe('BigCommerce Store checkout should trigger IAPP Account Login and 
       .locator('#firstNameInput')
       .waitFor({ state: 'visible', timeout: 20000 }); // wait for some element on the checkout page that only appears when logged in, this is pretty brittle and could be improved with a more robust selector strategy
 
+    await page.waitForTimeout(2000); // wait to visually confirm logged in state
     await page
       .locator('#checkout-shipping-continue')
       .waitFor({ state: 'visible', timeout: 10000 }); // wait for some element on the checkout page that only appears when logged in, this is pretty brittle and could be improved with a more robust selector strategy
@@ -96,87 +99,54 @@ async function waitForApiCalls(page: Page, expectedApiCalls: string[]) {
   }
 }
 
-/**
- * Attach WAF bypass headers only for IAPP account/auth hosts.
- * Do NOT send them globally — that triggers CORS preflights against BC CDN,
- * fonts, and test-checkout.iapp.org and prevents checkout JS from loading.
- */
+// test is behind internal WAF, punch a hole for this test when invoked from GitHub Actions
 async function addWafHeaders(page: Page) {
   const wafHeaderValue = process.env.WAF_TOKEN ?? '';
   const cognitoWafHeaderValue = process.env.COGNITO_WAF_TOKEN ?? '';
 
-  await page.route('**/*', async (route, request) => {
-    if (!needsWafBypassHeaders(request.url())) {
-      await route.continue();
-      return;
-    }
-
-    const headers = {
-      ...request.headers(),
-      'x-myiapp-waf': wafHeaderValue,
-      'x-myiapp-cognito-waf': cognitoWafHeaderValue,
-    };
-    await route.continue({ headers });
+  await page.route('**/*', (route, request) => {
+    const originalHeaders = request.headers();
+    originalHeaders['x-myiapp-cognito-waf'] = cognitoWafHeaderValue;
+    originalHeaders['x-myiapp-waf'] = wafHeaderValue;
+    route.continue({ headers: originalHeaders });
   });
 }
 
-function needsWafBypassHeaders(urlString: string): boolean {
-  try {
-    const { hostname } = new URL(urlString);
-    // Checkout asset hosts must be excluded — they are loaded cross-origin from BC.
-    if (
-      hostname === 'checkout.iapp.org' ||
-      hostname === 'test-checkout.iapp.org'
-    ) {
-      return false;
-    }
+async function myIappLogin(page: Page, username: string, password: string) {
+  await page.waitForURL(/\/auth/, { timeout: 5000 });
+  // await page.waitForTimeout(5000); // wait a bit for the sign in page to load before trying to interact with it
+  // click the "Sign In" button
+  await page
+    .getByRole('button', { name: 'Sign in' })
+    .waitFor({ state: 'visible', timeout: 10000 });
 
-    return (
-      hostname === 'iapp.org' ||
-      hostname === 'test.iapp.org' ||
-      hostname === 'myiapp.org' ||
-      hostname === 'test.myiapp.org' ||
-      hostname.endsWith('.myiapp.org') ||
-      hostname.endsWith('.iapp.org')
-    );
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Completes Cognito Managed Login reached via /account/store?redirectPage=checkout.
- * Flow: username -> Next -> password -> Sign in, then redirect back to checkout.
- */
-async function iappAccountLogin(page: Page, username: string, password: string) {
-  // /account/store redirects to Cognito Managed Login (auth.myiapp.org/login or test equivalent).
-  // Fail fast if we landed on Azure AD App Proxy — that means WAF bypass headers did not apply.
-  await page.waitForURL(
-    (url) =>
-      /\/(login|account\/store)/.test(url.pathname) ||
-      url.hostname.includes('login.microsoftonline.com'),
-    { timeout: 20000 }
-  );
-
-  if (page.url().includes('login.microsoftonline.com')) {
-    throw new Error(
-      `Reached Azure AD App Proxy instead of Cognito Managed Login. WAF bypass headers may be missing. Current URL: ${page.url()}`
-    );
-  }
-
-  const usernameInput = page.locator('input[name="username"]');
-  await usernameInput.waitFor({ state: 'visible', timeout: 20000 });
-  await usernameInput.fill(username);
-
-  // Cognito Managed Login uses a "Next" button on the username step
-  await page.getByRole('button', { name: 'Next' }).click();
-
-  const passwordInput = page.locator('input[name="password"]');
-  await passwordInput.waitFor({ state: 'visible', timeout: 20000 });
-  await passwordInput.fill(password);
-
-  // Password step submit is labeled "Sign in" on Cognito Managed Login
   await page.getByRole('button', { name: 'Sign in' }).click();
+
+  // this will try until the test timeout is exceeded
+  await page
+    .locator('input[name="username"]')
+    .waitFor({ state: 'visible', timeout: 10000 });
+
+  await page.waitForTimeout(200); // wait a few millis then try entering it again
+  await page
+    .locator('input[name="username"]')
+    .waitFor({ state: 'visible', timeout: 10000 });
+  await page.locator('input[name="username"]').fill(username);
+  await page.locator('button[type="submit"]').click();
+  await page.waitForTimeout(5000); // wait a bit for the password field to load before trying to interact with it
+
+  await page
+    .locator('input[name="password"]')
+    .waitFor({ state: 'visible', timeout: 20000 });
+
+  await page.waitForTimeout(200); // wait a few millis then try entering it again
+  await page
+    .locator('input[name="password"]')
+    .waitFor({ state: 'visible', timeout: 10000 });
+  await page.locator('input[name="password"]').fill(password);
+
+  await page.locator('button[type="submit"]').click();
+  await page.waitForTimeout(5000);
 }
 
 async function navigateToStoreWaitForLoad(page: Page) {
