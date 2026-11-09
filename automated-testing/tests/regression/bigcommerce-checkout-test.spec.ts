@@ -3,11 +3,6 @@ import testUserConfig from './user-config.json';
 
 let loginId = '';
 
-test.beforeAll(async ({ browser }) => {
-  const context = await browser.newContext();
-  const page = await context.newPage();
-});
-
 test.afterEach(async ({ page }, testInfo) => {
   if (testInfo.status !== testInfo.expectedStatus) {
     const screenshotPath = testInfo.outputPath(
@@ -23,8 +18,8 @@ test.afterEach(async ({ page }, testInfo) => {
   }
 });
 
-test.describe('BigCommerce Store checkout should trigger MyIapp Login and return on success', () => {
-  test('should navigate successfully to the BC Store and login via MyIapp at checkout', async ({
+test.describe('BigCommerce Store checkout should trigger IAPP Account Login and return on success', () => {
+  test('should navigate successfully to the BC Store and login via IAPP account at checkout', async ({
     browser,
   }) => {
     const authenticatedContext = await browser.newContext({
@@ -56,8 +51,7 @@ test.describe('BigCommerce Store checkout should trigger MyIapp Login and return
 
     // wait for the sign in button to appear and click it
     await page.getByRole('link', { name: 'Sign In' }).click();
-    await myIappLogin(page, username, password);
-    await page.waitForTimeout(2000); // wait to visually confirm logged in state
+    await iappAccountLogin(page, username, password);
     await checkoutUrlPromise; // wait for the checkout URL to be loaded after login
 
     // the same deal as MyIapp UI - need a manual GitHub Action Workflow to update snapshots on a linux os
@@ -66,7 +60,6 @@ test.describe('BigCommerce Store checkout should trigger MyIapp Login and return
       .locator('#firstNameInput')
       .waitFor({ state: 'visible', timeout: 20000 }); // wait for some element on the checkout page that only appears when logged in, this is pretty brittle and could be improved with a more robust selector strategy
 
-    await page.waitForTimeout(2000); // wait to visually confirm logged in state
     await page
       .locator('#checkout-shipping-continue')
       .waitFor({ state: 'visible', timeout: 10000 }); // wait for some element on the checkout page that only appears when logged in, this is pretty brittle and could be improved with a more robust selector strategy
@@ -112,41 +105,27 @@ async function addWafHeaders(page: Page) {
   });
 }
 
-async function myIappLogin(page: Page, username: string, password: string) {
-  await page.waitForURL(/\/auth/, { timeout: 5000 });
-  // await page.waitForTimeout(5000); // wait a bit for the sign in page to load before trying to interact with it
-  // click the "Sign In" button
-  await page
-    .getByRole('button', { name: 'Sign in' })
-    .waitFor({ state: 'visible', timeout: 10000 });
+/**
+ * Completes Cognito Managed Login reached via /account/store?redirectPage=checkout.
+ * Flow: username -> Next -> password -> Sign in, then redirect back to checkout.
+ */
+async function iappAccountLogin(page: Page, username: string, password: string) {
+  // /account/store redirects to Cognito Managed Login (auth.myiapp.org/login or test equivalent)
+  await page.waitForURL(/\/(login|account\/store)/, { timeout: 15000 });
 
+  const usernameInput = page.locator('input[name="username"]');
+  await usernameInput.waitFor({ state: 'visible', timeout: 15000 });
+  await usernameInput.fill(username);
+
+  // Cognito Managed Login uses a "Next" button on the username step
+  await page.getByRole('button', { name: 'Next' }).click();
+
+  const passwordInput = page.locator('input[name="password"]');
+  await passwordInput.waitFor({ state: 'visible', timeout: 20000 });
+  await passwordInput.fill(password);
+
+  // Password step submit is labeled "Sign in" on Cognito Managed Login
   await page.getByRole('button', { name: 'Sign in' }).click();
-
-  // this will try until the test timeout is exceeded
-  await page
-    .locator('input[name="username"]')
-    .waitFor({ state: 'visible', timeout: 10000 });
-
-  await page.waitForTimeout(200); // wait a few millis then try entering it again
-  await page
-    .locator('input[name="username"]')
-    .waitFor({ state: 'visible', timeout: 10000 });
-  await page.locator('input[name="username"]').fill(username);
-  await page.locator('button[type="submit"]').click();
-  await page.waitForTimeout(5000); // wait a bit for the password field to load before trying to interact with it
-
-  await page
-    .locator('input[name="password"]')
-    .waitFor({ state: 'visible', timeout: 20000 });
-
-  await page.waitForTimeout(200); // wait a few millis then try entering it again
-  await page
-    .locator('input[name="password"]')
-    .waitFor({ state: 'visible', timeout: 10000 });
-  await page.locator('input[name="password"]').fill(password);
-
-  await page.locator('button[type="submit"]').click();
-  await page.waitForTimeout(5000);
 }
 
 async function navigateToStoreWaitForLoad(page: Page) {

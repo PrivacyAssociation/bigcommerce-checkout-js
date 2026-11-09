@@ -9,7 +9,7 @@
  4. PR opened against `master` with custom IAPP code changes 
 
 **GitHub Actions workflows:**
-- [sync-bc-main.yaml](sync-bc-main.yaml): weekly cron which syncs with BC main, then invokes deploy pipeline workflows
+- [sync-bc-cron.yaml](sync-bc-cron.yaml): weekly cron which syncs with BC main, then invokes deploy pipeline workflows
 - [test.yaml](test.yaml): build & deploy to iapp-org-nonprod & run Playwright automated tests
 - [production.yaml](production.yaml) deploy previously built package to iapp-org-prod & run Playwrigh tautomated tests
 - [update-playwright-snapshots.yaml](update-playwright-snapshots.yaml): regenerate screenshots for Playwright automated visual regression tests - they need to be generated in a Linux environment

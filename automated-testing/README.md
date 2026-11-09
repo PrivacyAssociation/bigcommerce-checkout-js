@@ -17,10 +17,11 @@ This project runs Playwright automation to invoke the following UI flow in a chr
 2. Ensure all required fields are selected
 3. Add to cart
 4. Go to the `/checkout` page
-5. Verify the `SignIn` button renders, and that it was requested from `checkout.iapp.org`
-6. Click the `SignIn` button, and log in to MyIapp as `shanyetest` user.
-7. Waits for the redirect back to BigCommerce store, then goes back to `/checkout`
-8. Confirms user is still logged in, and correct screen is rendered at checkout
+5. Verify the `Sign In` button renders, and that it was requested from `checkout.iapp.org` (or `test-checkout.iapp.org`)
+6. Click `Sign In`, which navigates to `/account/store?redirectPage=checkout` and then Cognito Managed Login
+7. Complete Cognito login (username → Next → password → Sign in) as the configured test user
+8. Wait for the redirect back to BigCommerce `/checkout`
+9. Confirm the user is logged in and the shipping step of checkout is rendered
 
 # Environment Variables
 
