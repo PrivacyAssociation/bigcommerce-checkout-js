@@ -113,18 +113,18 @@ async function addWafHeaders(page: Page) {
 }
 
 async function myIappLogin(page: Page, username: string, password: string) {
-  // /account/store redirects to Cognito Managed Login (username, Next, password, Sign in).
+  // /account/store redirects to Cognito Managed Login (username, submit, password, submit).
   await page.waitForURL(/\/(login|account\/store)/, { timeout: 20000 });
 
   const usernameInput = page.locator('input[name="username"]');
   await usernameInput.waitFor({ state: 'visible', timeout: 20000 });
   await usernameInput.fill(username);
-  await page.getByRole('button', { name: 'Next' }).click();
+  await page.locator('button[type="submit"]').click();
 
   const passwordInput = page.locator('input[name="password"]');
   await passwordInput.waitFor({ state: 'visible', timeout: 20000 });
   await passwordInput.fill(password);
-  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.locator('button[type="submit"]').click();
 }
 
 async function navigateToStoreWaitForLoad(page: Page) {
