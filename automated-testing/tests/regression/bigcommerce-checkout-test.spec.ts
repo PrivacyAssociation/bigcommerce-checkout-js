@@ -113,12 +113,8 @@ async function addWafHeaders(page: Page) {
 }
 
 async function myIappLogin(page: Page, username: string, password: string) {
-  // /account/store redirects to Cognito Managed Login. Nonprod host is test-auth.iapp.org.
-  const loginUrl =
-    process.env.RUNTIME_ENVIRONMENT === 'production'
-      ? /https:\/\/auth\.myiapp\.org\/login/
-      : /https:\/\/test-auth\.iapp\.org\/login/;
-  await page.waitForURL(loginUrl, { timeout: 20000 });
+  // /account/store redirects to Cognito Managed Login (username, Next, password, Sign in).
+  await page.waitForURL(/\/(login|account\/store)/, { timeout: 20000 });
 
   const usernameInput = page.locator('input[name="username"]');
   await usernameInput.waitFor({ state: 'visible', timeout: 20000 });
